@@ -15,5 +15,4 @@ Este proyecto ha sido desarrollado por:
 - [César Bermejo Fernández]()
 - [Esteban Peña Salazar](https://github.com/esalap00)
 - [Álvaro Prieto Álvarez](https://github.com/Apriea04)
-- [Miguel Prieto Castellanos]()
 - [Carlos Prieto Viñuela]()
