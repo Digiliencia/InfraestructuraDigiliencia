@@ -17,7 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 import time
 
-url_website = "https://www.ncsc.gov.uk/"
+__url_website__ = "https://www.ncsc.gov.uk/"
 
 '''
 url_cyber_pro = "https://www.ncsc.gov.uk/section/information-for/cyber-security-professionals"
@@ -26,7 +26,7 @@ url_cyber_stategy = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics?
 url_cyptograpfy = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics?allTopics=true&topics=cryptography&sort=date%2Bdesc"
 '''
 
-def get_actual_date():
+def __get_actual_date__():
     '''
     Returns
     -------
@@ -37,7 +37,7 @@ def get_actual_date():
     format_date = date_actual.strftime("%d %B %Y")  # Example: 23 June 2023
     return format_date
 
-def disablaled_cookie_popup(driver, selector):
+def __disablaled_cookie_popup__(driver, selector):
     """
     Desactiva los popups de cookies en un sitio web.
 
@@ -52,7 +52,7 @@ def disablaled_cookie_popup(driver, selector):
     except Exception as e:
         print("ERROR close popup cookies: " + e)
 
-def configuration():
+def __configuration__():
     '''
     Parameters
     ----------
@@ -69,6 +69,7 @@ def configuration():
     opt.add_argument("--disable-gpu") #Durante la ejecución desactiva la gráfica
     opt.add_argument("--disable-dev-shm-usage") #Durante la ejecución evita el uso compartido de memoria
     opt.add_argument("--no-sandbox") #Desactiva el modo sandbox del ordenador
+    opt.add_argument("--disable-extensions") #Inicia el navegador sin ningun tipo de extensión
     
     opt.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.84 ")
     
@@ -79,13 +80,13 @@ def configuration():
 
     return driver
 
-def load_subpage(driver, identificator):
+def __load_subpage__(driver, xpath):
     '''
     Parameters
     ----------
     driver : TYPE
         DESCRIPTION.
-    identificator : String 
+    xpath : String 
         DESCRIPTION.
 
     Returns
@@ -95,7 +96,7 @@ def load_subpage(driver, identificator):
     '''
     # Esperar hasta que el enlace de la subpágina esté visible y hacer clic en él
     subpage_link = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, identificator))  # Ajusta el XPATH según el enlace
+        EC.element_to_be_clickable((By.XPATH, xpath))  # Ajusta el XPATH según el enlace
     )
     subpage_link.click()
     
@@ -106,7 +107,26 @@ def load_subpage(driver, identificator):
 
     return subpage_link
 
-def scrap_cyber_pro(driver):
+def __show_all_articles__(driver):
+    '''
+    '''
+    # Bucle para cargar todos los artículos
+    while True:
+        try:
+            # Intentar encontrar el botón "Cargar más artículos"     div.pcf-button button button--normalised button--secondary
+            boton_cargar_mas = driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
+            boton_cargar_mas.click()  # Hacer clic en el botón
+            time.sleep(1)  # Esperar unos segundos para que se carguen los nuevos artículos
+        except NoSuchElementException:
+            # Si no se encuentra el botón, asumimos que ya no hay más artículos por cargar
+            print("No hay más artículos para cargar.")
+            break
+
+def __num_all_articles__(driver):
+    show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
+    return int(show_art[3])
+
+def __scrap_cyber_pro__(driver):
     '''
     Parameters
     ----------
@@ -119,38 +139,19 @@ def scrap_cyber_pro(driver):
 
     '''    
     # Risk Management
-    load_subpage(driver, '//div[@data-testid="pcf-topics-panel"]/div[1]')
-    #load_subpage(driver, '/html/body/div/div[2]/div[2]/main/div/div/div/div[1]/div[2]/div/div[1]/div[2]/div[2]/div/div/div[1]/div[2]/div[1]')
+    __load_subpage__(driver, '//div[@data-testid="pcf-topics-panel"]/div[1]')
     time.sleep(1)
-    #Siempre que no se de al boton de mas articulos, seran 20
-    #show_art = driver.find_element(By.XPATH, '/html/body/div/div[2]/div[2]/main/div/div/main/div/div/div/div[4]/div[4]/div[2]').text.split()
-    show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
-    num_articles_page = int(show_art[3])
+    __show_all_articles__(driver)
+    time.sleep(1)
+    num_articles_page = __num_all_articles__(driver)
     articles = []
-    for i in range(0, num_articles_page):   # //div[@class="search-results"]/div[@class="pcf-search-result"]/a[@id="searchResult_{i}"]
-        subpage_link = load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{i}" and @class="reactLink"]')
-        #driver.execute_script("arguments[0].scrollIntoView(true);", subpage_link)  # Asegurarse de que el elemento esté visible
-        #time.sleep(0.5)  # Pausa breve para evitar problemas de sincronización
-        articles.append(get_article(driver))
-        time.sleep(1)
+    for i in range(0, num_articles_page):   
+        __load_subpage__(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{i}" and @class="reactLink"]')
+        articles.append(__get_article__(driver))
+        time.sleep(0.25)
         driver.back() # Vuelve a la pagina anterior
-    
-    '''
-    hacer mientras alla articulos, despues del artiuclo le puedo llegar a presionar el boton:
-        load_subpage(driver, //div[@class='pcf-search-result' and @data-testid='pcf-search-result']/a[@id='searchResult_0'])
-        articulos[i] = getarticle()
-        i++
-    '''
-    
-    ''' Example
-    time.sleep(1)
-    lista_ejemplo = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
-    #lista_ejemplo = driver.find_elements(By.XPATH, '/html/body/div/div[2]/div[2]/main/div/div/div/div[1]/div[2]/div/div[1]/div[2]/div[2]/div/div/div[1]/div[1]/div')
-    for uni in lista_ejemplo:
-        print(uni.text + "\n\n")
-    '''
 
-def get_article(driver):
+def __get_article__(driver):
     '''
     Parameters
     ----------
@@ -162,30 +163,49 @@ def get_article(driver):
     Article
 
     ''' 
-    time.sleep(1)
-    # NO USAR XPATH ABSOLUTOS NO FUNCIONAN EN TODOS LOS CASOS
-    #date = driver.find_element(By.XPATH, '/html/body/div/div[2]/div[2]/main/div/div[1]/div[2]/aside/div[2]/div[1]/ul/li[1]/div/ul/li').text # Mirrar si haría falta
+    time.sleep(0.5)
+    date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
     title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
     summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
-
-    #print(date + " " + get_actual_date())
-
-    return {"title": title, "content": summary}
-
-try:      
-    driver = configuration()                    
-    driver.get(url_website)
-    print(driver.title)
     
-    # Función para desactivar el popup de las cookies
-    disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+    if(__exist_xpath__(driver, '//div[@class="details"]/p[@class="details__name"]')):
+        author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
+    else:
+        author = 'Anonymous'
 
-    load_cyber_pro = load_subpage(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
-    scrap_cyber_pro(driver)
-    
-except Exception as e:
-    print("ERROR: ", e)
-    
-finally: #Siempre se ejecuta ocurra o no un error
-    # Cierra el navegador
-    driver.quit()
+    contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
+    content = ''
+    for i in contents:
+        content += i.text
+
+    return {"title": summary, "content": content, "date": date, "author": author}
+
+
+def __exist_xpath__(driver, xpath):
+    try:
+        driver.find_element(By.XPATH, xpath)
+        return True
+    except NoSuchElementException:
+        return False
+
+def start_scrapping():
+    try:      
+        driver = __configuration__()                    
+        driver.get(__url_website__)
+        print(driver.title)
+        
+        # Función para desactivar el popup de las cookies
+        __disablaled_cookie_popup__(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+
+        load_cyber_pro = __load_subpage__(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
+        __scrap_cyber_pro__(driver)
+        
+    except Exception as e:
+        print("ERROR: ", e)
+        
+    finally: #Siempre se ejecuta ocurra o no un error
+        # Cierra el navegador
+        driver.quit()
+
+#DEVELOP
+start_scrapping()
