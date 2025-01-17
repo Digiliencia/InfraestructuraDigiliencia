@@ -12,7 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 import time
@@ -34,9 +34,23 @@ def get_actual_date():
     '''
     date_actual = datetime.now()
     # Formatear la fecha (opcional)
-    format_date = date_actual.strftime("%Y-%m-%d")  # Fomat: Year-Month-Day
+    format_date = date_actual.strftime("%d %B %Y")  # Example: 23 June 2023
     return format_date
 
+def disablaled_cookie_popup(driver, selector):
+    """
+    Desactiva los popups de cookies en un sitio web.
+
+    :param driver: Instancia del navegador de Selenium.
+    :param selectors: Lista de selectores (XPath, CSS) que identifican los botones de aceptar o rechazar cookies.
+    """
+    try:
+        # Espera a que el botón esté presente
+        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, selector))).click()
+        print(f"Popup de cookies cerrado con selector: {selector}")
+        return
+    except Exception as e:
+        print("ERROR close popup cookies: " + e)
 
 def configuration():
     '''
@@ -90,6 +104,8 @@ def load_subpage(driver, identificator):
         EC.presence_of_element_located((By.TAG_NAME, "body"))  # Espera hasta que el contenido del cuerpo se cargue
     )
 
+    return subpage_link
+
 def scrap_cyber_pro(driver):
     '''
     Parameters
@@ -103,27 +119,21 @@ def scrap_cyber_pro(driver):
 
     '''    
     # Risk Management
-    load_subpage(driver, '/html/body/div/div[2]/div[2]/main/div/div/div/div[1]/div[2]/div/div[1]/div[2]/div[2]/div/div/div[1]/div[2]/div[1]')
-    #time.sleep(2)
-    #driver.find_element(By.XPATH, "//div[@class='row']/div[@data-testid='organisation-results-container']/div[@data-testid='button-container']/button[@data-testid='load-more-button']")
-    driver.find_element(By.XPATH, "//div[@data-testid='button-container']/button")
-    
-    '''
-    # Bucle para cargar todos los artículos
-    while True:
-        try:
-            # Intentar encontrar el botón "Cargar más artículos"     div.pcf-button button button--normalised button--secondary
-            boton_cargar_mas = driver.find_element(By.XPATH, "//div[@class='pcf-button button button--normalised button--secondary']")
-            boton_cargar_mas.click()  # Hacer clic en el botón
-            time.sleep(3)  # Esperar unos segundos para que se carguen los nuevos artículos
-        except NoSuchElementException:
-            # Si no se encuentra el botón, asumimos que ya no hay más artículos por cargar
-            print("No hay más artículos para cargar.")
-            break
-    '''
-    articulos = driver.find_elements(By.CLASS_NAME, "/html/body/div/div[2]/div[2]/main/div/div/main/div/div/div/div[4]/div[4]/div[1]")
-    time.sleep(9)
-    #get_articles(driver)
+    load_subpage(driver, '//div[@data-testid="pcf-topics-panel"]/div[1]')
+    #load_subpage(driver, '/html/body/div/div[2]/div[2]/main/div/div/div/div[1]/div[2]/div/div[1]/div[2]/div[2]/div/div/div[1]/div[2]/div[1]')
+    time.sleep(1)
+    #Siempre que no se de al boton de mas articulos, seran 20
+    #show_art = driver.find_element(By.XPATH, '/html/body/div/div[2]/div[2]/main/div/div/main/div/div/div/div[4]/div[4]/div[2]').text.split()
+    show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
+    num_articles_page = int(show_art[3])
+    articles = []
+    for i in range(0, num_articles_page):   # //div[@class="search-results"]/div[@class="pcf-search-result"]/a[@id="searchResult_{i}"]
+        subpage_link = load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{i}" and @class="reactLink"]')
+        #driver.execute_script("arguments[0].scrollIntoView(true);", subpage_link)  # Asegurarse de que el elemento esté visible
+        #time.sleep(0.5)  # Pausa breve para evitar problemas de sincronización
+        articles.append(get_article(driver))
+        time.sleep(1)
+        driver.back() # Vuelve a la pagina anterior
     
     '''
     hacer mientras alla articulos, despues del artiuclo le puedo llegar a presionar el boton:
@@ -140,15 +150,37 @@ def scrap_cyber_pro(driver):
         print(uni.text + "\n\n")
     '''
 
-def get_articles(driver):
-    return None
+def get_article(driver):
+    '''
+    Parameters
+    ----------
+    driver : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    Article
+
+    ''' 
+    time.sleep(1)
+    # NO USAR XPATH ABSOLUTOS NO FUNCIONAN EN TODOS LOS CASOS
+    #date = driver.find_element(By.XPATH, '/html/body/div/div[2]/div[2]/main/div/div[1]/div[2]/aside/div[2]/div[1]/ul/li[1]/div/ul/li').text # Mirrar si haría falta
+    title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
+    summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
+
+    #print(date + " " + get_actual_date())
+
+    return {"title": title, "content": summary}
 
 try:      
     driver = configuration()                    
     driver.get(url_website)
     print(driver.title)
     
-    load_cyber_pro = load_subpage(driver, '/html/body/div/div[2]/div[2]/main/div/div[3]/div/div/div[6]/div/div/div/div/div[6]/div')
+    # Función para desactivar el popup de las cookies
+    disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+
+    load_cyber_pro = load_subpage(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
     scrap_cyber_pro(driver)
     
 except Exception as e:
