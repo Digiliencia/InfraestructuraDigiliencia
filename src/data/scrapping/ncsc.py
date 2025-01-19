@@ -138,7 +138,6 @@ def _scrap_all_topics(driver):
     
     # //div[@data-testid="all-topics-panel-row"]/div[i]
     
-    _load_subpage(driver, '//div[@data-testid="pcf-topics-panel"]/div[4]') 
     time.sleep(1)
     num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
     num_all_topics = int(num_topics[0])
@@ -151,9 +150,11 @@ def _scrap_all_topics(driver):
         time.sleep(1)
         
         # Extraer temática
+        print("Tema: \n" + str(i))
         
         num_articles_page = _num_all_articles(driver)
         for j in range(0, num_articles_page):   
+            print("Articulo: " + str(j))
             _load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
             time.sleep(1)
             articles.append(_get_article(driver))
@@ -178,6 +179,11 @@ def _scrap_all_topics(driver):
         time.sleep(0.25)
         driver.back() # Vuelve a la pagina anterior
     '''
+
+def _error_not_found_topic(driver):
+    '''
+    '''
+    return None
 
 def _get_topic(driver):
     '''
@@ -260,15 +266,14 @@ def _exist_xpath(driver, xpath):
 
 def start_scrapping():
     try:      
-        __url_website__ = "https://www.ncsc.gov.uk/"
+        _url_website = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
         driver = _configuration()                    
-        driver.get(__url_website__)
+        driver.get(_url_website)
         print(driver.title)
         
         # Función para desactivar el popup de las cookies
         _disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
 
-        load_cyber_pro = _load_subpage(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
         _scrap_all_topics(driver)
         
     except Exception as e:
