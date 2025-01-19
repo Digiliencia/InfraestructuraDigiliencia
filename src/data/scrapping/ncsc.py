@@ -23,7 +23,7 @@ https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-news?q=&defaultTypes=news,i
 https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
 '''
 
-def __get_actual_date__():
+def _get_actual_date():
     '''
     Returns
     -------
@@ -34,7 +34,7 @@ def __get_actual_date__():
     format_date = date_actual.strftime("%d %B %Y")  # Example: 23 June 2023
     return format_date
 
-def __disablaled_cookie_popup__(driver, selector):
+def _disablaled_cookie_popup(driver, selector):
     """
     Desactiva los popups de cookies en un sitio web.
 
@@ -49,7 +49,7 @@ def __disablaled_cookie_popup__(driver, selector):
     except Exception as e:
         print("ERROR close popup cookies: " + e)
 
-def __configuration__():
+def _configuration():
     '''
     Parameters
     ----------
@@ -77,7 +77,7 @@ def __configuration__():
 
     return driver
 
-def __load_subpage__(driver, xpath):
+def _load_subpage(driver, xpath):
     '''
     Parameters
     ----------
@@ -104,7 +104,7 @@ def __load_subpage__(driver, xpath):
 
     return subpage_link
 
-def __show_all_articles__(driver):
+def _show_all_articles(driver):
     '''
     '''
     # Bucle para cargar todos los artículos
@@ -119,11 +119,11 @@ def __show_all_articles__(driver):
             print("No hay más artículos para cargar.")
             break
 
-def __num_all_articles__(driver):
+def _num_all_articles(driver):
     show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
     return int(show_art[3])
 
-def __scrap_all_topics__(driver):
+def _scrap_all_topics(driver):
     '''
     Parameters
     ----------
@@ -138,25 +138,25 @@ def __scrap_all_topics__(driver):
     
     # //div[@data-testid="all-topics-panel-row"]/div[i]
     
-    __load_subpage__(driver, '//div[@data-testid="pcf-topics-panel"]/div[4]') 
+    _load_subpage(driver, '//div[@data-testid="pcf-topics-panel"]/div[4]') 
     time.sleep(1)
     num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
     num_all_topics = int(num_topics[0])
     
     articles = []
     for i in range(1, num_all_topics):
-        __load_subpage__(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+        _load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
         time.sleep(1)
-        __show_all_articles__(driver)
+        _show_all_articles(driver)
         time.sleep(1)
         
         # Extraer temática
         
-        num_articles_page = __num_all_articles__(driver)
+        num_articles_page = _num_all_articles(driver)
         for j in range(0, num_articles_page):   
-            __load_subpage__(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+            _load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
             time.sleep(1)
-            articles.append(__get_article__(driver))
+            articles.append(_get_article(driver))
             time.sleep(1)
             driver.back() # Vuelve a la pagina anterior
         driver.back()
@@ -179,7 +179,7 @@ def __scrap_all_topics__(driver):
         driver.back() # Vuelve a la pagina anterior
     '''
 
-def __get_topic__(driver):
+def _get_topic(driver):
     '''
     Parameters
     ----------
@@ -193,17 +193,17 @@ def __get_topic__(driver):
     '''
     time.sleep(0.5)
 
-    if(__exist_xpath__(driver, '//div[@data-testid="pcf-title"]')):
+    if(_exist_xpath(driver, '//div[@data-testid="pcf-title"]')):
         title_topic = driver.find_element(By.XPATH, '//div[@data-testid="pcf-title"]').text
     else:
         title_topic = 'NONE'
 
-    if(__exist_xpath__(driver, '//div[@data-testid="summary"]')):
+    if(_exist_xpath(driver, '//div[@data-testid="summary"]')):
         description_topic = driver.find_elemnt(By.XPATH, '//div[@data-testid="summary"]').text
 
     return {"title_topic": title_topic, "description": description_topic}
 
-def __get_article__(driver):
+def _get_article(driver):
     '''
     Parameters
     ----------
@@ -217,29 +217,29 @@ def __get_article__(driver):
     ''' 
     time.sleep(0.5) 
     
-    if(__exist_xpath__(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+    if(_exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
         date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
     else:
         date = 'UNDATED'
     
-    if(__exist_xpath__(driver, '//div[@class="pcf-title"]')):
+    if(_exist_xpath(driver, '//div[@class="pcf-title"]')):
         title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
     else:
         title = 'NONE'
         
-    if(__exist_xpath__(driver, '//div[@class="summary-content-container"]')):
+    if(_exist_xpath(driver, '//div[@class="summary-content-container"]')):
         summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
     else:
         summary = 'NONE'
     
     
-    if(__exist_xpath__(driver, '//div[@class="details"]/p[@class="details__name"]')):
+    if(_exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
         author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
     else:
         author = 'Anonymous'
 
 
-    if(__exist_xpath__(driver, '//div[@data-testid="pcf-BodyText"]')):
+    if(_exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
         contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
         content = ''
         for i in contents:
@@ -251,7 +251,7 @@ def __get_article__(driver):
     return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
 
-def __exist_xpath__(driver, xpath):
+def _exist_xpath(driver, xpath):
     try:
         driver.find_element(By.XPATH, xpath)
         return True
@@ -261,15 +261,15 @@ def __exist_xpath__(driver, xpath):
 def start_scrapping():
     try:      
         __url_website__ = "https://www.ncsc.gov.uk/"
-        driver = __configuration__()                    
+        driver = _configuration()                    
         driver.get(__url_website__)
         print(driver.title)
         
         # Función para desactivar el popup de las cookies
-        __disablaled_cookie_popup__(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+        _disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
 
-        load_cyber_pro = __load_subpage__(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
-        __scrap_all_topics__(driver)
+        load_cyber_pro = _load_subpage(driver, '//div[@data-testid="pcf-guidance-for-panel"]/div[@class="row"]/div[6]')
+        _scrap_all_topics(driver)
         
     except Exception as e:
         print("ERROR: ", e)
