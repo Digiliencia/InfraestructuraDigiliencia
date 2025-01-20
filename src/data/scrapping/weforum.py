@@ -5,6 +5,8 @@ from selenium.webdriver.common.by import By
 from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
 import time
+from datetime import datetime
+
 
 class WEForumError(Exception):
     def __init__(self, message):
@@ -65,18 +67,20 @@ class WEForumScrapper:
         # Return to the original page
         self.driver.get(original_url)
 
-    def _get_links_to_scrape(self, max_age_date: int = 7) -> list[tuple[str, str, str]]:
+    def _get_links_to_scrape(
+        self, max_age_date: int = 7
+    ) -> list[tuple[str, str, str, str]]:
         """Get the links to the articles to scrape
 
         Args:
             max_age_dates (int): List of dates to filter the articles
-            
+
         Raises:
             ValueError: If max_age_date is less than 1
-            
+
 
         Returns:
-            list: List of tuples with the publisher, title and link of the articles
+            list: List of tuples with the type (video, publication, ...), publisher, title and link of the articles
         """
 
         if max_age_date < 1:
@@ -97,7 +101,7 @@ class WEForumScrapper:
                     .find_element_by_class_name("sc-ibMKnd eSUXyy")
                     .text
                 )
-                if TimeUtils.days_between_dates(age, max_age_date) < 0:
+                if TimeUtils.days_between_dates(age, age_words) < 0:
                     # An article written before the max_age_date was found
                     found_old_article = True
 
@@ -122,17 +126,72 @@ class WEForumScrapper:
         # Process each article:
         processed_articles: list = []
         for article in articles:
+            type = article.find_element_by_class_name("sc-bxGoT fwUdzf").text
             publisher = article.find_element_by_class_name("sc-cUnzlc egQVKE").text
             title = article.find_element_by_class_name("sc-ePJuOI eFVjkQ").text
             link_element = article.find_element_by_class_name("sc-hqKjEI cDxNTg")
-            link = link_element.get_attribute("href") if link_element.get_attribute("title") == "Open" else None
+            link = (
+                link_element.get_attribute("href")
+                if link_element.get_attribute("title") == "Open"
+                else None
+            )
             if link:
-                processed_articles.append((publisher, title, link))
+                processed_articles.append((type, publisher, title, link))
             else:
                 raise WEForumError("Link not found: " + title)
         return processed_articles
 
+    def _scrape_WEF_publication(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
 
+        Args:
+            url (str): World Economic Forum publication URL
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        # Access the URL
+        self.driver.get(url)
+
+        data = {}
+
+        # Get the title
+        title_element = self.driver.find_element_by_css_selector(
+            "h1.chakra-heading.wef-1sa41sv"
+        )
+        data["title"] = title_element.text
+
+        # Get the date
+        time_element = self.driver.get_element_by_tag_name("time")
+        time = datetime.fromisoformat(time_element.get_attribute("datetime"))
+
+        # Get the author
+        author_div = self.driver.find_element_by_css_selector("div.wef-1upaxcp")
+        author = author_div.find_element_by_css_selector(
+            "a"
+        ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrap it to.
+
+        # Get the content
+        classes: dict = {
+            "main_section_div": "wef-1a11yf0",  # Includes inside a div with information
+            # about the context of the article and a "wef-0" with the main content and a last
+            # one with license and other info (like footer).
+            "paragraphs": "wef-zw4tnc",
+            "related_readings": "wef-1mv5kk8",
+            "videos": "wef-hwdz70",
+            "podcasts": "wef-1bs0642",
+            "subtitles": "wef-1qmtbdn",
+            "discover_more": "wef-1r70254",
+            "imgs": "wef-ha4kjk",
+            "bullet_point_paragraphs": "wef-aa063t",
+            "main_bullet_points": "wef-1anm32a",
+        }
+
+        # TODO: continue here
 
     def close(self):
         self.driver.close()
