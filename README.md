@@ -12,7 +12,7 @@ DDBB_URI        # URI de la base de datos
 ## Autores
 Este proyecto ha sido desarrollado por:
 - [Santiago Ares Alfayate]()
-- [César Bermejo Fernández]()
+- [César Bermejo Fernández](https://github.com/cesonico-ule)
 - [Esteban Peña Salazar](https://github.com/esalap00)
 - [Álvaro Prieto Álvarez](https://github.com/Apriea04)
 - [Carlos Prieto Viñuela]()
