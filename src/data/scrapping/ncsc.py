@@ -3,7 +3,7 @@
 Created on Wed Jan 15 10:08:33 2025
 
 @author: Carlos Prieto 
-Intento de Scrapping de la página web: https://www.ncsc.gov.uk/
+Scrapping de la página web: https://www.ncsc.gov.uk/
 """
 
 from selenium import webdriver
@@ -146,44 +146,51 @@ def _scrap_all_topics(driver):
     for i in range(1, num_all_topics):
         _load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
         time.sleep(1)
-        _show_all_articles(driver)
-        time.sleep(1)
         
         # Extraer temática
-        print("Tema: \n" + str(i))
+        print("Num tema: " + str(i) + "\n")
         
+        _is_error_not_found_topic(driver, i)  
+        time.sleep(1)
         num_articles_page = _num_all_articles(driver)
+        time.sleep(1)
+        _show_all_articles(driver)
         for j in range(0, num_articles_page):   
-            print("Articulo: " + str(j))
+            print("Num articulo: " + str(j))
             _load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
-            time.sleep(1)
+            time.sleep(0.75)
+            _is_error_not_found_topic(driver, j)  
+            time.sleep(0.75)
             articles.append(_get_article(driver))
-            time.sleep(1)
+            time.sleep(0.75)
             driver.back() # Vuelve a la pagina anterior
         driver.back()
      
     print("Total de articulos: ", len(articles))
-    
-    '''
-    articles = []
-    
-    # Risk Management
-    __load_subpage__(driver, '//div[@data-testid="pcf-topics-panel"]/div[1]')
-    time.sleep(1)
-    __show_all_articles__(driver)
-    time.sleep(1)
-    num_articles_page = __num_all_articles__(driver)
-    for i in range(0, num_articles_page):   
-        __load_subpage__(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{i}" and @class="reactLink"]')
-        articles.append(__get_article__(driver))
-        time.sleep(0.25)
-        driver.back() # Vuelve a la pagina anterior
-    '''
 
-def _error_not_found_topic(driver):
+#NO se usa
+def _is_error_not_found_topic(driver, num_topic):
     '''
+    The website have a bug. Sometimes, if you access a topic te puedes encontrar con la pagina de 404 y si sales y vuelves a seleccionar el mismo tema, te deja acceder al propio tema
+
+    Parameters
+    ----------
+    driver : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TRUE -> There is a page not found 404
+    FALSE -> There is a topic
     '''
-    return None
+    # Error page not found, page back and go to page
+    print(_exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
+    if(_exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
+        print("Anomalia detectada")
+        driver.back()
+        time.sleep(3)
+        _load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
+    
 
 def _get_topic(driver):
     '''
@@ -195,7 +202,6 @@ def _get_topic(driver):
     Returns
     -------
     Article
-
     '''
     time.sleep(0.5)
 
@@ -206,6 +212,8 @@ def _get_topic(driver):
 
     if(_exist_xpath(driver, '//div[@data-testid="summary"]')):
         description_topic = driver.find_elemnt(By.XPATH, '//div[@data-testid="summary"]').text
+    else:
+        description_topic = title_topic
 
     return {"title_topic": title_topic, "description": description_topic}
 
@@ -258,11 +266,8 @@ def _get_article(driver):
 
 
 def _exist_xpath(driver, xpath):
-    try:
-        driver.find_element(By.XPATH, xpath)
-        return True
-    except NoSuchElementException:
-        return False
+    elementos = driver.find_elements(By.XPATH, xpath)
+    return len(elementos) > 0
 
 def start_scrapping():
     try:      
