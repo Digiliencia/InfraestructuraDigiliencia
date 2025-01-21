@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 21 12:39:40 2025
+
+@author: Álvaro Prieto Álvarez
+Scrapper for the World Economic Forum website. It allows to scrap the articles from the Cybersecurity topic.
+"""
+
 import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,6 +31,7 @@ class WEForumScrapper:
             "https://intelligence.weforum.org/topics/a1Gb00000015LbsEAE"
         )
         self.home_page = "https://www.weforum.org/"
+        self.stories_url = "https://www.weforum.org/stories"
         self.load_time = 2
 
     def _login(self):
@@ -141,11 +150,15 @@ class WEForumScrapper:
                 raise WEForumError("Link not found: " + title)
         return processed_articles
 
-    def _scrape_WEF_publication(self, url: str) -> dict:
+    def _scrape_WEF_story_publication(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
         Args:
             url (str): World Economic Forum publication URL
+
+        Raises:
+            WEForumError: If the URL is not a valid WEForum stories URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page
 
         Returns:
             dict: A dictionary with the publication information. Contains:
@@ -154,6 +167,11 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        if self.stories_url not in url:
+            raise WEForumError(
+                "Attempted to scrap invalid page for WEForum stories scrapper"
+            )
+
         # Access the URL
         self.driver.get(url)
 
@@ -170,7 +188,7 @@ class WEForumScrapper:
         time = datetime.fromisoformat(time_element.get_attribute("datetime"))
 
         # Get the author
-        author_div = self.driver.find_element_by_css_selector("div.wef-1upaxcp")
+        author_div = self.driver.find_element(By.CSS_SELECTOR, "div.wef-1upaxcp")
         author = author_div.find_element_by_css_selector(
             "a"
         ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrap it to.
@@ -191,7 +209,23 @@ class WEForumScrapper:
             "main_bullet_points": "wef-1anm32a",
         }
 
-        # TODO: continue here
+        main_section_div = self.driver.get_element(
+            By.CLASS_NAME, classes["main_section_div"]
+        )
 
-    def close(self):
+    def _close(self):
         self.driver.close()
+
+    def _is_logged_in(self) -> bool:
+        """Being in the topic page, checks if the user is logged in.
+
+        Returns:
+            bool: True if the user is logged in, False otherwise.
+        """
+        # TODO
+        return False
+
+    def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
+        self.driver.get(self.cybersecturity_topic_url)
+        # TODO
+        return None
