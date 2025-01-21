@@ -10,6 +10,9 @@ import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
 import time
@@ -23,7 +26,28 @@ class WEForumError(Exception):
 
 class WEForumScrapper:
     def __init__(self):
-        self.driver = selenium.webdriver.Chrome()
+        EnvLoader()  # Call EnvLoader to force reading the .env file
+        self.driver = WebDriver()
+        options = Options()
+        options.add_argument(
+            "user-agent="
+            + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
+        )
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        prefs = {
+            "profile.default_content_setting_values.geolocation": 2,
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+            "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+            "webrtc.multiple_routes_enabled": False,
+            "webrtc.nonproxied_udp_enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_argument("log-level=3")
+        options.add_argument("--start-maximized")
+
         self.weforum_email = EnvLoader.weforum_email
         self.weforum_passwd = EnvLoader.weforum_passwd
         self.timeout = EnvLoader.webdriverwait_timeout
@@ -33,6 +57,7 @@ class WEForumScrapper:
         self.home_page = "https://www.weforum.org/"
         self.stories_url = "https://www.weforum.org/stories"
         self.load_time = 2
+        self.login_page = "https://login.weforum.org/"
 
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
@@ -43,22 +68,27 @@ class WEForumScrapper:
 
         # TODO: Implement login within the original url if possible and available
         original_url = self.driver.current_url
-        self.driver.get(self.home_page)
-        sign_in_bttn = self.driver.getElementById("navbar_sign_in")
-        sign_in_bttn.click()
 
         # Accept cookies if pop-up visible
-        cookies_popup = self.driver.getElementById("CybotCookiebotDialog")
-        if cookies_popup.is_displayed():
-            accept_bttn = self.driver.getElementById(
-                "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"
-            )
-            accept_bttn.click()
+        if self._if_element_exists(By.ID, "CybotCookiebotDialog"):
+            cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
+            if cookies_popup.is_displayed():
+                accept_bttn = self.driver.find_element(
+                    By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"
+                )
+                accept_bttn.click()
+                
+        # Open email login popup
+        time.sleep(self.load_time)
+        login_bttn = self.driver.find_element(By.ID, "topic-upgrade-banner-login-button")
+        login_bttn.click()
+        time.sleep(0.5)
 
         # Introduce email
-        email_input = self.driver.getElementById("loginradius-login-emailid")
+        email_input = self.driver.find_element(By.ID, "loginradius-login-emailid")
         email_input.send_keys(self.weforum_email)
-        next_bttn = self.driver.getElementById("login-check-email")
+        time.sleep(1)
+        next_bttn = self.driver.find_element(By.ID, "login-check-email")
         next_bttn.click()
 
         # Wait until the log-in button is visible or timeout after 5 seconds
@@ -69,12 +99,15 @@ class WEForumScrapper:
             raise TimeoutError("Login button not found")
 
         # Introduce password
-        passwd_input = self.driver.getElementById("loginradius-login-password")
+        time.sleep(self.load_time)
+        passwd_input = self.driver.find_element(By.ID, "loginradius-login-password")
         passwd_input.send_keys(self.weforum_passwd)
+        time.sleep(1)
         submit_bttn.click()
 
         # Return to the original page
         self.driver.get(original_url)
+        self.driver.refresh()
 
     def _get_links_to_scrape(
         self, max_age_date: int = 7
@@ -214,18 +247,51 @@ class WEForumScrapper:
         )
 
     def _close(self):
+        """
+        Closes the current browser window.
+
+        This method will close the browser window that is currently controlled by the driver instance.
+        """
         self.driver.close()
+
+    def _if_element_exists(self, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            self.driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
 
     def _is_logged_in(self) -> bool:
         """Being in the topic page, checks if the user is logged in.
 
         Returns:
             bool: True if the user is logged in, False otherwise.
+
+        Raises:
+            WEForumError: If the user is not in the topic page
         """
-        # TODO
-        return False
+        if self.driver.current_url != self.cybersecturity_topic_url:
+            raise WEForumError(
+                "Cannot check if logged in because browser is not in the topic page"
+            )
+
+        # If the user logo (id: mf_user-icon) exists, user is loged in
+        return self._if_element_exists(By.ID, "mf_user-icon")
 
     def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.get(self.cybersecturity_topic_url)
-        # TODO
+
+        # Sign in if not already
+        if not self._is_logged_in():
+            self._login()
+
         return None
