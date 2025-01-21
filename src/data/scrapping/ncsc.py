@@ -17,22 +17,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 import time
 
+from utils.time import TimeUtils
+from utils.env_loader import EnvLoader
+
 '''
 https://www.ncsc.gov.uk/section/advice-guidance/glossary
 https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-news?q=&defaultTypes=news,information&sort=date%2Bdesc
 https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
 '''
-
-def _get_actual_date():
-    '''
-    Returns
-    -------
-    Actual Date with fomat: Year-Month-Day
-    '''
-    date_actual = datetime.now()
-    # Formatear la fecha (opcional)
-    format_date = date_actual.strftime("%d %B %Y")  # Example: 23 June 2023
-    return format_date
 
 def _disablaled_cookie_popup(driver, selector):
     """

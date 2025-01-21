@@ -95,3 +95,16 @@ class TimeUtils:
         # Calculate the difference in days
         delta = date2 - date1
         return delta.days
+
+    def format_actual_date() -> str:
+        '''
+        Calculate the actual date in a format
+        Returns:
+            str: Actual Date with fomat: Year-Month-Day
+        Example:
+            >>> format_actual_date()
+            21 January 2025
+        '''
+        date_actual = datetime.now()
+        format_date = date_actual.strftime("%d %B %Y") 
+        return format_date
