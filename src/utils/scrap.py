@@ -76,6 +76,6 @@ class Scrap:
 
         return subpage_link
     
-    def exist_xpath(driver, xpath):
+    def exist_xpath(self, driver, xpath):
         elementos = driver.find_elements(By.XPATH, xpath)
         return len(elementos) > 0
