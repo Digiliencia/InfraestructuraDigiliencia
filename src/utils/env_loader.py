@@ -14,11 +14,11 @@ class EnvLoader:
         if cls._instance is None:
             cls._instance = super(EnvLoader, cls).__new__(cls)
             cls._instance.load_env_vars()
-            cls.ddbb_uri = cls._instance.get_env_var('DDBB_URI')
+            ''' cls.ddbb_uri = cls._instance.get_env_var('DDBB_URI')
             cls.ddbb_username = cls._instance.get_env_var('DDBB_USERNAME')
             cls.ddbb_passwd = cls._instance.get_env_var('DDBB_PASSWD')
             cls.weforum_email = cls._instance.get_env_var('WEFORUM_EMAIL')
-            cls.weforum_passwd = cls._instance.get_env_var('WEFORUM_PASSWD')
+            cls.weforum_passwd = cls._instance.get_env_var('WEFORUM_PASSWD')'''
             cls.webdriverwait_timeout = int(cls._instance.get_env_var('WEBDRIVERWAIT_TIMEOUT', 5))
         return cls._instance
 
