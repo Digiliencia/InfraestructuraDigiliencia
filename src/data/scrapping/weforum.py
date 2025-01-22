@@ -3,14 +3,18 @@
 Created on Wed Jan 21 12:39:40 2025
 
 @author: Álvaro Prieto Álvarez
-Scrapper for the World Economic Forum website. It allows to scrap the articles from the Cybersecurity topic.
+Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
 import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    ElementNotInteractableException,
+    TimeoutException,
+)
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
@@ -66,9 +70,6 @@ class WEForumScrapper:
             TimeoutError: If the login button is not found after 5 seconds
         """
 
-        # TODO: Implement login within the original url if possible and available
-        original_url = self.driver.current_url
-
         # Accept cookies if pop-up visible
         if self._if_element_exists(By.ID, "CybotCookiebotDialog"):
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
@@ -77,12 +78,13 @@ class WEForumScrapper:
                     By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"
                 )
                 accept_bttn.click()
-                
+
+        # Open new tab to login
+        self.driver.execute_script(f"window.open('{self.login_page}');")
+        self.driver.switch_to.window(self.driver.window_handles[1])
+
         # Open email login popup
         time.sleep(self.load_time)
-        login_bttn = self.driver.find_element(By.ID, "topic-upgrade-banner-login-button")
-        login_bttn.click()
-        time.sleep(0.5)
 
         # Introduce email
         email_input = self.driver.find_element(By.ID, "loginradius-login-emailid")
@@ -105,14 +107,22 @@ class WEForumScrapper:
         time.sleep(1)
         submit_bttn.click()
 
-        # Return to the original page
-        self.driver.get(original_url)
+        # Wait for about 10 seconds
+        time.sleep(13)
+
+        # Close the login tab
+        self.driver.close()
+        self.driver.switch_to.window(self.driver.window_handles[0])
         self.driver.refresh()
+        time.sleep(
+            self.load_time * 5
+        )  # As there are probably more than one redirection, wait a bit more
+        time.sleep(self.load_time)
 
     def _get_links_to_scrape(
         self, max_age_date: int = 7
     ) -> list[tuple[str, str, str, str]]:
-        """Get the links to the articles to scrape
+        """Get the links to the articles to scrape.
 
         Args:
             max_age_dates (int): List of dates to filter the articles
@@ -202,7 +212,7 @@ class WEForumScrapper:
         """
         if self.stories_url not in url:
             raise WEForumError(
-                "Attempted to scrap invalid page for WEForum stories scrapper"
+                "Attempted to scrape invalid page for WEForum stories scrapper"
             )
 
         # Access the URL
@@ -224,7 +234,7 @@ class WEForumScrapper:
         author_div = self.driver.find_element(By.CSS_SELECTOR, "div.wef-1upaxcp")
         author = author_div.find_element_by_css_selector(
             "a"
-        ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrap it to.
+        ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrape it to.
 
         # Get the content
         classes: dict = {
@@ -290,8 +300,11 @@ class WEForumScrapper:
     def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.get(self.cybersecturity_topic_url)
 
+        time.sleep(self.load_time)
         # Sign in if not already
         if not self._is_logged_in():
             self._login()
+            
+        links = self._get_links_to_scrape(from_days_ago)
 
         return None
