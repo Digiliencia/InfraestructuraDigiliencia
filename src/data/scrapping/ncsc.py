@@ -33,6 +33,8 @@ class Ncsc:
     def _show_all_articles(self, driver):
         '''
         '''
+        if(driver is None):
+            raise("ERROR: drive not found")
         # Bucle para cargar todos los artículos
         while True:
             try:
@@ -46,11 +48,14 @@ class Ncsc:
                 break
 
     def _num_all_articles(self, driver):
+        if(driver is None):
+            raise("ERROR: drive not found")
+        
         show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
         return int(show_art[3])
 
     #NO se usa
-    def _is_error_not_found(self, driver, num_topic):
+    def _is_error_not_found(self, driver, num_topic: int = 1):
         '''
         The website have a bug. Sometimes, if you access a topic te puedes encontrar con la pagina de 404 y si sales y vuelves a seleccionar el mismo tema, te deja acceder al propio tema
 
@@ -64,6 +69,8 @@ class Ncsc:
         TRUE -> There is a page not found 404
         FALSE -> There is a topic
         ''' 
+        if(driver is None):
+            raise("ERROR: drive not found")
         # Error page not found, page back and go to page
         #print(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
         if(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
@@ -85,7 +92,8 @@ class Ncsc:
         None.
 
         '''  
-        
+        if(driver is None):
+            raise("ERROR: drive not found")
         # //div[@data-testid="all-topics-panel-row"]/div[i]
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
@@ -129,6 +137,9 @@ class Ncsc:
         -------
         Article
         '''
+        if(driver is None):
+            raise("ERROR: drive not found")
+        
         time.sleep(self.load.webdriverwait_timeout)
 
         if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-title"]')):
@@ -143,7 +154,7 @@ class Ncsc:
 
         return {"title_topic": title_topic, "description": description_topic}
 
-    def _get_article(self, driver, index: int = 0, articles=None) -> dict[str, str]:
+    def _get_article(self, driver, index: int = 0, articles: dict = []) -> dict[str, str]:
         '''
         Parameters
         ----------
@@ -155,6 +166,9 @@ class Ncsc:
         Article
 
         ''' 
+        if(driver is None):
+            raise("ERROR: drive not found")
+
         time.sleep(self.load.webdriverwait_timeout) 
         
         if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
@@ -171,13 +185,11 @@ class Ncsc:
             summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
         else:
             summary = 'NONE'
-        
-        
+               
         if(self.scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
             author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
         else:
             author = 'Anonymous'
-
 
         if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
             contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
