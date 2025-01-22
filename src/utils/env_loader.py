@@ -21,7 +21,7 @@ class EnvLoader:
             cls.weforum_email = cls._instance.get_env_var('WEFORUM_EMAIL')
             cls.weforum_passwd = cls._instance.get_env_var('WEFORUM_PASSWD')
             '''
-            cls.webdriverwait_timeout = int(cls._instance.get_env_var('WEBDRIVERWAIT_TIMEOUT', 5))
+            cls.webdriverwait_timeout = int(cls._instance.get_env_var('WEBDRIVERWAIT_TIMEOUT', 1))
         return cls._instance
 
     @staticmethod
