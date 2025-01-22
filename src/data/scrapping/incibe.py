@@ -6,6 +6,17 @@ Created on Wed Jan 15 10:08:33 2025
 Web scrapping: https://www.incibe.es/
 """
 
+# Importing the necessary libraries
+import sys
+import os
+
+# Add the parent directory (src) to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+from utils.scrap import Scrap
+
+scrap = Scrap()
+
+'''
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -77,3 +88,5 @@ class IncibeScraper:
 if __name__ == "__main__":
     scraper = IncibeScraper()
     scraper.start_scrapping()
+
+'''
