@@ -6,6 +6,12 @@ Created on Wed Jan 15 10:08:33 2025
 Scrapping de la página web: https://www.ncsc.gov.uk/
 """
 
+# Importing the necessary libraries
+import sys
+import os
+# Add the parent directory (src) to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -20,6 +26,8 @@ import time
 #from utils.time import TimeUtils
 #from utils.env_loader import EnvLoader
 from utils.scrap import Scrap
+
+#from utils import *
 
 '''
 https://www.ncsc.gov.uk/section/advice-guidance/glossary
@@ -263,9 +271,10 @@ class Ncsc:
 
     def start_scrapping(self):
         try:      
+            srap = Scrap()
             _url_website = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
             #driver = self._configuration()    
-            driver = Scrap.configuration()                
+            driver = srap.configuration()                
             driver.get(_url_website)
             print(driver.title)
             
@@ -281,5 +290,7 @@ class Ncsc:
             # Cierra el navegador
             driver.quit()
 
-    #DEVELOP
-    #start_scrapping()
+
+if __name__ == "__main__":
+    ncsc = Ncsc()
+    ncsc.start_scrapping()
