@@ -14,79 +14,42 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from utils.scrap import Scrap
 
-scrap = Scrap()
-
-'''
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-import time
-
 
 class IncibeScraper:
-    def _disablaled_cookie_popup(self, driver, selector):
+    def __init__(self):
         """
-        Deactivates the cookies popup in a website.
-        :param driver: Instance of the Selenium browser.
-        :param selector: XPath or CSS selector to identify the accept/reject cookies buttons.
+        Initialize the IncibeScraper class
+        """
+        self.scrap = Scrap()
+        self.driver = self.scrap.configuration()
+
+    def openIncibeBlog(self):
+        try:
+            self.driver.get("https://www.incibe.es/incibe-cert/blog")
+            self.disable_cookie_popup()  # Cierra el popup de cookies
+            print("Incibe blog page opened")
+        except Exception as e:
+            print(f"Error opening Incibe blog page: {e}")
+    
+    def disable_cookie_popup(self):
+        """
+        Close the cookie popup if it exists
         """
         try:
-            WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, selector))).click()
-            print(f"Pop up from cookies closed by selector: {selector}")
-        except Exception as e:
-            print(f"ERROR closing popup cookies: {str(e)}")
-
-    def _configuration(self):
-        """
-        Configures and returns the Selenium WebDriver.
-        """
-        opt = Options()
-        opt.add_argument("--disable-gpu")
-        opt.add_argument("--disable-dev-shm-usage")
-        opt.add_argument("--no-sandbox")
-        opt.add_argument("--disable-extensions")
-        opt.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.84"
-        )
-
-        driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=opt
-        )
-        return driver
-
-    def start_scrapping(self):
-        """
-        Main method to start the scraping process.
-        """
-        driver = None
-        try:
-            url_website = "https://www.incibe.es/incibe-cert/blog"
-            driver = self._configuration()
-            driver.get(url_website)
-            print(driver.title)
-
-            # Close the cookies popup
-            self._disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
-
-            # Placeholder for further scraping logic
-            print("Scraping logic here...")
-
-        except Exception as e:
-            print(f"ERROR: {str(e)}")
-
-        finally:
-            if driver:
-                driver.quit()
+            # Busca el botón de "Rechazar cookies"
+            cookie_button = self.driver.find_element(By.XPATH, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+            cookie_button.click()
+            print("Popup de cookies cerrado")
+        except NoSuchElementException:
+            print("No se encontró el popup de cookies, continuando...")
 
 
-# Run the scraper
+
+
+# Main execution
 if __name__ == "__main__":
-    scraper = IncibeScraper()
-    scraper.start_scrapping()
+    scraper = IncibeScraper()  # Create an instance of IncibeScraper
+    scraper.openIncibeBlog()   # Call the method
+    input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
+    scraper.driver.quit()      # Cierra el navegador de forma controlada
 
-'''
