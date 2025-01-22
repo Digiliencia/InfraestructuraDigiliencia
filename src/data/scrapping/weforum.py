@@ -82,9 +82,9 @@ class WEForumScrapper:
         # Open new tab to login
         self.driver.execute_script(f"window.open('{self.login_page}');")
         self.driver.switch_to.window(self.driver.window_handles[1])
-
-        # Open email login popup
-        time.sleep(self.load_time)
+        WebDriverWait(self.driver, self.timeout).until(
+            EC.presence_of_element_located((By.ID, "loginradius-login-emailid"))
+        )
 
         # Introduce email
         email_input = self.driver.find_element(By.ID, "loginradius-login-emailid")
@@ -138,11 +138,23 @@ class WEForumScrapper:
         if max_age_date < 1:
             raise ValueError("max_age_date must be greater than 0")
 
-        age_words = TimeUtils.age_format_date(max_age_date)
+        age_words = TimeUtils.format_days_ago(max_age_date)
 
-        # TODO: continue
+        aside_div = self.driver.find_element(By.CSS_SELECTOR, "div.sc-kwXLfY.HCdD")
+        self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
+        time.sleep(self.load_time)
+        latest_label = self.driver.find_element(
+            By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']"
+        )
+        latest_label.click()  # Click on the label as the button is not clickable
+        time.sleep(self.load_time)
 
-        articles = self.driver.find_elements_by_class_name("sc-bLmarx dQpFdR")
+        latest_articles_div = self.driver.find_element(
+            By.CSS_SELECTOR, "div[data-test-id='latest-knowledge-feed']"
+        )  # Div containing articles, placed just under the articles search bar
+        articles = latest_articles_div.find_elements(
+            By.CSS_SELECTOR, ".sc-bLmarx.dQpFdR"
+        )
         found_old_article: bool = False
         checked_articles: int = 0
         # Check if there is an article older than the max_age_date
@@ -150,10 +162,13 @@ class WEForumScrapper:
             while checked_articles < len(articles) and not found_old_article:
                 age = (
                     articles[checked_articles]
-                    .find_element_by_class_name("sc-ibMKnd eSUXyy")
+                    .find_element(By.CSS_SELECTOR, ".sc-ibMKnd.eSUXyy")
                     .text
                 )
-                if TimeUtils.days_between_dates(age, age_words) < 0:
+                if (
+                    "hour" not in age
+                    and TimeUtils.days_between_dates(age, age_words) > 0
+                ):
                     # An article written before the max_age_date was found
                     found_old_article = True
 
@@ -164,11 +179,11 @@ class WEForumScrapper:
             # If no old enough article was found, scroll down to load more articles
             if not found_old_article:
                 self.driver.execute_script(
-                    "window.scrollTo(0, document.body.scrollHeight);"
+                    "arguments[0].scrollTo(0, arguments[0].scrollHeight);", aside_div
                 )
                 time.sleep(self.load_time)
-                new_articles = self.driver.find_elements_by_class_name(
-                    "sc-bLmarx dQpFdR"
+                new_articles = latest_articles_div.find_elements(
+                    By.CSS_SELECTOR, ".sc-bLmarx.dQpFdR"
                 )
                 if len(new_articles) == len(articles):
                     # No more articles to load
@@ -178,19 +193,32 @@ class WEForumScrapper:
         # Process each article:
         processed_articles: list = []
         for article in articles:
-            type = article.find_element_by_class_name("sc-bxGoT fwUdzf").text
-            publisher = article.find_element_by_class_name("sc-cUnzlc egQVKE").text
-            title = article.find_element_by_class_name("sc-ePJuOI eFVjkQ").text
-            link_element = article.find_element_by_class_name("sc-hqKjEI cDxNTg")
-            link = (
-                link_element.get_attribute("href")
-                if link_element.get_attribute("title") == "Open"
-                else None
-            )
-            if link:
-                processed_articles.append((type, publisher, title, link))
-            else:
-                raise WEForumError("Link not found: " + title)
+            try:
+                type = article.find_element(By.CSS_SELECTOR, ".sc-bxGoT.fwUdzf").text.lower()
+                
+                if type == 'video':
+                    # Ignore videos by now
+                    pass
+                elif type == "publication":
+                    publisher = article.find_element(
+                        By.CSS_SELECTOR, ".sc-cUnzlc.egQVKE"
+                    ).text
+                    title = article.find_element(By.CSS_SELECTOR, ".sc-ePJuOI.eFVjkQ").text
+                    link_element = article.find_element(
+                        By.CSS_SELECTOR, ".sc-hqKjEI.cDxNTg"
+                    )
+                    link = (
+                        link_element.get_attribute("href")
+                        if link_element.get_attribute("title") == "Open"
+                        else None
+                    )
+                    if link:
+                        processed_articles.append((type, publisher, title, link))
+                    else:
+                        raise WEForumError("Link not found: " + title)
+                    
+            except Exception as e:
+                print(article.get_attribute("outerHTML"))
         return processed_articles
 
     def _scrape_WEF_story_publication(self, url: str) -> dict:
@@ -221,19 +249,19 @@ class WEForumScrapper:
         data = {}
 
         # Get the title
-        title_element = self.driver.find_element_by_css_selector(
-            "h1.chakra-heading.wef-1sa41sv"
+        title_element = self.driver.find_element(
+            By.CSS_SELECTOR, "h1.chakra-heading.wef-1sa41sv"
         )
         data["title"] = title_element.text
 
         # Get the date
-        time_element = self.driver.get_element_by_tag_name("time")
+        time_element = self.driver.find_element(By.TAG_NAME, "time")
         time = datetime.fromisoformat(time_element.get_attribute("datetime"))
 
         # Get the author
         author_div = self.driver.find_element(By.CSS_SELECTOR, "div.wef-1upaxcp")
-        author = author_div.find_element_by_css_selector(
-            "a"
+        author = author_div.find_element(
+            By.TAG_NAME, "a"
         ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrape it to.
 
         # Get the content
@@ -298,13 +326,14 @@ class WEForumScrapper:
         return self._if_element_exists(By.ID, "mf_user-icon")
 
     def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
+        self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
 
         time.sleep(self.load_time)
         # Sign in if not already
         if not self._is_logged_in():
             self._login()
-            
+
         links = self._get_links_to_scrape(from_days_ago)
 
         return None
