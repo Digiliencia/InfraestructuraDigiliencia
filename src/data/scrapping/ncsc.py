@@ -22,7 +22,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 import time
-
+from selenium.webdriver.chrome.webdriver import WebDriver
 #from utils.time import TimeUtils
 #from utils.env_loader import EnvLoader
 from utils.scrap import Scrap
@@ -35,6 +35,12 @@ https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-news?q=&defaultTypes=news,i
 https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
 '''
 class Ncsc:
+    
+    def __init__(self):
+        self.srap = Scrap()
+        self.driver = WebDriver()
+        self.driver = self.srap.configuration()
+
     '''
     def _disablaled_cookie_popup(driver, selector):
         """
@@ -143,14 +149,14 @@ class Ncsc:
         -------
         TRUE -> There is a page not found 404
         FALSE -> There is a topic
-        '''
+        ''' 
         # Error page not found, page back and go to page
-        print(Scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
-        if(Scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
+        print(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
+        if(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
             print("Anomalia detectada")
             driver.back()
             time.sleep(3)
-            Scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
+            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
 
     def _scrap_all_topics(self, driver):
         '''
@@ -166,14 +172,13 @@ class Ncsc:
         '''  
         
         # //div[@data-testid="all-topics-panel-row"]/div[i]
-        
         time.sleep(1)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
         num_all_topics = int(num_topics[0])
         
         articles = []
         for i in range(1, num_all_topics):
-            Scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             time.sleep(1)
             
             # Extraer temática
@@ -186,7 +191,7 @@ class Ncsc:
             self._show_all_articles(driver)
             for j in range(0, num_articles_page):   
                 print("Num articulo: " + str(j))
-                Scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
                 time.sleep(0.75)
                 self._is_error_not_found_topic(driver, j)  
                 time.sleep(0.75)
@@ -210,12 +215,12 @@ class Ncsc:
         '''
         time.sleep(0.5)
 
-        if(Scrap.exist_xpath(driver, '//div[@data-testid="pcf-title"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-title"]')):
             title_topic = driver.find_element(By.XPATH, '//div[@data-testid="pcf-title"]').text
         else:
             title_topic = 'NONE'
 
-        if(Scrap.exist_xpath(driver, '//div[@data-testid="summary"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@data-testid="summary"]')):
             description_topic = driver.find_elemnt(By.XPATH, '//div[@data-testid="summary"]').text
         else:
             description_topic = title_topic
@@ -236,29 +241,29 @@ class Ncsc:
         ''' 
         time.sleep(0.5) 
         
-        if(Scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
             date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
         else:
             date = 'UNDATED'
         
-        if(Scrap.exist_xpath(driver, '//div[@class="pcf-title"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@class="pcf-title"]')):
             title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
         else:
             title = 'NONE'
             
-        if(Scrap.exist_xpath(driver, '//div[@class="summary-content-container"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@class="summary-content-container"]')):
             summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
         else:
             summary = 'NONE'
         
         
-        if(Scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
             author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
         else:
             author = 'Anonymous'
 
 
-        if(Scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
+        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
             contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
             content = ''
             for i in contents:
@@ -270,27 +275,29 @@ class Ncsc:
         return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
     def start_scrapping(self):
-        try:      
-            srap = Scrap()
-            _url_website = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
-            #driver = self._configuration()    
-            driver = srap.configuration()                
-            driver.get(_url_website)
-            print(driver.title)
-            
+        try:   
+            url_website = "https://www.ncsc.gov.uk/"   
+            url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
+            #driver = self._configuration()  
+            sscrap = Scrap()  
+            driver = sscrap.configuration()      
+            driver.get(url_website_all_topics)          
+            #self.driver.get(url_website_all_topics)
+            #print(self.driver.title)
+            '''
             # Función para desactivar el popup de las cookies
-            Scrap.disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+            self.scrap.disablaled_cookie_popup(self.driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
 
-            self._scrap_all_topics(driver)
-            
+            self._scrap_all_topics(self.driver)
+            '''
         except Exception as e:
             print("ERROR: ", e)
             
         finally: #Siempre se ejecuta ocurra o no un error
             # Cierra el navegador
-            driver.quit()
+            self.driver.quit()
 
-
+# DEVELOP
 if __name__ == "__main__":
     ncsc = Ncsc()
     ncsc.start_scrapping()
