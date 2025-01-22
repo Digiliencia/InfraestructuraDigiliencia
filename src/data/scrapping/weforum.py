@@ -6,15 +6,11 @@ Created on Wed Jan 21 12:39:40 2025
 Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
-import selenium
+from typing import Callable
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    ElementNotInteractableException,
-    TimeoutException,
-)
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
@@ -119,20 +115,18 @@ class WEForumScrapper:
         )  # As there are probably more than one redirection, wait a bit more
         time.sleep(self.load_time)
 
-    def _get_links_to_scrape(
-        self, max_age_date: int = 7
-    ) -> list[tuple[str, str, str, str]]:
+    def _get_websites_to_scrape(self, max_age_date: int = 7) -> list[dict[str, str]]:
         """Get the links to the articles to scrape.
 
         Args:
             max_age_dates (int): List of dates to filter the articles
 
         Raises:
-            ValueError: If max_age_date is less than 1
+            ValueError: If max_age_date is less than 1 or if the article type is not recognized
 
 
         Returns:
-            list: List of tuples with the type (video, publication, ...), publisher, title and link of the articles
+            list: List of ditct with the type (video, publication, ...), publisher, title and url of each article
         """
 
         if max_age_date < 1:
@@ -193,32 +187,42 @@ class WEForumScrapper:
         # Process each article:
         processed_articles: list = []
         for article in articles:
-            try:
-                type = article.find_element(By.CSS_SELECTOR, ".sc-bxGoT.fwUdzf").text.lower()
-                
-                if type == 'video':
-                    # Ignore videos by now
-                    pass
-                elif type == "publication":
-                    publisher = article.find_element(
-                        By.CSS_SELECTOR, ".sc-cUnzlc.egQVKE"
-                    ).text
-                    title = article.find_element(By.CSS_SELECTOR, ".sc-ePJuOI.eFVjkQ").text
-                    link_element = article.find_element(
-                        By.CSS_SELECTOR, ".sc-hqKjEI.cDxNTg"
+
+            type = article.find_element(
+                By.CSS_SELECTOR, ".sc-bxGoT.fwUdzf"
+            ).text.lower()
+
+            if type == "video":
+                # Ignore videos by now
+                pass
+            elif type == "publication":
+                # Get the publisher, title and link
+                publisher = article.find_element(
+                    By.CSS_SELECTOR, ".sc-cUnzlc.egQVKE"
+                ).text
+                title = article.find_element(By.CSS_SELECTOR, ".sc-ePJuOI.eFVjkQ").text
+                link_element = article.find_element(
+                    By.CSS_SELECTOR, ".sc-hqKjEI.cDxNTg"
+                )
+                link = (
+                    link_element.get_attribute("href")
+                    if link_element.get_attribute("title") == "Open"
+                    else None
+                )
+                if link:
+                    processed_articles.append(
+                        {
+                            "type": type,
+                            "publisher": publisher,
+                            "title": title,
+                            "url": link,
+                        }
                     )
-                    link = (
-                        link_element.get_attribute("href")
-                        if link_element.get_attribute("title") == "Open"
-                        else None
-                    )
-                    if link:
-                        processed_articles.append((type, publisher, title, link))
-                    else:
-                        raise WEForumError("Link not found: " + title)
-                    
-            except Exception as e:
-                print(article.get_attribute("outerHTML"))
+                else:
+                    raise WEForumError("Link not found: " + title)
+            else:
+                raise WEForumError("Unknown article type: " + type)
+
         return processed_articles
 
     def _scrape_WEF_story_publication(self, url: str) -> dict:
@@ -263,6 +267,7 @@ class WEForumScrapper:
         author = author_div.find_element(
             By.TAG_NAME, "a"
         ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrape it to.
+        # TODO: fix if more than one person wrote the article (list?)
 
         # Get the content
         classes: dict = {
@@ -283,6 +288,9 @@ class WEForumScrapper:
         main_section_div = self.driver.get_element(
             By.CLASS_NAME, classes["main_section_div"]
         )
+
+        # TODO: Implement the content scraping
+        return None
 
     def _close(self):
         """
@@ -334,6 +342,28 @@ class WEForumScrapper:
         if not self._is_logged_in():
             self._login()
 
-        links = self._get_links_to_scrape(from_days_ago)
+        articles = self._get_websites_to_scrape(from_days_ago)
+
+        publicaion_scrappers = {
+            "World Economic Forum": self._scrape_WEF_story_publication
+        }
+
+        scraped_publications = []
+
+        for article in articles:
+            if article["type"] == "publication":
+                scrapper_function: Callable = publicaion_scrappers.get(
+                    article["publisher"]
+                )
+                if scrapper_function:
+                    try:
+                        publication_data = scrapper_function(article["url"])
+                        scraped_publications.append(publication_data)
+                    except Exception as e:
+                        print(f"Error scraping {article['url']}: {e}")
+                else:
+                    print(
+                        f"No scrapper function found for publisher: {article['publisher']}"
+                    )
 
         return None
