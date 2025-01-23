@@ -100,6 +100,7 @@ class Ncsc:
         num_all_topics = int(num_topics[0])
         
         articles = []
+        num_art = 0
         for i in range(1, num_all_topics):
             self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             time.sleep(self.load.webdriverwait_timeout)
@@ -119,7 +120,8 @@ class Ncsc:
                 time.sleep(self.load.webdriverwait_timeout)
                 self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
-                articles.append(self._get_article(driver, j, articles))
+                articles.append(self._get_article(driver, num_art, articles))
+                num_art += 1 
                 time.sleep(self.load.webdriverwait_timeout)
                 driver.back() # Vuelve a la pagina anterior
             driver.back()
@@ -201,7 +203,7 @@ class Ncsc:
 
         return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
-    def start_scrapping(self):
+    def start_scrapping(self): # Primera iteracion al 100% -> 890 articulos, Segunda iteración al 100% -> 657, no me coje el ultimo topic
         try:    
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
  
