@@ -45,6 +45,9 @@ class Scrap:
         Return:
             None
         """
+        if(driver is None):
+            raise("ERROR: drive is None")
+        
         try:
             # Wait for the button to be present
             WebDriverWait(driver, self.timeout).until(EC.element_to_be_clickable((By.XPATH, selector))).click()
@@ -63,6 +66,9 @@ class Scrap:
         Return:
             subpage_link
         '''
+        if not isinstance(xpath, str):
+            raise("ERROR: xpath is not type String")
+
         # Wait until the subpage link is visible and click on it
         subpage_link = WebDriverWait(driver, self.timeout).until(
             EC.element_to_be_clickable((By.XPATH, xpath))  # Adjust the XPATH according to the link
@@ -76,8 +82,18 @@ class Scrap:
 
         return subpage_link
     
-    def exist_xpath(self, driver, xpath):
+    def exist_xpath(self, driver, xpath) -> bool:
         """
+        This function use to check existence a xpath
+        Args:
+            driver : Selenium browser instance.
+            xpath (String): xpath of a element 
+        Return:
+            True -> Exist xpath
+            False -> Not exist xpath
         """
+        if not isinstance(xpath, str):
+            raise("ERROR: xpath is not type String")
+
         elementos = driver.find_elements(By.XPATH, xpath)
         return len(elementos) > 0

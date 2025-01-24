@@ -118,10 +118,10 @@ class Ncsc:
             self._show_all_articles(driver)
             
             print("Num de articulos por tema: " + str(num_articles_page))
-            for j in range(0, num_articles_page):  # Mirar el num_articles_page tiene que llegar hasta el 46  
+            for j in range(0, num_articles_page):  
                 print("Num articulo: " + str(j))
                 self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
-                time.sleep(self.load.webdriverwait_timeout)
+                #time.sleep(self.load.webdriverwait_timeout)
                 #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
                 articles.append(self._get_article(driver, num_art, articles))
