@@ -52,7 +52,7 @@ class Ncsc:
             raise("ERROR: drive not found")
         
         show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
-        return int(show_art[3])
+        return int(show_art[5])
 
     #NO se usa
     def _is_error_not_found(self, driver, num_topic: int = 1):
@@ -101,12 +101,12 @@ class Ncsc:
         
         articles = []
         num_art = 0
-        for i in range(1, num_all_topics):
+        for i in range(1, (num_all_topics+1)):
             self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             time.sleep(self.load.webdriverwait_timeout)
             
             # Extraer temática
-            print("Num tema: " + str(i) + "\n")
+            print("Num tema: " + str(i))
             
             self._is_error_not_found(driver, i)  
             time.sleep(self.load.webdriverwait_timeout)
@@ -114,11 +114,12 @@ class Ncsc:
             time.sleep(self.load.webdriverwait_timeout)
             self._show_all_articles(driver)
             
-            for j in range(0, num_articles_page):   
+            print("Num de articulos por tema: " + str(num_articles_page))
+            for j in range(0, num_articles_page):  # Mirar el num_articles_page tiene que llegar hasta el 46  
                 print("Num articulo: " + str(j))
                 self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
                 time.sleep(self.load.webdriverwait_timeout)
-                self._is_error_not_found(driver, j)  
+                #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
                 articles.append(self._get_article(driver, num_art, articles))
                 num_art += 1 
@@ -127,6 +128,8 @@ class Ncsc:
             driver.back()
         
         print("Total de articulos: ", len(articles))        
+        self._scrap_all_topics(self, driver)
+
 
     def _get_topic(self, driver) -> dict[str, str]:
         '''
@@ -203,7 +206,7 @@ class Ncsc:
 
         return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
-    def start_scrapping(self): # Primera iteracion al 100% -> 890 articulos, Segunda iteración al 100% -> 657, no me coje el ultimo topic
+    def start_scrapping(self): # Primera iteracion al 100% -> 890 articulos, Segunda iteración al 100% -> 657, no me coje el ultimo topic, no esta cogiendo todos los articulos
         try:    
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
  
