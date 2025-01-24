@@ -6,6 +6,7 @@ Created on Wed Jan 15 10:08:33 2025
 Scrapping of website: https://www.ncsc.gov.uk/
 """
 '''DEVELOP'''
+
 # Importing the necessary libraries
 import sys
 import os
@@ -99,6 +100,7 @@ class Ncsc:
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
         num_all_topics = int(num_topics[0])
         
+        topics = []
         articles = []
         num_art = 0
         for i in range(1, (num_all_topics+1)):
@@ -107,7 +109,8 @@ class Ncsc:
             
             # Extraer temática
             print("Num tema: " + str(i))
-            
+            topics.append(self._get_topic(driver))
+
             self._is_error_not_found(driver, i)  
             time.sleep(self.load.webdriverwait_timeout)
             num_articles_page = self._num_all_articles(driver)
@@ -128,7 +131,6 @@ class Ncsc:
             driver.back()
         
         print("Total de articulos: ", len(articles))        
-        self._scrap_all_topics(self, driver)
 
 
     def _get_topic(self, driver) -> dict[str, str]:
@@ -153,7 +155,7 @@ class Ncsc:
             title_topic = 'NONE'
 
         if(self.scrap.exist_xpath(driver, '//div[@data-testid="summary"]')):
-            description_topic = driver.find_elemnt(By.XPATH, '//div[@data-testid="summary"]').text
+            description_topic = driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
         else:
             description_topic = title_topic
 
