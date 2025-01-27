@@ -249,22 +249,21 @@ class WEForumScrapper:
 
         # Access the URL
         self.driver.get(url)
+        time.sleep(self.load_time)
 
         data = {}
 
         # Get the title
-        title_element = self.driver.find_element(
-            By.CSS_SELECTOR, "h1.chakra-heading.wef-1sa41sv"
-        )
+        title_element = self.driver.find_element(By.TAG_NAME, "h1")
         data["title"] = title_element.text
 
         # Get the date
         time_element = self.driver.find_element(By.TAG_NAME, "time")
-        time = datetime.fromisoformat(time_element.get_attribute("datetime"))
+        data["time"] = datetime.fromisoformat(time_element.get_attribute("datetime"))
 
         # Get the author
         author_div = self.driver.find_element(By.CSS_SELECTOR, "div.wef-1upaxcp")
-        author = author_div.find_element(
+        data["author"] = author_div.find_element(
             By.TAG_NAME, "a"
         ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrape it to.
         # TODO: fix if more than one person wrote the article (list?)
@@ -285,12 +284,33 @@ class WEForumScrapper:
             "main_bullet_points": "wef-1anm32a",
         }
 
-        main_section_div = self.driver.get_element(
+        main_section_div = self.driver.find_element(
             By.CLASS_NAME, classes["main_section_div"]
         )
+        content_div = main_section_div.find_element(By.CLASS_NAME, "wef-0")
+        divs = content_div.find_elements(By.XPATH, "./div")
+        content = ""
 
-        # TODO: Implement the content scraping
-        return None
+        for div in divs:
+            cl = div.get_attribute("class")
+            if cl == classes["paragraphs"]:
+                content += div.text + "\n"
+            elif cl == classes["subtitles"]:
+                content += f"\n\n{div.text}\n"
+            elif cl == classes["bullet_point_paragraphs"]:
+                for li in div.find_elements(By.TAG_NAME, "li"):
+                    content += f"\t- {li.text}\n"
+            elif cl == classes["main_bullet_points"]:
+                for li in div.find_elements(By.TAG_NAME, "li"):
+                    content += f"\t- {li.text}\n"
+            elif cl == classes["imgs"]:
+                img = div.find_element(By.TAG_NAME, "img")
+                img_link = img.get_attribute("src")
+                img_alt = img.get_attribute("alt")
+                content += f"![{img_alt}]({img_link})\n"
+
+        data["content"] = content
+        return data
 
     def _close(self):
         """
@@ -365,5 +385,9 @@ class WEForumScrapper:
                     print(
                         f"No scrapper function found for publisher: {article['publisher']}"
                     )
+
+        for publication in scraped_publications:
+            # print(publication)
+            pass
 
         return None
