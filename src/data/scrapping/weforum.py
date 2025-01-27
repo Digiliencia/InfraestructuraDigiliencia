@@ -17,6 +17,7 @@ from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
 import time
 from datetime import datetime
+from urllib.parse import urlparse, parse_qs
 
 
 class WEForumError(Exception):
@@ -284,11 +285,14 @@ class WEForumScrapper:
             "main_bullet_points": "wef-1anm32a",
         }
 
-        main_section_div = self.driver.find_element(
-            By.CLASS_NAME, classes["main_section_div"]
-        )
-        content_div = main_section_div.find_element(By.CLASS_NAME, "wef-0")
-        divs = content_div.find_elements(By.XPATH, "./div")
+        """ For getting the main section div containing the rest of divs
+        I first search for a normal paragraph, then I go up to the parent (containing the p)
+        and after the parent, which will contain every div with
+        the classes specified before.
+        """
+        any_p = self.driver.find_element(By.CLASS_NAME, classes["paragraphs"])
+        p_div = any_p.find_element(By.XPATH, "../../..")
+        divs = p_div.find_elements(By.XPATH, "./div")
         content = ""
 
         for div in divs:
@@ -336,6 +340,120 @@ class WEForumScrapper:
             return False
         return True
 
+    def _scrape_wired_story(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): Wired story URL
+
+        Raises:
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        # TODO: check if login, as it is not free to access the content
+
+        self._accept_cookies_if_visible("onetrust-accept-btn-handler")
+
+        data = {}
+        time_element = self.driver.find_element(By.TAG_NAME, "time")
+        date_str = time_element.text
+        data["date"] = datetime.strptime(date_str, "%b %d, %Y %I:%M %p")
+
+        author_element = self.driver.find_element(
+            By.CSS_SELECTOR, '[data-testid="BylineName"]'
+        )
+        data["author"] = author_element.text
+
+        title_element = self.driver.find_element(
+            By.CSS_SELECTOR, 'h1[data-testid="ContentHeaderHed"]'
+        )
+        data["title"] = title_element.text
+
+        content_elements = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.body__inner-container > p"
+        )
+        content = ""
+        for element in content_elements:
+            content += element.text + "\n"
+
+        data["content"] = content
+
+        return data
+
+    def _accept_cookies_if_visible(self, accept_bttn_id: str):
+        """Accepts the cookies if the pop-up is visible.
+
+        Args:
+            accept_bttn_id (str): The ID of the accept button.
+        """
+        if self._if_element_exists(By.ID, accept_bttn_id):
+            accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
+            if accept_bttn.is_displayed():
+                accept_bttn.click()
+        time.sleep(self.load_time)
+
+    def _scrape_globaldata_newsletter(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): GlobalData newsletter details URL
+
+        Raises:
+            WEForumError: If the URL is not a valid GlobalData newsletter details URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        # Verify URL
+        if "https://www.globaldata.com/newsletter/details" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for GlobalData newsletter scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        # Extract date from URL parameter if available
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        newsletter_date = query_params.get("newsletterdate", [None])[0]
+        if newsletter_date:
+            data["date"] = datetime.strptime(newsletter_date, "%Y-%m-%d")
+        else:
+            raise WEForumError(
+                "newsletter date not found in URL. Cannot set publication date."
+            )
+
+        data["author"] = "GlobalData"
+
+        title_element = self.driver.find_element(By.CSS_SELECTOR, "h2>a")
+        data["title"] = title_element.text
+
+        content_container = title_element.find_element(By.XPATH, "./../../..")
+        content = content_container.text
+        content.replace(data["title"], "")  # Remove title from content
+        data["content"] = content
+
+        return data
+
     def _is_logged_in(self) -> bool:
         """Being in the topic page, checks if the user is logged in.
 
@@ -365,7 +483,9 @@ class WEForumScrapper:
         articles = self._get_websites_to_scrape(from_days_ago)
 
         publicaion_scrappers = {
-            "World Economic Forum": self._scrape_WEF_story_publication
+            "World Economic Forum": self._scrape_WEF_story_publication,
+            "Wired": self._scrape_wired_story,
+            "GlobalData": self._scrape_globaldata_newsletter,
         }
 
         scraped_publications = []
@@ -380,7 +500,7 @@ class WEForumScrapper:
                         publication_data = scrapper_function(article["url"])
                         scraped_publications.append(publication_data)
                     except Exception as e:
-                        print(f"Error scraping {article['url']}: {e}")
+                        print(f"Error scraping {article['url']}:\n {e}")
                 else:
                     print(
                         f"No scrapper function found for publisher: {article['publisher']}"
