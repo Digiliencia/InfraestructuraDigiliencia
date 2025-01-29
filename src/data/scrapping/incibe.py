@@ -6,74 +6,103 @@ Created on Wed Jan 15 10:08:33 2025
 Web scrapping: https://www.incibe.es/
 """
 
-from selenium import webdriver
+# Importing the necessary libraries
+import sys
+import os
+
+
+# Add the parent directory (src) to the Python path
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+from utils.scrap import Scrap
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 
+
 class IncibeScraper:
-    def _disablaled_cookie_popup(self, driver, selector):
+    def __init__(self):
         """
-        Deactivates the cookies popup in a website.
-        :param driver: Instance of the Selenium browser.
-        :param selector: XPath or CSS selector to identify the accept/reject cookies buttons.
+        Initialize the IncibeScraper class
+        """
+        self.scrapper = Scrap()
+        self.driver = self.scrapper.configuration()
+    
+    def get_urls_to_scrap(self, days:int=0)->list[str]:
+        self.getIncibeBlogUrls(0)
+
+    def openIncibeBlog(self, page_num:int=0)->None:
+        try:
+            self.driver.get(f"https://www.incibe.es/incibe-cert/blog?page={page_num}")
+            self.disable_cookie_popup()  # Cierra el popup de cookies
+            self.hide_cookie_warning()    # Cierra el aviso de cookies
+            print("Incibe blog page opened")
+        except Exception as e:
+            print(f"Error opening Incibe blog page: {e}")
+    
+    def disable_cookie_popup(self):
+        """
+        Cierra el popup de cookies si existe
         """
         try:
-            WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, selector))).click()
-            print(f"Pop up from cookies closed by selector: {selector}")
+            # Esperar a que el botón de "Rechazar todas" sea clicable con el nuevo XPath
+            wait = WebDriverWait(self.driver, 10)
+            cookie_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]'))
+            )
+            cookie_button.click()
+            print("Popup de cookies cerrado.")
         except Exception as e:
-            print(f"ERROR closing popup cookies: {str(e)}")
-
-    def _configuration(self):
+            print(f"No se encontró el popup de cookies o hubo un error: {e}")
+    
+    def hide_cookie_warning(self):
         """
-        Configures and returns the Selenium WebDriver.
+        Clica el botón 'Ocultar' en el aviso de cookies si existe
         """
-        opt = Options()
-        opt.add_argument("--disable-gpu")
-        opt.add_argument("--disable-dev-shm-usage")
-        opt.add_argument("--no-sandbox")
-        opt.add_argument("--disable-extensions")
-        opt.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.84"
-        )
-
-        driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=opt
-        )
-        return driver
-
-    def start_scrapping(self):
-        """
-        Main method to start the scraping process.
-        """
-        driver = None
         try:
-            url_website = "https://www.incibe.es/incibe-cert/blog"
-            driver = self._configuration()
-            driver.get(url_website)
-            print(driver.title)
-
-            # Close the cookies popup
-            self._disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
-
-            # Placeholder for further scraping logic
-            print("Scraping logic here...")
-
+            # Esperar a que el botón de "Ocultar" sea clicable con su XPath
+            wait = WebDriverWait(self.driver, 10)
+            ocultar_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="hide-banner-button"]'))
+            )
+            ocultar_button.click()
+            print("Aviso de cookies ocultado.")
         except Exception as e:
-            print(f"ERROR: {str(e)}")
+            print(f"No se encontró el botón de 'Ocultar' o hubo un error: {e}")
 
-        finally:
-            if driver:
-                driver.quit()
+    
 
+    def getIncibeBlogUrls(self, page_num:int)->list[str]:
+        """
+        Get the Incibe blog posts
+        """
+        try:
+            self.openIncibeBlog(page_num)
+            # Esperar a que se carguen los elementos de la página
+            time.sleep(5)
+            # Encontrar todos los elementos de la lista
+            blog_posts = self.driver.find_elements(By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div')
+            # Extraer los enlaces de los elementos
+            blog_urls:list[str] = []
+            for post in blog_posts:
+                published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
+                phrase = published_on_elem.text
+                date_str = phrase.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
+                link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
+                blog_urls.append(link)
+            return blog_urls
+        except NoSuchElementException as e:
+            print(f"Error al obtener los enlaces de los posts del blog: {e}")
+            return []
+        
 
-# Run the scraper
-if __name__ == "__main__":
-    scraper = IncibeScraper()
-    scraper.start_scrapping()
+    # Main execution
+    def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
+        
+        self.get_urls_to_scrap(from_days_ago)
+        input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
+        self.driver.quit()      # Cierra el navegador de forma controlada
+        return None
+#//*[@id="views-bootstrap-blog-listado-page-1"]/div/div[1]
