@@ -226,6 +226,109 @@ class WEForumScrapper:
 
         return processed_articles
 
+    def _close(self):
+        """
+        Closes the current browser window.
+
+        This method will close the browser window that is currently controlled by the driver instance.
+        """
+        self.driver.close()
+
+    def _is_logged_in(self) -> bool:
+        """Being in the topic page, checks if the user is logged in.
+
+        Returns:
+            bool: True if the user is logged in, False otherwise.
+
+        Raises:
+            WEForumError: If the user is not in the topic page
+        """
+        if self.driver.current_url != self.cybersecturity_topic_url:
+            raise WEForumError(
+                "Cannot check if logged in because browser is not in the topic page"
+            )
+
+        # If the user logo (id: mf_user-icon) exists, user is loged in
+        return self._if_element_exists(By.ID, "mf_user-icon")
+
+    def _if_element_exists(self, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            self.driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
+
+    def _accept_cookies_if_visible(self, accept_bttn_id: str):
+        """Accepts the cookies if the pop-up is visible.
+
+        Args:
+            accept_bttn_id (str): The ID of the accept button.
+        """
+        if self._if_element_exists(By.ID, accept_bttn_id):
+            accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
+            if accept_bttn.is_displayed():
+                accept_bttn.click()
+        time.sleep(self.load_time)
+
+    def _scrape_wired_story(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): Wired story URL
+
+        Raises:
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        # TODO: check if login, as it is not free to access the content
+
+        self._accept_cookies_if_visible("onetrust-accept-btn-handler")
+
+        data = {}
+        time_element = self.driver.find_element(By.TAG_NAME, "time")
+        date_str = time_element.text
+        data["date"] = datetime.strptime(date_str, "%b %d, %Y %I:%M %p")
+
+        author_element = self.driver.find_element(
+            By.CSS_SELECTOR, '[data-testid="BylineName"]'
+        )
+        data["author"] = author_element.text
+
+        title_element = self.driver.find_element(
+            By.CSS_SELECTOR, 'h1[data-testid="ContentHeaderHed"]'
+        )
+        data["title"] = title_element.text
+
+        content_elements = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.body__inner-container > p"
+        )
+        content = ""
+        for element in content_elements:
+            content += element.text + "\n"
+
+        data["content"] = content
+
+        return data
+
     def _scrape_WEF_story_publication(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
@@ -316,92 +419,6 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _close(self):
-        """
-        Closes the current browser window.
-
-        This method will close the browser window that is currently controlled by the driver instance.
-        """
-        self.driver.close()
-
-    def _if_element_exists(self, by: By, element: str) -> bool:
-        """
-        Check if an element exists on the web page.
-        Args:
-            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
-            element (str): The locator value of the element to find.
-        Returns:
-            bool: True if the element is found, False otherwise.
-        """
-
-        try:
-            self.driver.find_element(by, element)
-        except NoSuchElementException:
-            return False
-        return True
-
-    def _scrape_wired_story(self, url: str) -> dict:
-        """Access the given URL and scrapes the publication.
-
-        Args:
-            url (str): Wired story URL
-
-        Raises:
-            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
-
-        Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
-        """
-        # Access the URL
-        self.driver.get(url)
-        time.sleep(self.load_time)
-
-        # TODO: check if login, as it is not free to access the content
-
-        self._accept_cookies_if_visible("onetrust-accept-btn-handler")
-
-        data = {}
-        time_element = self.driver.find_element(By.TAG_NAME, "time")
-        date_str = time_element.text
-        data["date"] = datetime.strptime(date_str, "%b %d, %Y %I:%M %p")
-
-        author_element = self.driver.find_element(
-            By.CSS_SELECTOR, '[data-testid="BylineName"]'
-        )
-        data["author"] = author_element.text
-
-        title_element = self.driver.find_element(
-            By.CSS_SELECTOR, 'h1[data-testid="ContentHeaderHed"]'
-        )
-        data["title"] = title_element.text
-
-        content_elements = self.driver.find_elements(
-            By.CSS_SELECTOR, "div.body__inner-container > p"
-        )
-        content = ""
-        for element in content_elements:
-            content += element.text + "\n"
-
-        data["content"] = content
-
-        return data
-
-    def _accept_cookies_if_visible(self, accept_bttn_id: str):
-        """Accepts the cookies if the pop-up is visible.
-
-        Args:
-            accept_bttn_id (str): The ID of the accept button.
-        """
-        if self._if_element_exists(By.ID, accept_bttn_id):
-            accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
-            if accept_bttn.is_displayed():
-                accept_bttn.click()
-        time.sleep(self.load_time)
-
     def _scrape_globaldata_newsletter(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
@@ -449,27 +466,65 @@ class WEForumScrapper:
 
         content_container = title_element.find_element(By.XPATH, "./../../..")
         content = content_container.text
-        content.replace(data["title"], "")  # Remove title from content
-        data["content"] = content
+        data["content"] = content.replace(
+            data["title"], ""
+        )  # Remove title from content
 
         return data
 
-    def _is_logged_in(self) -> bool:
-        """Being in the topic page, checks if the user is logged in.
+    def _scrape_the_conversation(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
 
-        Returns:
-            bool: True if the user is logged in, False otherwise.
+        Args:
+            url (str): The Conversation publication URL
 
         Raises:
-            WEForumError: If the user is not in the topic page
+            WEForumError: If the URL is not a valid The Conversation URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
         """
-        if self.driver.current_url != self.cybersecturity_topic_url:
+        if "https://theconversation.com/" not in url:
             raise WEForumError(
-                "Cannot check if logged in because browser is not in the topic page"
+                "Attempted to scrape invalid page for The Conversation scrapper"
             )
 
-        # If the user logo (id: mf_user-icon) exists, user is loged in
-        return self._if_element_exists(By.ID, "mf_user-icon")
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        # Get the title
+        article = self.driver.find_element(By.ID, "article")
+        title_element = article.find_element(By.TAG_NAME, "h1")
+        data["title"] = title_element.text
+
+        # Get the date
+        time_element = article.find_element(
+            By.CSS_SELECTOR, "figure div.timestamps > time"
+        )
+        data["date"] = datetime.fromisoformat(time_element.get_attribute("datetime"))
+
+        # Get the author
+        author_elements = article.find_elements(
+            By.CSS_SELECTOR, "section.content-authors span.nobr"
+        )
+        data["author"] = ", ".join(
+            [author_element.text for author_element in author_elements]
+        )
+
+        # Get the content
+        container = article.find_element(By.CLASS_NAME, "content-body")
+        ct = container.text
+        data["content"] = ct
+
+        return data
 
     def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()

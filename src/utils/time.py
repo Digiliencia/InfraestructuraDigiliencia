@@ -103,3 +103,39 @@ class TimeUtils:
         # Calculate the difference in days
         delta = date2 - date1
         return delta.days
+
+    @staticmethod
+    def format_spanish_date(days_ago: int) -> str:
+        """
+        Formats a date based on the number of days ago in dd/mm/yyyy format.
+
+        Args:
+            days_ago (int): The number of days ago.
+
+        Returns:
+            str: A formatted string representing the date in dd/mm/yyyy format.
+        """
+        today = datetime.now()
+        date_result = today - timedelta(days=days_ago)
+        return date_result.strftime("%d/%m/%Y")
+
+    @staticmethod
+    def days_between_es_dates(date_str1: str, date_str2: str) -> int:
+        """
+        Calculates the difference in days between two dates in dd/mm/yyyy format.
+        Args:
+            date_str1 (str): The first date string (e.g., "1/10/2023").
+            date_str2 (str): The second date string (e.g., "10/10/2023").
+        Returns:
+            int: The number of days between the two dates measured from the first to the second.
+        Raises:
+            ValueError: If the date strings are not in the correct format.
+        Example:
+            >>> TimeUtils.days_between_dates('1/10/2023', '10/10/2023')
+            9
+        """
+        date_format = "%d/%m/%Y"
+        date1 = datetime.strptime(date_str1, date_format)
+        date2 = datetime.strptime(date_str2, date_format)
+        delta = date2 - date1
+        return delta.days
