@@ -7,31 +7,53 @@ Web scrapping: https://www.incibe.es/
 """
 
 # Importing the necessary libraries
+import re
 import sys
 import os
 
 
 # Add the parent directory (src) to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from utils.scrap import Scrap
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+from utils.time import TimeUtils
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.chrome.options import Options
 import time
+
 
 
 
 class IncibeScraper:
     def __init__(self):
-        """
-        Initialize the IncibeScraper class
-        """
-        self.scrap = Scrap()
-        self.driver = self.scrap.configuration()
-    
+        
+        self.driver = WebDriver()
+        options = Options()
+        options.add_argument(
+            "user-agent="
+            + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
+        )
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        prefs = {
+            "profile.default_content_setting_values.geolocation": 2,
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+            "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+            "webrtc.multiple_routes_enabled": False,
+            "webrtc.nonproxied_udp_enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_argument("log-level=3")
+        options.add_argument("--start-maximized")
+
+
     def get_urls_to_scrap(self, days:int=0)->list[str]:
-        self.getIncibeBlogUrls(0)
+        until_date = TimeUtils.format_spanish_date(days)
+        self.getIncibeBlogUrls(0,until_date)
 
     def openIncibeBlog(self, page_num:int=0)->None:
         try:
@@ -72,7 +94,9 @@ class IncibeScraper:
         except Exception as e:
             print(f"No se encontró el botón de 'Ocultar' o hubo un error: {e}")
 
-    def getIncibeBlogUrls(self, page_num:int)->list[str]:
+    
+
+    def getIncibeBlogUrls(self, page_num:int, date:str)->list[str]:
         """
         Get the Incibe blog posts
         """
@@ -85,20 +109,26 @@ class IncibeScraper:
             # Extraer los enlaces de los elementos
             blog_urls:list[str] = []
             for post in blog_posts:
-                published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel') 
-                link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
-                blog_urls.append(link)
+                published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
+                phrase = published_on_elem.text
+                published_date = re.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
+                if TimeUtils.days_between_es_dates(date, published_date) > 0:
+                    link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
+                    blog_urls.append(link)
+                else:
+                    break
+                
             return blog_urls
         except NoSuchElementException as e:
             print(f"Error al obtener los enlaces de los posts del blog: {e}")
             return []
         
 
-# Main execution
-if __name__ == "__main__":
-    scraper = IncibeScraper()  # Create an instance of IncibeScraper
-    scraper.get_urls_to_scrap(0)
-    input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
-    scraper.driver.quit()      # Cierra el navegador de forma controlada
-
+    # Main execution
+    def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
+        self.driver.maximize_window()
+        self.get_urls_to_scrap(from_days_ago)
+        input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
+        self.driver.quit()      # Cierra el navegador de forma controlada
+        return None
 #//*[@id="views-bootstrap-blog-listado-page-1"]/div/div[1]
