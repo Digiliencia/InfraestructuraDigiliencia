@@ -6,12 +6,14 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support import expected_conditions as EC
 
-from env_loader import EnvLoader
+
+from .env_loader import EnvLoader
 
 class Scrap:
 
     def __init__(self):
-        self.timeout = EnvLoader.webdriverwait_timeout
+        load = EnvLoader()
+        self.timeout = load.webdriverwait_timeout
 
     def configuration(self):
         '''
