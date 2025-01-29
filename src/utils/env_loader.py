@@ -1,25 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 15 12:39:40 2025
+
+@author: Álvaro Prieto Álvarez
+Class to load environment variables from a .env file
+"""
+
 import os
 from dotenv import load_dotenv
 
+
 class EnvLoader:
     _instance = None
-    ddbb_uri: str
-    ddbb_username: str
-    ddbb_passwd: str
-    weforum_email: str
-    weforum_passwd: str
-    webdriverwait_timeout: int
+    ddbb_uri: str = ""
+    ddbb_username: str = ""
+    ddbb_passwd: str = ""
+    weforum_email: str = ""
+    weforum_passwd: str = ""
+    webdriverwait_timeout: int = 5
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(EnvLoader, cls).__new__(cls)
             cls._instance.load_env_vars()
-            ''' cls.ddbb_uri = cls._instance.get_env_var('DDBB_URI')
-            cls.ddbb_username = cls._instance.get_env_var('DDBB_USERNAME')
-            cls.ddbb_passwd = cls._instance.get_env_var('DDBB_PASSWD')
-            cls.weforum_email = cls._instance.get_env_var('WEFORUM_EMAIL')
-            cls.weforum_passwd = cls._instance.get_env_var('WEFORUM_PASSWD')'''
-            cls.webdriverwait_timeout = int(cls._instance.get_env_var('WEBDRIVERWAIT_TIMEOUT', 5))
+            cls.ddbb_uri = cls._instance.get_env_var("DDBB_URI")
+            cls.ddbb_username = cls._instance.get_env_var("DDBB_USERNAME")
+            cls.ddbb_passwd = cls._instance.get_env_var("DDBB_PASSWD")
+            cls.weforum_email = cls._instance.get_env_var("WEFORUM_EMAIL")
+            cls.weforum_passwd = cls._instance.get_env_var("WEFORUM_PASSWD")
+            cls.webdriverwait_timeout = int(
+                cls._instance.get_env_var("WEBDRIVERWAIT_TIMEOUT", 5)
+            )
         return cls._instance
 
     @staticmethod
