@@ -48,7 +48,15 @@ class Ncsc:
                 print("No hay más artículos para cargar.")
                 break
 
-    def _num_all_articles(self, driver):
+    def _get_num_all_articles(self, driver):
+        '''
+        Return number all articles of a topic
+        
+        Args:
+            driver: Selenium browser instance.
+        Return:
+            number all articles of a topic
+        '''
         if(driver is None):
             raise("ERROR: drive not found")
         
@@ -113,7 +121,7 @@ class Ncsc:
 
             self._is_error_not_found(driver, i)  
             time.sleep(self.load.webdriverwait_timeout)
-            num_articles_page = self._num_all_articles(driver)
+            num_articles_page = self._get_num_all_articles(driver)
             time.sleep(self.load.webdriverwait_timeout)
             self._show_all_articles(driver)
             
@@ -135,14 +143,15 @@ class Ncsc:
 
     def _get_topic(self, driver) -> dict[str, str]:
         '''
-        Parameters
-        ----------
-        driver : TYPE
-            DESCRIPTION.
+        Return a topic of NCSC
 
-        Returns
-        -------
-        Article
+        Args:       
+            driver: Selenium browser instance.
+        Return:
+            A topic of NCSC
+            A topic is divide:
+                title
+                description
         '''
         if(driver is None):
             raise("ERROR: drive not found")
@@ -163,15 +172,20 @@ class Ncsc:
 
     def _get_article(self, driver, index: int = 0, articles: dict = []) -> dict[str, str]:
         '''
-        Parameters
-        ----------
-        driver : TYPE
-            DESCRIPTION.
+        Return an article of a topic
 
-        Returns
-        -------
-        Article
-
+        Args:
+            driver: Selenium browser instance.
+            index: counter of array articles
+            articles: array of all articles
+        Return:
+            An article of a topic
+            An article is divide:
+                date
+                title
+                summary
+                author
+                content
         ''' 
         if(driver is None):
             raise("ERROR: drive not found")
@@ -204,7 +218,7 @@ class Ncsc:
             for i in contents:
                 content += i.text
         else:
-            content = 'ERROR' # Una vez que esten todas las noticias extraidas eliminar las erroneas
+            content = 'ERROR' 
 
         return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
