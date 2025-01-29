@@ -52,7 +52,8 @@ class IncibeScraper:
 
 
     def get_urls_to_scrap(self, days:int=0)->list[str]:
-        self.getIncibeBlogUrls(0)
+        until_date = TimeUtils.format_spanish_date(days)
+        self.getIncibeBlogUrls(0,until_date)
 
     def openIncibeBlog(self, page_num:int=0)->None:
         try:
@@ -95,7 +96,7 @@ class IncibeScraper:
 
     
 
-    def getIncibeBlogUrls(self, page_num:int)->list[str]:
+    def getIncibeBlogUrls(self, page_num:int, date:str)->list[str]:
         """
         Get the Incibe blog posts
         """
@@ -110,10 +111,13 @@ class IncibeScraper:
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
                 phrase = published_on_elem.text
-                date_str = re.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
-                if TimeUtils.
-                link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
-                blog_urls.append(link)
+                published_date = re.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
+                if TimeUtils.days_between_es_dates(date, published_date) > 0:
+                    link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
+                    blog_urls.append(link)
+                else:
+                    break
+                
             return blog_urls
         except NoSuchElementException as e:
             print(f"Error al obtener los enlaces de los posts del blog: {e}")
