@@ -70,7 +70,7 @@ class IncibeScraper:
     def getInformationByUrl(self, url:str)->dict[str, str]:
         try:
             self.driver.get(url)
-            title = self.driver.find_element(By.CLASS_NAME, 'node__title').text
+            title = self.driver.find_element(By.CLASS_NAME, 'field--name-title').text
             content = self.driver.find_element(By.CLASS_NAME, 'node__content').text
             return {"title": title, "content": content}
         except Exception as e:
