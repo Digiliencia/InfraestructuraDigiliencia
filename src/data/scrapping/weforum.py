@@ -330,7 +330,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrape_WEF_story_publication(self, url: str) -> dict:
+    def _scrap_WEF_story_publication(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -420,7 +420,7 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _scrape_globaldata_newsletter(self, url: str) -> dict:
+    def _scrap_globaldata_newsletter(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -473,7 +473,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrape_the_conversation(self, url: str) -> dict:
+    def _scrap_the_conversation(self, url: str) -> dict:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -527,7 +527,71 @@ class WEForumScrapper:
 
         return data
 
-    def scrape(self, from_days_ago: int) -> tuple[dict[str, str]]:
+    def _scrap_the_quantum_insider(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): The Conversation publication URL
+
+        Raises:
+            WEForumError: If the URL is not a valid The Conversation URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if not url.startswith("https://thequantuminsider.com/"):
+            raise WEForumError(
+                "Attempted to scrape invalid page for The Quantum Insider scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        # Get the title
+        data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
+
+        # Get the date
+        date_element = self.driver.find_element(By.TAG_NAME, "time")
+        data["date"] = datetime.strptime(date_element.text, "%B %d, %Y")
+
+        # Get the author
+        data["author"] = self.driver.find_element(
+            By.CLASS_NAME, "elementor-post-info__item--type-author"
+        ).text
+        
+        # Get the content
+        content_container = self.driver.find_element(By.CSS_SELECTOR, "#cst-p-css .elementor-widget-container")
+        content = ""
+        elements = content_container.find_elements(By.XPATH, "./*")
+        for element in elements:
+            tag = element.tag_name
+            if tag == "p":
+                content += element.text + "\n\n"
+            elif tag == "h3":
+                content += f"\n\n{element.text}\n"
+            elif tag == "ul":
+                for li in element.find_elements(By.TAG_NAME, "li"):
+                    content += f"* {li.text}\n"
+            elif tag == "ol":
+                for i, li in enumerate(element.find_elements(By.TAG_NAME, "li"), 1):
+                    content += f"{i}. {li.text}\n"
+            elif tag == "img":
+                img_link = element.get_attribute("src")
+                img_alt = element.get_attribute("alt")
+                content += f"![{img_alt}]({img_link})\n"
+        
+        data["content"] = content
+        return data
+
+    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
 
@@ -539,9 +603,10 @@ class WEForumScrapper:
         articles = self._get_websites_to_scrape(from_days_ago)
 
         publicaion_scrappers = {
-            "World Economic Forum": self._scrape_WEF_story_publication,
+            "World Economic Forum": self._scrap_WEF_story_publication,
             "Wired": self._scrape_wired_story,
-            "GlobalData": self._scrape_globaldata_newsletter,
+            "GlobalData": self._scrap_globaldata_newsletter,
+            "The Quantum Insider": self._scrap_the_quantum_insider,
         }
 
         scraped_publications = []
