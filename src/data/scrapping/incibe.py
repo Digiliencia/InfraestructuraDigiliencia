@@ -51,10 +51,32 @@ class IncibeScraper:
         options.add_argument("--start-maximized")
 
 
-    def get_urls_to_scrap(self, days:int=0)->list[str]:
+    def get_urls_to_scrap(self, days:int=0)->set[str]:
         until_date = TimeUtils.format_spanish_date(days)
-        self.getIncibeBlogUrls(0,until_date)
-
+        found_oldest = False
+        i = 0
+        urls = set()
+        while not found_oldest:
+            found_oldest, retrieved_urls = self.getIncibeBlogUrls(i,until_date)  
+            total_size = len(urls)
+            #Si no funciona el set union, se puede hacer un for para añadir los elementos 
+            urls.update(retrieved_urls)        
+            i+=1
+            if len(urls) == total_size:
+                break        
+        return urls
+    
+    # Get the information from the URL (Verificar con Álvaro)
+    def getInformationByUrl(self, url:str)->dict[str, str]:
+        try:
+            self.driver.get(url)
+            title = self.driver.find_element(By.CLASS_NAME, 'field--name-title').text
+            content = self.driver.find_element(By.CLASS_NAME, 'node__content').text
+            return {"title": title, "content": content}
+        except Exception as e:
+            print(f"Error al obtener la información de la URL: {e}")
+            return {}
+        
     def openIncibeBlog(self, page_num:int=0)->None:
         try:
             self.driver.get(f"https://www.incibe.es/incibe-cert/blog?page={page_num}")
@@ -86,20 +108,21 @@ class IncibeScraper:
         try:
             # Esperar a que el botón de "Ocultar" sea clicable con su XPath
             wait = WebDriverWait(self.driver, 10)
-            ocultar_button = wait.until(
+            hide_button = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="hide-banner-button"]'))
             )
-            ocultar_button.click()
+            hide_button.click()
             print("Aviso de cookies ocultado.")
         except Exception as e:
             print(f"No se encontró el botón de 'Ocultar' o hubo un error: {e}")
 
     
 
-    def getIncibeBlogUrls(self, page_num:int, date:str)->list[str]:
+    def getIncibeBlogUrls(self, page_num:int, date:str)->tuple[bool,set[str]]:
         """
         Get the Incibe blog posts
         """
+        found_oldest = False 
         try:
             self.openIncibeBlog(page_num)
             # Esperar a que se carguen los elementos de la página
@@ -107,27 +130,33 @@ class IncibeScraper:
             # Encontrar todos los elementos de la lista
             blog_posts = self.driver.find_elements(By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div')
             # Extraer los enlaces de los elementos
-            blog_urls:list[str] = []
+            blog_urls:set[str] = set()
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
                 phrase = published_on_elem.text
                 published_date = re.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
-                    blog_urls.append(link)
+                    blog_urls.add(link)
                 else:
+                    found_oldest = True
                     break
                 
-            return blog_urls
+            return (found_oldest, blog_urls)
         except NoSuchElementException as e:
             print(f"Error al obtener los enlaces de los posts del blog: {e}")
             return []
         
 
-    # Main execution
+    # Main execution (verificar con Álvaro)
     def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
         self.driver.maximize_window()
         self.get_urls_to_scrap(from_days_ago)
+        # Recorrer las URLs para obtener la información
+        for url in self.get_urls_to_scrap(from_days_ago):
+            print(f"Obteniendo información de la URL: {url}")
+            info = self.getInformationByUrl(url)
+            print(info)
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
         self.driver.quit()      # Cierra el navegador de forma controlada
         return None
