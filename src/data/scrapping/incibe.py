@@ -16,17 +16,35 @@ import os
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from utils.time import TimeUtils
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
+from datetime import datetime
 import time
 
 
 
 
 class IncibeScraper:
+
+    def _if_element_exists(self, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            self.driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
+    
     def __init__(self):
         
         self.driver = WebDriver()
@@ -71,8 +89,12 @@ class IncibeScraper:
         try:
             self.driver.get(url)
             title = self.driver.find_element(By.CLASS_NAME, 'field--name-title').text
-            content = self.driver.find_element(By.CLASS_NAME, 'node__content').text
-            return {"title": title, "content": content}
+            content = self.driver.find_element(By.CSS_SELECTOR, 'article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item').text
+            date = self.driver.find_element(By.CSS_SELECTOR, '.node__content.field--type-text-with-summary .field__item').text
+            author = self.driver.find_element(By.CSS_SELECTOR, '.field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item').text
+            date = date.split(" ")[-1]
+            date = datetime.strptime(date, "%d/%m/%Y")
+            return {"title": title, "content": content, "date": date, "author": author}
         except Exception as e:
             print(f"Error al obtener la información de la URL: {e}")
             return {}
@@ -97,9 +119,9 @@ class IncibeScraper:
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]'))
             )
             cookie_button.click()
-            print("Popup de cookies cerrado.")
-        except Exception as e:
-            print(f"No se encontró el popup de cookies o hubo un error: {e}")
+            print("Cookies popup closed.")
+        except TimeoutException as e:
+            print(f"Disable cookies button not found")
     
     def hide_cookie_warning(self):
         """
@@ -109,12 +131,12 @@ class IncibeScraper:
             # Esperar a que el botón de "Ocultar" sea clicable con su XPath
             wait = WebDriverWait(self.driver, 10)
             hide_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="hide-banner-button"]'))
+                EC.element_to_be_clickable((By.ID, 'hide-banner-button'))
             )
             hide_button.click()
-            print("Aviso de cookies ocultado.")
-        except Exception as e:
-            print(f"No se encontró el botón de 'Ocultar' o hubo un error: {e}")
+            print(f"Hide cookies button clicked.")
+        except TimeoutException as e:
+            print(f"Hide cookies button not found")
 
     
 
