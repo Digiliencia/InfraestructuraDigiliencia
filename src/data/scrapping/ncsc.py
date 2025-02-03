@@ -33,76 +33,83 @@ class Ncsc:
 
     def _show_all_articles(self, driver):
         '''
+        Shows the browser all articles in a topic. Click the "Show 10 more" button repeatedly until it disappears.
+
+        Args:
+            driver: Selenium browser instance.
+        Raise:
+            TypeError: not found drive
+        Return:
+            None
         '''
         if(driver is None):
-            raise("ERROR: drive not found")
-        # Bucle para cargar todos los artículos
+            raise TypeError("ERROR: drive not found")
+        # Loop to load all articles
         while True:
             try:
-                # Intentar encontrar el botón "Cargar más artículos"     div.pcf-button button button--normalised button--secondary
+                # Try to find the "Load more items" button     div.pcf-button button button--normalised button--secondary
                 button_load = driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
-                button_load.click()  # Hacer clic en el botón
-                time.sleep(self.load.webdriverwait_timeout) # Esperar unos segundos para que se carguen los nuevos artículos
+                button_load.click()  # Click the button
+                time.sleep(self.load.webdriverwait_timeout) # Wait a few seconds for new articles to load
             except NoSuchElementException:
-                # Si no se encuentra el botón, asumimos que ya no hay más artículos por cargar
+                # If the button is not found, we assume that there are no more items to load.
                 print("No hay más artículos para cargar.")
                 break
 
-    def _get_num_all_articles(self, driver):
+    def _get_num_all_articles(self, driver) -> int:
         '''
         Return number all articles of a topic
         
         Args:
             driver: Selenium browser instance.
+        Raise:
+            TypeError: not found drive
         Return:
             number all articles of a topic
         '''
         if(driver is None):
-            raise("ERROR: drive not found")
+            raise TypeError("ERROR: drive not found")
         
         show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
         return int(show_art[5])
 
-    #NO se usa
     def _is_error_not_found(self, driver, num_topic: int = 1):
         '''
-        The website have a bug. Sometimes, if you access a topic te puedes encontrar con la pagina de 404 y si sales y vuelves a seleccionar el mismo tema, te deja acceder al propio tema
+        The website has a bug. Sometimes, if you access a topic you can find the 404 page and if you exit and select the same topic again, it lets you access the same topic.
 
-        Parameters
-        ----------
-        driver : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TRUE -> There is a page not found 404
-        FALSE -> There is a topic
+        Args:
+            driver: Selenium browser instance.
+            num_topic: topic number of the topics to be scraped
+        Raise:
+            TypeError: Not found drive
+        Return:
+            TRUE -> There is a page not found 404
+            FALSE -> There is a topic
         ''' 
         if(driver is None):
-            raise("ERROR: drive not found")
+            raise TypeError("ERROR: drive not found")
         # Error page not found, page back and go to page
         #print(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
         if(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
             print("Anomalia detectada")
             driver.back()
             time.sleep(self.load.webdriverwait_timeout)
-            time.sleep(self.load.webdriverwait_timeout)
+            #time.sleep(self.load.webdriverwait_timeout)
             self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
 
-    def _scrap_all_topics(self, driver):
+    def _scrap_all_topics_articles(self, driver)-> dict[str, str]:
         '''
-        Parameters
-        ----------
-        driver : TYPE
-            DESCRIPTION.
+        main function of website scraping https://www.ncsc.gov.uk/
 
-        Returns
-        -------
-        None.
-
+        Raise:
+            TypeError: Not found driver
+        Args:
+            driver: Selenium browser instance.
+        Return:
+            all topics and all articles on topics
         '''  
         if(driver is None):
-            raise("ERROR: drive not found")
+            raise TypeError("ERROR: drive not found")
         # //div[@data-testid="all-topics-panel-row"]/div[i]
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
@@ -115,7 +122,7 @@ class Ncsc:
             self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             time.sleep(self.load.webdriverwait_timeout)
             
-            # Extraer temática
+            # Extract Topic
             print("Num tema: " + str(i))
             topics.append(self._get_topic(driver))
 
@@ -140,6 +147,7 @@ class Ncsc:
         
         print("Total de articulos: ", len(articles))        
 
+        return {topics, articles}
 
     def _get_topic(self, driver) -> dict[str, str]:
         '''
@@ -147,6 +155,8 @@ class Ncsc:
 
         Args:       
             driver: Selenium browser instance.
+        Raise:
+            TypeError: Not found driver
         Return:
             A topic of NCSC
             A topic is divide:
@@ -154,7 +164,7 @@ class Ncsc:
                 description
         '''
         if(driver is None):
-            raise("ERROR: drive not found")
+            raise TypeError("ERROR: drive not found")
         
         time.sleep(self.load.webdriverwait_timeout)
 
@@ -222,7 +232,15 @@ class Ncsc:
 
         return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
-    def start_scrapping(self): # Primera iteracion al 100% -> 890 articulos, Segunda iteración al 100% -> 657, no me coje el ultimo topic, no esta cogiendo todos los articulos
+    def start_scrapping(self): 
+        """
+        Inicialite scrapping of website: https://www.ncsc.gov.uk/
+
+        Args:
+            None
+        Return:
+            None
+        """
         try:    
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
  
@@ -230,16 +248,16 @@ class Ncsc:
             driver.get(url_website_all_topics)   
             print(driver.title)
             
-            # Función para desactivar el popup de las cookies
+            # Function to disable the cookie popup
             self.scrap.disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
 
-            self._scrap_all_topics(driver)
+            self._scrap_all_topics_articles(driver)
             
         except Exception as e:
             print("ERROR: ", e)
             
-        finally: #Siempre se ejecuta ocurra o no un error
-            # Cierra el navegador
+        finally: # It always runs whether an error occurs or not.
+            # Close navegator
             driver.quit()
 
 # DEVELOP
