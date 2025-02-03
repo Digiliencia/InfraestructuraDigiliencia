@@ -16,6 +16,7 @@ from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
 import time
+import random
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 
@@ -176,7 +177,7 @@ class WEForumScrapper:
                 self.driver.execute_script(
                     "arguments[0].scrollTo(0, arguments[0].scrollHeight);", aside_div
                 )
-                time.sleep(self.load_time)
+                time.sleep(random.uniform(self.load_time, self.load_time + 2))
                 new_articles = latest_articles_div.find_elements(
                     By.CSS_SELECTOR, ".sc-bLmarx.dQpFdR"
                 )
