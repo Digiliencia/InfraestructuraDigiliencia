@@ -528,7 +528,7 @@ class WEForumScrapper:
         return data
 
     def _scrap_the_quantum_insider(self, url: str) -> dict:
-        """Access the given URL and scrapes the publication.
+        """Access the given URL and scrapes the post.
 
         Args:
             url (str): The Conversation publication URL
@@ -566,9 +566,11 @@ class WEForumScrapper:
         data["author"] = self.driver.find_element(
             By.CLASS_NAME, "elementor-post-info__item--type-author"
         ).text
-        
+
         # Get the content
-        content_container = self.driver.find_element(By.CSS_SELECTOR, "#cst-p-css .elementor-widget-container")
+        content_container = self.driver.find_element(
+            By.CSS_SELECTOR, "#cst-p-css .elementor-widget-container"
+        )
         content = ""
         elements = content_container.find_elements(By.XPATH, "./*")
         for element in elements:
@@ -587,9 +589,74 @@ class WEForumScrapper:
                 img_link = element.get_attribute("src")
                 img_alt = element.get_attribute("alt")
                 content += f"![{img_alt}]({img_link})\n"
-        
+
         data["content"] = content
         return data
+
+    def _scrap_australian_strategic_policy_institute(self, url: str) -> dict:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): The Conversation publication URL
+
+        Raises:
+            WEForumError: If the URL is not a valid The Conversation URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://www.aspistrategist.org.au/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Australian Strategic Policy Institute scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        # Get the title
+        data["title"] = self.driver.find_element(By.CLASS_NAME, "entry-title").text
+
+        # Get the date
+        date_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "article > header > .meta"
+        )
+        data["date"] = datetime.fromisoformat(date_elem.get_attribute("datetime"))
+
+        # Get the author
+        author_elems = self.driver.find_elements(
+            By.CSS_SELECTOR, "article > header > .meta > .author"
+        )
+        data["author"] = ", ".join([author_elem.text for author_elem in author_elems])
+
+        # Get the content
+        content_div = self.driver.find_element(By.CLASS_NAME, "entry-content")
+        content = ""
+        for element in content_div.find_elements(By.XPATH, "./*"):
+            tag = element.tag_name
+            if tag == "p":
+                content += element.text + "\n\n"
+            elif tag == "h3":
+                content += f"{element.text}\n"
+            elif tag == "ul":
+                for li in element.find_elements(By.TAG_NAME, "li"):
+                    content += f"* {li.text}\n"
+            elif tag == "ol":
+                for i, li in enumerate(element.find_elements(By.TAG_NAME, "li"), 1):
+                    content += f"{i}. {li.text}\n"
+            elif tag == "img":
+                img_link = element.get_attribute("src")
+                img_alt = element.get_attribute("alt")
+                content += f"![{img_alt}]({img_link})\n"
+
+        data["content"] = content
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
@@ -607,6 +674,7 @@ class WEForumScrapper:
             "Wired": self._scrape_wired_story,
             "GlobalData": self._scrap_globaldata_newsletter,
             "The Quantum Insider": self._scrap_the_quantum_insider,
+            "Australian Strategic Policy Institute": self._scrap_australian_strategic_policy_institute,
         }
 
         scraped_publications = []
