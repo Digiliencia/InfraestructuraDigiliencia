@@ -54,15 +54,15 @@ class IncibeScraper:
     def openIncibeBlog(self, page_num:int=0)->None:
         try:
             self.driver.get(f"https://www.incibe.es/incibe-cert/blog?page={page_num}")
-            self.disable_cookie_popup()  # Cierra el popup de cookies
-            self.hide_cookie_warning()    # Cierra el aviso de cookies
+            self.disable_cookie_popup()  # Close the popup of cookies
+            self.hide_cookie_warning()    # close the cookie warning
             print("Incibe blog page opened")
         except Exception as e:
             print(f"Error opening Incibe blog page: {e}")
     
     def disable_cookie_popup(self):
         """
-        Cierra el popup de cookies si existe
+        Close the popup of cookies if it exists
         """
         try:
             # Esperar a que el botón de "Rechazar todas" sea clicable con el nuevo XPath
@@ -71,24 +71,24 @@ class IncibeScraper:
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]'))
             )
             cookie_button.click()
-            print("Popup de cookies cerrado.")
+            print("Cookies  popup closed.")
         except Exception as e:
-            print(f"No se encontró el popup de cookies o hubo un error: {e}")
+            print(f"Cookies popup not found")
     
     def hide_cookie_warning(self):
         """
-        Clica el botón 'Ocultar' en el aviso de cookies si existe
+        click the 'Ocultar' button in the cookie warning if it exists
         """
         try:
-            # Esperar a que el botón de "Ocultar" sea clicable con su XPath
+            # Wait for the 'Ocultar' button to be clickable
             wait = WebDriverWait(self.driver, 10)
             ocultar_button = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="hide-banner-button"]'))
             )
             ocultar_button.click()
-            print("Aviso de cookies ocultado.")
+            print("Warning cookies hidden.")
         except Exception as e:
-            print(f"No se encontró el botón de 'Ocultar' o hubo un error: {e}")
+            print(f"Hyde cookie button not found")
 
     
 
@@ -98,11 +98,11 @@ class IncibeScraper:
         """
         try:
             self.openIncibeBlog(page_num)
-            # Esperar a que se carguen los elementos de la página
+            # Wait for the page to load
             time.sleep(5)
-            # Encontrar todos los elementos de la lista
+            # Find all the elements with the blog posts
             blog_posts = self.driver.find_elements(By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div')
-            # Extraer los enlaces de los elementos
+            # Get the links of the blog posts
             blog_urls:list[str] = []
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
@@ -116,7 +116,7 @@ class IncibeScraper:
                 
             return blog_urls
         except NoSuchElementException as e:
-            print(f"Error al obtener los enlaces de los posts del blog: {e}")
+            print(f"Error getting Incibe blog posts")
             return []
         
 
@@ -124,7 +124,6 @@ class IncibeScraper:
     def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
         self.driver.maximize_window()
         self.get_urls_to_scrap(from_days_ago)
-        input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
-        self.driver.quit()      # Cierra el navegador de forma controlada
+        input("Presiona Enter para cerrar el navegador...")  #Keep the browser open
+        self.driver.quit()      # Close the browser
         return None
-#//*[@id="views-bootstrap-blog-listado-page-1"]/div/div[1]
