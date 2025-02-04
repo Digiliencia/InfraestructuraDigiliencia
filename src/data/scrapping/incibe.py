@@ -65,7 +65,7 @@ class IncibeScraper:
         Close the popup of cookies if it exists
         """
         try:
-            # Esperar a que el botón de "Rechazar todas" sea clicable con el nuevo XPath
+            # Wait for the 'Rechazar todas' button to be clickable
             wait = WebDriverWait(self.driver, 10)
             cookie_button = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]'))
