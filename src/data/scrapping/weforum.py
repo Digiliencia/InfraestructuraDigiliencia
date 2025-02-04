@@ -6,7 +6,7 @@ Created on Wed Jan 21 12:39:40 2025
 Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
-from typing import Callable
+from typing import Callable, Optional
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -280,7 +280,7 @@ class WEForumScrapper:
                 accept_bttn.click()
         time.sleep(self.load_time)
 
-    def _scrape_wired_story(self, url: str) -> dict:
+    def _scrap_wired_story(self, url: str) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -330,7 +330,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrap_WEF_story_publication(self, url: str) -> dict:
+    def _scrap_WEF_story_publication(self, url: str) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -420,7 +420,7 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _scrap_globaldata_newsletter(self, url: str) -> dict:
+    def _scrap_globaldata_newsletter(self, url: str) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -473,7 +473,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrap_the_conversation(self, url: str) -> dict:
+    def _scrap_the_conversation(self, url: str) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -527,14 +527,14 @@ class WEForumScrapper:
 
         return data
 
-    def _scrap_the_quantum_insider(self, url: str) -> dict:
+    def _scrap_the_quantum_insider(self, url: str) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the post.
 
         Args:
-            url (str): The Conversation publication URL
+            url (str): The Quantum Insider URL
 
         Raises:
-            WEForumError: If the URL is not a valid The Conversation URL
+            WEForumError: If the URL is not a valid The Quantum Insider URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -593,14 +593,16 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _scrap_australian_strategic_policy_institute(self, url: str) -> dict:
+    def _scrap_australian_strategic_policy_institute(
+        self, url: str
+    ) -> dict[str, str | datetime]:
         """Access the given URL and scrapes the publication.
 
         Args:
-            url (str): The Conversation publication URL
+            url (str): Australian Strategic Policy Institute URL
 
         Raises:
-            WEForumError: If the URL is not a valid The Conversation URL
+            WEForumError: If the URL is not a valid Australian Strategic Policy Institute URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -657,6 +659,61 @@ class WEForumScrapper:
                 content += f"![{img_alt}]({img_link})\n"
 
         data["content"] = content
+        return data
+
+    def _scrap_propbublica_article(self, url: str) -> dict[str, str | datetime]:
+        """Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): ProPublica article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid ProPublica article URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://www.propublica.org/article/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for ProPublica article scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        # Get the title
+        data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
+
+        # Get the date
+        time_container = self.driver.find_element(
+            By.CSS_SELECTOR, "time.article-meta-1__pubdate"
+        )
+        time_elem = time_container.find_element(By.TAG_NAME, "time")
+        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+
+        # Get the author
+        authors_elem = self.driver.find_element(By.CLASS_NAME, "article-meta-1__byline")
+        authors = []
+        for elem in authors_elem.find_elements(By.XPATH, ".//p"):
+            if elem.tag_name in ["span", "a"]:
+                authors.append(elem.text)
+        data["author"] = ", ".join(authors)
+
+        # Get the content
+        content_div = self.driver.find_element(By.CLASS_NAME, "article-body")
+        data["content"] = ""
+        for p in content_div.find_elements(By.TAG_NAME, "p"):
+            data["content"] += p.text + "\n\n"
+
+        return data
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
@@ -671,17 +728,18 @@ class WEForumScrapper:
 
         publicaion_scrappers = {
             "World Economic Forum": self._scrap_WEF_story_publication,
-            "Wired": self._scrape_wired_story,
+            "Wired": self._scrap_wired_story,
             "GlobalData": self._scrap_globaldata_newsletter,
             "The Quantum Insider": self._scrap_the_quantum_insider,
             "Australian Strategic Policy Institute": self._scrap_australian_strategic_policy_institute,
+            "ProPublica": self._scrap_propbublica_article,
         }
 
         scraped_publications = []
 
         for article in articles:
             if article["type"] == "publication":
-                scrapper_function: Callable = publicaion_scrappers.get(
+                scrapper_function: Optional[Callable] = publicaion_scrappers.get(
                     article["publisher"]
                 )
                 if scrapper_function:
@@ -699,4 +757,4 @@ class WEForumScrapper:
             # print(publication)
             pass
 
-        return None
+        return None # type: ignore
