@@ -5,6 +5,7 @@ Created on Wed Jan 15 10:08:33 2025
 @author: Carlos Prieto 
 Scrapping of website: https://www.ncsc.gov.uk/
 """
+
 '''DEVELOP'''
 
 # Importing the necessary libraries
@@ -12,6 +13,7 @@ import sys
 import os
 # Add the parent directory (src) to the Python path 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+''''''
 
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
@@ -19,6 +21,7 @@ import time
 from selenium.webdriver.chrome.webdriver import WebDriver
 from utils.env_loader import EnvLoader
 from utils.scrap import Scrap
+from utils.time import TimeUtils
 
 '''
 https://www.ncsc.gov.uk/section/advice-guidance/glossary
@@ -89,7 +92,6 @@ class Ncsc:
         if(driver is None):
             raise TypeError("ERROR: drive not found")
         # Error page not found, page back and go to page
-        #print(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]'))
         if(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
             print("Anomalia detectada")
             driver.back()
@@ -111,6 +113,62 @@ class Ncsc:
         if(driver is None):
             raise TypeError("ERROR: drive not found")
         # //div[@data-testid="all-topics-panel-row"]/div[i]
+        time.sleep(self.load.webdriverwait_timeout)
+        num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
+        num_all_topics = int(num_topics[0])
+        
+        topics = []
+        articles = []
+        num_art = 0
+        for i in range(1, (num_all_topics+1)):
+            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            time.sleep(self.load.webdriverwait_timeout)
+            
+            # Extract Topic
+            print("Num tema: " + str(i))
+            topics.append(self._get_topic(driver))
+
+            self._is_error_not_found(driver, i)  
+            time.sleep(self.load.webdriverwait_timeout)
+            num_articles_page = self._get_num_all_articles(driver)
+            time.sleep(self.load.webdriverwait_timeout)
+            self._show_all_articles(driver)
+            
+            print("Num de articulos por tema: " + str(num_articles_page))
+            for j in range(0, num_articles_page):  
+                print("Num articulo: " + str(j))
+                self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                #time.sleep(self.load.webdriverwait_timeout)
+                #self._is_error_not_found(driver, j)  
+                time.sleep(self.load.webdriverwait_timeout)
+                articles.append(self._get_article(driver, num_art, articles))
+                num_art += 1 
+                time.sleep(self.load.webdriverwait_timeout)
+                driver.back() # Vuelve a la pagina anterior
+            driver.back()
+        
+        print("Total de articulos: ", len(articles))        
+
+        return {topics, articles}
+
+
+    def _scrap_all_topics_articles_to_days(self, driver, days:int=0)-> dict[str, str]:
+        '''
+        main function of website scraping https://www.ncsc.gov.uk/
+
+        Raise:
+            TypeError: Not found driver
+        Args:
+            driver: Selenium browser instance.
+            days: days from today's date to extract data
+        Return:
+            all topics and all articles on topics
+        '''  
+        if(driver is None):
+            raise TypeError("ERROR: drive not found")
+
+        until_date = TimeUtils.format_subtract_days_to_actual_date(days)
+
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
         num_all_topics = int(num_topics[0])
@@ -260,7 +318,9 @@ class Ncsc:
             # Close navegator
             driver.quit()
 
+''''''
 # DEVELOP
 if __name__ == "__main__":
     ncsc = Ncsc()
     ncsc.start_scrapping()
+''''''
