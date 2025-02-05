@@ -69,7 +69,7 @@ class WEForumScrapper:
         """
 
         # Accept cookies if pop-up visible
-        if self._if_element_exists(By.ID, "CybotCookiebotDialog"):
+        if self._if_element_exists(By.ID, "CybotCookiebotDialog"):  # type: ignore
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
             if cookies_popup.is_displayed():
                 accept_bttn = self.driver.find_element(
@@ -697,7 +697,9 @@ class WEForumScrapper:
             By.CSS_SELECTOR, "time.article-meta-1__pubdate"
         )
         time_elem = time_container.find_element(By.TAG_NAME, "time")
-        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+        data["date"] = datetime.strptime(
+            time_elem.get_attribute("datetime"), "%Y-%m-%dEST%H:%M"
+        )
 
         # Get the author
         authors_elem = self.driver.find_element(By.CLASS_NAME, "article-meta-1__byline")
@@ -757,4 +759,4 @@ class WEForumScrapper:
             # print(publication)
             pass
 
-        return None # type: ignore
+        return None  # type: ignore
