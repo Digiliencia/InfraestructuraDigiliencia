@@ -1,81 +1,113 @@
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
-
 from utils.env_loader import EnvLoader
 
-class Scrap:
+
+class ScrapUtils:
 
     def __init__(self):
         self.timeout = EnvLoader.webdriverwait_timeout
 
-    def configuration(self):
-        '''
+    @staticmethod
+    def get_driver() -> WebDriver:
+        """
         Configuration global for all sprits scrapping
+
         Returns:
             Driver
-        '''
-        opt = Options()
-        #opt.add_argument("--headless") #Run the script without using a graphical interface
-        #The following functions are used to improve the performance of the script
-        opt.add_argument("--disable-gpu") #During execution, disable the graphics
-        opt.add_argument("--disable-dev-shm-usage") #During execution, avoid sharing memory
-        opt.add_argument("--no-sandbox") #Disable sandbox mode on your computer
-        opt.add_argument("--disable-extensions") #Start the browser without any extensions
-        
-        opt.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.84 ")
-        
-        driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=opt
-        )
-
-        return driver
-
-    def disablaled_cookie_popup(self, driver, selector):
         """
-        Disables cookie pop-ups on a website.
+        options = Options()
+        options.add_argument(
+            "user-agent="
+            + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
+        )
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        prefs = {
+            "profile.default_content_setting_values.geolocation": 2,
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+            "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+            "webrtc.multiple_routes_enabled": False,
+            "webrtc.nonproxied_udp_enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_argument("log-level=3")
+        options.add_argument("--start-maximized")
+
+        return WebDriver(options=options)
+
+    @staticmethod
+    def click_element(driver: WebDriver, css_selector: str, timeout: int = 2) -> bool:
+        """
+        Tries to click an element on a website by searching for it by a CSS selector. Waits for the element to be clickable for a given time. If the element is not found, it continues without raising an exception.
+
         Args:
             driver: Selenium browser instance.
-            selectors: List of selectors (XPath, CSS) that identify the accept or reject cookie buttons.
-        Return:
-            None
+            css_selector: CSS selector of the element.
+            timeout: Time in seconds to wait for the element to be clickable.
+
+        Returns:
+            True if the element was clicked, False otherwise.
         """
         try:
-            # Wait for the button to be present
-            WebDriverWait(driver, self.timeout).until(EC.element_to_be_clickable((By.XPATH, selector))).click()
-            print(f"Cookie popup closed with selector: {selector}")
-            return
-        except Exception as e:
-            print("ERROR close popup cookies: " + e)
+            # Wait for the 'Rechazar todas' button to be clickable
+            wait = WebDriverWait(driver, timeout)
+            cookie_button = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
+            )
+            cookie_button.click()
+            return True
+        except TimeoutException:
+            print(f"{css_selector} elem not found")
+            return False
 
+    @DeprecationWarning
     def load_subpage(self, driver, xpath):
-        '''
-        Load subpage of a website 
+        """
+        Load subpage of a website
         Args:
             driver : Selenium browser instance.
-            xpath (String): xpath of a element 
+            xpath (String): xpath of a element
 
         Return:
             subpage_link
-        '''
+        """
         # Wait until the subpage link is visible and click on it
         subpage_link = WebDriverWait(driver, self.timeout).until(
-            EC.element_to_be_clickable((By.XPATH, xpath))  # Adjust the XPATH according to the link
+            EC.element_to_be_clickable(
+                (By.XPATH, xpath)
+            )  # Adjust the XPATH according to the link
         )
         subpage_link.click()
-        
+
         # Wait for the subpage to load
         WebDriverWait(driver, self.timeout).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))  # Wait until the body content is loaded
+            EC.presence_of_element_located(
+                (By.TAG_NAME, "body")
+            )  # Wait until the body content is loaded
         )
 
         return subpage_link
-    
-    def exist_xpath(driver, xpath):
-        elementos = driver.find_elements(By.XPATH, xpath)
-        return len(elementos) > 0
+
+    @staticmethod
+    def _if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True

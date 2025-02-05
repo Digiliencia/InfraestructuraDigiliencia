@@ -14,15 +14,33 @@ import re
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from utils.time import TimeUtils
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
+from datetime import datetime
 import time
 
 
 class IncibeScraper:
+
+    def _if_element_exists(self, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            self.driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
+    
     def __init__(self):
 
         self.driver = WebDriver()
@@ -45,9 +63,39 @@ class IncibeScraper:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
-        self.load_time = 2
 
-    def openIncibeBlog(self, page_num: int = 0) -> None:
+
+    def get_urls_to_scrap(self, days:int=0)->set[str]:
+        until_date = TimeUtils.format_spanish_date(days)
+        found_oldest = False
+        i = 0
+        urls = set()
+        while not found_oldest:
+            found_oldest, retrieved_urls = self.getIncibeBlogUrls(i,until_date)  
+            total_size = len(urls)
+            #Si no funciona el set union, se puede hacer un for para añadir los elementos 
+            urls.update(retrieved_urls)        
+            i+=1
+            if len(urls) == total_size:
+                break        
+        return urls
+    
+    # Get the information from the URL (Verificar con Álvaro)
+    def getInformationByUrl(self, url:str)->dict[str, str]:
+        try:
+            self.driver.get(url)
+            title = self.driver.find_element(By.CLASS_NAME, 'field--name-title').text
+            content = self.driver.find_element(By.CSS_SELECTOR, 'article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item').text
+            date = self.driver.find_element(By.CSS_SELECTOR, '.node__content.field--type-text-with-summary .field__item').text
+            author = self.driver.find_element(By.CSS_SELECTOR, '.field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item').text
+            date = date.split(" ")[-1]
+            date = datetime.strptime(date, "%d/%m/%Y")
+            return {"title": title, "content": content, "date": date, "author": author}
+        except Exception as e:
+            print(f"Error al obtener la información de la URL: {e}")
+            return {}
+        
+    def openIncibeBlog(self, page_num:int=0)->None:
         try:
             self.driver.get(f"https://www.incibe.es/incibe-cert/blog?page={page_num}")
             self.disable_cookie_popup()  # Close the popup of cookies
@@ -69,10 +117,10 @@ class IncibeScraper:
                 )
             )
             cookie_button.click()
-            print("Cookies  popup closed.")
-        except Exception as e:
-            print(f"Cookies popup not found")
-
+            print("Cookies popup closed.")
+        except TimeoutException as e:
+            print(f"Disable cookies button not found")
+    
     def hide_cookie_warning(self):
         """
         click the 'Ocultar' button in the cookie warning if it exists
@@ -80,77 +128,54 @@ class IncibeScraper:
         try:
             # Wait for the 'Ocultar' button to be clickable
             wait = WebDriverWait(self.driver, 10)
-            ocultar_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="hide-banner-button"]'))
+            hide_button = wait.until(
+                EC.element_to_be_clickable((By.ID, 'hide-banner-button'))
             )
-            ocultar_button.click()
-            print("Warning cookies hidden.")
-        except Exception as e:
-            print(f"Hyde cookie button not found")
+            hide_button.click()
+            print(f"Hide cookies button clicked.")
+        except TimeoutException as e:
+            print(f"Hide cookies button not found")
 
-    # Get the information from the URL (Verificar con Álvaro)
-    def get_information_by_url(self, url: str) -> dict[str, str]:
-        try:
-            self.driver.get(url)
-            time.sleep(self.load_time)
-            title = self.driver.find_element(By.CLASS_NAME, "field--name-title").text
-            content = self.driver.find_element(
-                By.CSS_SELECTOR,
-                "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
-            ).text
-            date = self.driver.find_element(
-                By.CSS_SELECTOR,
-                ".node__content.field--type-text-with-summary .field__item",
-            ).text
-            author = self.driver.find_element(
-                By.CSS_SELECTOR,
-                ".field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item",
-            ).text
-            date = date.split(" ")[-1]
-            date = datetime.strptime(date, "%d/%m/%Y")
-            return {"title": title, "content": content, "date": date, "author": author}
-        except Exception as e:
-            print(f"Error al obtener la información de la URL: {e}")
-            return {}
+    
 
-    def get_urls_to_scrap(self, days: int, page_num: int = 0) -> list[str]:
+    def getIncibeBlogUrls(self, page_num:int, date:str)->tuple[bool,set[str]]:
         """
         Get the Incibe blog posts
         """
-        date = TimeUtils.format_spanish_date(days)
+        found_oldest = False 
         try:
             self.openIncibeBlog(page_num)
-            # Wait for the page to load
-            time.sleep(self.load_time)
-            # Find all the elements with the blog posts
-            blog_posts = self.driver.find_elements(
-                By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div'
-            )
-            # Get the links of the blog posts
-            blog_urls: list[str] = []
+            # Esperar a que se carguen los elementos de la página
+            time.sleep(5)
+            # Encontrar todos los elementos de la lista
+            blog_posts = self.driver.find_elements(By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div')
+            # Extraer los enlaces de los elementos
+            blog_urls:set[str] = set()
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
                 published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
-                    link = post.find_element(
-                        By.CSS_SELECTOR, ".node__links a"
-                    ).get_attribute("href")
-                    blog_urls.append(link)
+                    link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
+                    blog_urls.add(link)
                 else:
+                    found_oldest = True
                     break
-
-            return blog_urls
+                
+            return (found_oldest, blog_urls)
         except NoSuchElementException as e:
             print(f"Error getting Incibe blog posts")
             return []
 
-    # Main execution
-    def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
+    # Main execution (verificar con Álvaro)
+    def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
         self.driver.maximize_window()
-        urls = self.get_urls_to_scrap(from_days_ago)
-        for url in urls:
-            print(self.get_information_by_url(url))
-        input("Presiona Enter para cerrar el navegador...")  # Keep the browser open
-        self.driver.quit()  # Close the browser
+        self.get_urls_to_scrap(from_days_ago)
+        # Recorrer las URLs para obtener la información
+        for url in self.get_urls_to_scrap(from_days_ago):
+            print(f"Obteniendo información de la URL: {url}")
+            info = self.getInformationByUrl(url)
+            print(info)
+        input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
+        self.driver.quit()      # Cierra el navegador de forma controlada
         return None
