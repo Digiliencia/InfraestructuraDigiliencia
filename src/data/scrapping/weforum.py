@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
+from utils.scrap import ScrapUtils
 import time
 import random
 from datetime import datetime
@@ -61,6 +62,8 @@ class WEForumScrapper:
         self.load_time = 2
         self.login_page = "https://login.weforum.org/"
 
+        self.scrapUtils = ScrapUtils()
+
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
 
@@ -69,7 +72,7 @@ class WEForumScrapper:
         """
 
         # Accept cookies if pop-up visible
-        if self._if_element_exists(By.ID, "CybotCookiebotDialog"):  # type: ignore
+        if self.scrapUtils._if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
             if cookies_popup.is_displayed():
                 accept_bttn = self.driver.find_element(
@@ -250,23 +253,7 @@ class WEForumScrapper:
             )
 
         # If the user logo (id: mf_user-icon) exists, user is loged in
-        return self._if_element_exists(By.ID, "mf_user-icon")
-
-    def _if_element_exists(self, by: By, element: str) -> bool:
-        """
-        Check if an element exists on the web page.
-        Args:
-            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
-            element (str): The locator value of the element to find.
-        Returns:
-            bool: True if the element is found, False otherwise.
-        """
-
-        try:
-            self.driver.find_element(by, element)
-        except NoSuchElementException:
-            return False
-        return True
+        return self.scrapUtils._if_element_exists(self.driver, By.ID, "mf_user-icon")
 
     def _accept_cookies_if_visible(self, accept_bttn_id: str):
         """Accepts the cookies if the pop-up is visible.
@@ -274,7 +261,7 @@ class WEForumScrapper:
         Args:
             accept_bttn_id (str): The ID of the accept button.
         """
-        if self._if_element_exists(By.ID, accept_bttn_id):
+        if self.scrapUtils._if_element_exists(self.driver, By.ID, accept_bttn_id):
             accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
             if accept_bttn.is_displayed():
                 accept_bttn.click()
@@ -307,7 +294,9 @@ class WEForumScrapper:
         data = {}
         time_element = self.driver.find_element(By.TAG_NAME, "time")
         date_str = time_element.text
-        data["date"] = datetime.strptime(date_str, "%b %d, %Y %I:%M %p")
+        data["date"] = datetime.strptime(
+            date_str, "%b %d, %Y %I:%M %p"
+        )  # TODO: take into account case like "Updated a month ago": https://www.wired.com/live/tiktok-scotus-live-coverage/
 
         author_element = self.driver.find_element(
             By.CSS_SELECTOR, '[data-testid="BylineName"]'
