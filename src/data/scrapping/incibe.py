@@ -7,9 +7,11 @@ Web scrapping: https://www.incibe.es/
 """
 
 # Importing the necessary libraries
+from datetime import datetime
 import re
+
 # Add the parent directory (src) to the Python path
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from utils.time import TimeUtils
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
@@ -20,11 +22,9 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 
-
-
 class IncibeScraper:
     def __init__(self):
-        
+
         self.driver = WebDriver()
         options = Options()
         options.add_argument(
@@ -45,21 +45,17 @@ class IncibeScraper:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
+        self.load_time = 2
 
-
-    def get_urls_to_scrap(self, days:int=0)->list[str]:
-        until_date = TimeUtils.format_spanish_date(days)
-        self.getIncibeBlogUrls(0,until_date)
-
-    def openIncibeBlog(self, page_num:int=0)->None:
+    def openIncibeBlog(self, page_num: int = 0) -> None:
         try:
             self.driver.get(f"https://www.incibe.es/incibe-cert/blog?page={page_num}")
             self.disable_cookie_popup()  # Close the popup of cookies
-            self.hide_cookie_warning()    # close the cookie warning
+            self.hide_cookie_warning()  # close the cookie warning
             print("Incibe blog page opened")
         except Exception as e:
             print(f"Error opening Incibe blog page: {e}")
-    
+
     def disable_cookie_popup(self):
         """
         Close the popup of cookies if it exists
@@ -68,13 +64,15 @@ class IncibeScraper:
             # Wait for the 'Rechazar todas' button to be clickable
             wait = WebDriverWait(self.driver, 10)
             cookie_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]'))
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="cookiesjsr"]/div/div/div[2]/button[2]')
+                )
             )
             cookie_button.click()
             print("Cookies  popup closed.")
         except Exception as e:
             print(f"Cookies popup not found")
-    
+
     def hide_cookie_warning(self):
         """
         click the 'Ocultar' button in the cookie warning if it exists
@@ -90,40 +88,69 @@ class IncibeScraper:
         except Exception as e:
             print(f"Hyde cookie button not found")
 
-    
+    # Get the information from the URL (Verificar con Álvaro)
+    def get_information_by_url(self, url: str) -> dict[str, str]:
+        try:
+            self.driver.get(url)
+            time.sleep(self.load_time)
+            title = self.driver.find_element(By.CLASS_NAME, "field--name-title").text
+            content = self.driver.find_element(
+                By.CSS_SELECTOR,
+                "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
+            ).text
+            date = self.driver.find_element(
+                By.CSS_SELECTOR,
+                ".node__content.field--type-text-with-summary .field__item",
+            ).text
+            author = self.driver.find_element(
+                By.CSS_SELECTOR,
+                ".field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item",
+            ).text
+            date = date.split(" ")[-1]
+            date = datetime.strptime(date, "%d/%m/%Y")
+            return {"title": title, "content": content, "date": date, "author": author}
+        except Exception as e:
+            print(f"Error al obtener la información de la URL: {e}")
+            return {}
 
-    def getIncibeBlogUrls(self, page_num:int, date:str)->list[str]:
+    def get_urls_to_scrap(self, days: int, page_num: int = 0) -> list[str]:
         """
         Get the Incibe blog posts
         """
+        date = TimeUtils.format_spanish_date(days)
         try:
             self.openIncibeBlog(page_num)
             # Wait for the page to load
-            time.sleep(5)
+            time.sleep(self.load_time)
             # Find all the elements with the blog posts
-            blog_posts = self.driver.find_elements(By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div')
+            blog_posts = self.driver.find_elements(
+                By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div'
+            )
             # Get the links of the blog posts
-            blog_urls:list[str] = []
+            blog_urls: list[str] = []
             for post in blog_posts:
-                published_on_elem = post.find_element(By.CLASS_NAME, 'postedOnLabel')
+                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r'\d{2}/\d{2}/\d{4}', phrase).group()
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
-                    link = post.find_element(By.CSS_SELECTOR, '.node__links a').get_attribute('href')
+                    link = post.find_element(
+                        By.CSS_SELECTOR, ".node__links a"
+                    ).get_attribute("href")
                     blog_urls.append(link)
                 else:
                     break
-                
+
             return blog_urls
         except NoSuchElementException as e:
             print(f"Error getting Incibe blog posts")
             return []
-        
 
     # Main execution
-    def scrapper(self, from_days_ago:int)->tuple[dict[str, str]]:
+    def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
-        self.get_urls_to_scrap(from_days_ago)
-        input("Presiona Enter para cerrar el navegador...")  #Keep the browser open
-        self.driver.quit()      # Close the browser
+        urls = self.get_urls_to_scrap(from_days_ago)
+        for url in urls:
+            print(self.get_information_by_url(url))
+        input("Presiona Enter para cerrar el navegador...")  # Keep the browser open
+        self.driver.quit()  # Close the browser
         return None
