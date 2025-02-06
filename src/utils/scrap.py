@@ -67,34 +67,6 @@ class ScrapUtils:
             print(f"{css_selector} elem not found")
             return False
 
-    @DeprecationWarning
-    def load_subpage(self, driver, xpath):
-        """
-        Load subpage of a website
-        Args:
-            driver : Selenium browser instance.
-            xpath (String): xpath of a element
-
-        Return:
-            subpage_link
-        """
-        # Wait until the subpage link is visible and click on it
-        subpage_link = WebDriverWait(driver, self.timeout).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, xpath)
-            )  # Adjust the XPATH according to the link
-        )
-        subpage_link.click()
-
-        # Wait for the subpage to load
-        WebDriverWait(driver, self.timeout).until(
-            EC.presence_of_element_located(
-                (By.TAG_NAME, "body")
-            )  # Wait until the body content is loaded
-        )
-
-        return subpage_link
-
     @staticmethod
     def if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
         """

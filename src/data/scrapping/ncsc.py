@@ -18,7 +18,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import time
-from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from utils.env_loader import EnvLoader
 from utils.scrap import ScrapUtils
 from utils.time import TimeUtils
@@ -92,12 +93,12 @@ class Ncsc:
         if(driver is None):
             raise TypeError("ERROR: drive not found")
         # Error page not found, page back and go to page
-        if(self.scrap.exist_xpath(driver, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
             print("Anomalia detectada")
             driver.back()
             time.sleep(self.load.webdriverwait_timeout)
-            #time.sleep(self.load.webdriverwait_timeout)
-            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
+            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
+            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]').click()
 
     def _scrap_all_topics_articles(self, driver)-> dict[str, str]:
         '''
@@ -121,7 +122,9 @@ class Ncsc:
         articles = []
         num_art = 0
         for i in range(1, (num_all_topics+1)):
-            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
+
             time.sleep(self.load.webdriverwait_timeout)
             
             # Extract Topic
@@ -137,7 +140,16 @@ class Ncsc:
             print("Num de articulos por tema: " + str(num_articles_page))
             for j in range(0, num_articles_page):  
                 print("Num articulo: " + str(j))
-                self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                #self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                #driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click()
+
+                page = WebDriverWait(driver, self.load.webdriverwait_timeout).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                    )  # Adjust the XPATH according to the link
+                )
+                page.click()
+
                 #time.sleep(self.load.webdriverwait_timeout)
                 #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
@@ -177,7 +189,8 @@ class Ncsc:
         articles = []
         num_art = 0
         for i in range(1, (num_all_topics+1)):
-            self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
+            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
             time.sleep(self.load.webdriverwait_timeout)
             
             # Extract Topic
@@ -193,7 +206,8 @@ class Ncsc:
             print("Num de articulos por tema: " + str(num_articles_page))
             for j in range(0, num_articles_page):  
                 print("Num articulo: " + str(j))
-                self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                #self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
+                driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click()
                 #time.sleep(self.load.webdriverwait_timeout)
                 #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
@@ -234,28 +248,28 @@ class Ncsc:
 
         time.sleep(self.load.webdriverwait_timeout) 
         
-        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
             date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
         else:
             date = articles[index-1]["date"]
 
         if(until_date < date):  
-            if(self.scrap.exist_xpath(driver, '//div[@class="pcf-title"]')):
+            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-title"]')):
                 title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
             else:
                 title = 'NONE'
                 
-            if(self.scrap.exist_xpath(driver, '//div[@class="summary-content-container"]')):
+            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="summary-content-container"]')):
                 summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
             else:
                 summary = 'NONE'
                 
-            if(self.scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
+            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
                 author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
             else:
                 author = 'Anonymous'
 
-            if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
+            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-BodyText"]')):
                 contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''
                 for i in contents:
@@ -286,12 +300,12 @@ class Ncsc:
         
         time.sleep(self.load.webdriverwait_timeout)
 
-        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-title"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-title"]')):
             title_topic = driver.find_element(By.XPATH, '//div[@data-testid="pcf-title"]').text
         else:
             title_topic = 'NONE'
 
-        if(self.scrap.exist_xpath(driver, '//div[@data-testid="summary"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="summary"]')):
             description_topic = driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
         else:
             description_topic = title_topic
@@ -320,27 +334,27 @@ class Ncsc:
 
         time.sleep(self.load.webdriverwait_timeout) 
         
-        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
             date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
         else:
             date = articles[index-1]["date"]
         
-        if(self.scrap.exist_xpath(driver, '//div[@class="pcf-title"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-title"]')):
             title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
         else:
             title = 'NONE'
             
-        if(self.scrap.exist_xpath(driver, '//div[@class="summary-content-container"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="summary-content-container"]')):
             summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
         else:
             summary = 'NONE'
                
-        if(self.scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
             author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
         else:
             author = 'Anonymous'
 
-        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-BodyText"]')):
             contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
             content = ''
             for i in contents:
