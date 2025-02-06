@@ -101,6 +101,7 @@ class IncibeScraper:
     def get_information_by_url(
         self, url: str, classes: dict[str, str]
     ) -> dict[str, str | datetime]:
+        print(f"Obteniendo información de la URL: {url}")
         try:
             self.driver.get(url)
             time.sleep(2)
@@ -242,7 +243,6 @@ class IncibeScraper:
 
             # Recorrer las URLs para obtener la información
             for url in urls_to_scrap:
-                print(f"Obteniendo información de la URL: {url}")
                 info = self.get_information_by_url(url, dict)
                 print(info)
 
