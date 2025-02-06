@@ -9,6 +9,7 @@ Web scrapping: https://www.incibe.es/
 # Importing the necessary libraries
 from datetime import datetime
 import re
+
 # Add the parent directory (src) to the Python path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from utils.time import TimeUtils
@@ -24,22 +25,6 @@ import time
 
 
 class IncibeScraper:
-
-    def _if_element_exists(self, by: By, element: str) -> bool:
-        """
-        Check if an element exists on the web page.
-        Args:
-            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
-            element (str): The locator value of the element to find.
-        Returns:
-            bool: True if the element is found, False otherwise.
-        """
-
-        try:
-            self.driver.find_element(by, element)
-        except NoSuchElementException:
-            return False
-        return True
 
     def __init__(self):
 
@@ -64,33 +49,45 @@ class IncibeScraper:
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
 
-    def get_urls_to_scrap(self, url, days: int = 0) -> set[str]:
+        self.CLASSES = {
+            "cert": {
+                "title": ".field--name-title",
+                "content": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
+                "date": ".node__content.field--type-text-with-summary .field__item",
+                "author": ".field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item",
+            },
+            "bitacora": {
+                "title": ".field--name-title",
+                "content": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
+                "date": ".node__content.field--type-text-with-summary .field__item",
+            },
+        }
+
+    def _if_element_exists(self, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            self.driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
+
+    def get_urls_to_scrap(self, url, selector: str, days: int, get_urls_function: callable) -> set[str]:
         until_date = TimeUtils.format_spanish_date(days)
         found_oldest = False
         url_to_open = url
         i = 0
-        urls = set()
+        urls: set[str] = set()
         while not found_oldest:
-            found_oldest, retrieved_urls = self.get_incibe_blog_urls(
-                url_to_open, i, until_date
-            )
-            total_size = len(urls)
-            # Si no funciona el set union, se puede hacer un for para añadir los elementos
-            urls.update(retrieved_urls)
-            i += 1
-            if len(urls) == total_size:
-                break
-        return urls
-    
-    def get_urls_to_scrap_bitacora(self, url, days: int = 0) -> set[str]:
-        until_date = TimeUtils.format_spanish_date(days)
-        found_oldest = False
-        url_to_open = url
-        i = 0
-        urls = set()
-        while not found_oldest:
-            found_oldest, retrieved_urls = self.get_incibe_blog_urls_bitacora(
-                url_to_open, i, until_date
+            found_oldest, retrieved_urls = get_urls_function(
+                url_to_open, until_date, selector, i
             )
             total_size = len(urls)
             # Si no funciona el set union, se puede hacer un for para añadir los elementos
@@ -101,22 +98,30 @@ class IncibeScraper:
         return urls
 
     # Get the information from the URL (Verificar con Álvaro)
-    def get_information_by_url(self, url: str) -> dict[str, str]:
+    def get_information_by_url(
+        self, url: str, classes: dict[str, str]
+    ) -> dict[str, str | datetime]:
         try:
             self.driver.get(url)
-            title = self.driver.find_element(By.CLASS_NAME, "field--name-title").text
+            time.sleep(2)
+            title = self.driver.find_element(By.CSS_SELECTOR, classes["title"]).text
             content = self.driver.find_element(
                 By.CSS_SELECTOR,
-                "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
+                classes["content"],
             ).text
             date = self.driver.find_element(
                 By.CSS_SELECTOR,
-                ".node__content.field--type-text-with-summary .field__item",
+                classes["date"],
             ).text
-            author = self.driver.find_element(
-                By.CSS_SELECTOR,
-                ".field.field--name-field-autor.field--type-entity-reference.field--label-above .field__item",
-            ).text
+            author = None
+            if classes.get("author"):
+                author = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["author"],
+                ).text
+            else:
+                author = "INCIBE"
+
             date = date.split(" ")[-1]
             date = datetime.strptime(date, "%d/%m/%Y")
             return {"title": title, "content": content, "date": date, "author": author}
@@ -127,7 +132,6 @@ class IncibeScraper:
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
         try:
             self.driver.get(url_to_open_incibe + "?page=" + str(page_num))
-            self.manage_cookies()  # Close the popup of cookies
             print("Incibe blog page opened")
         except Exception as e:
             print(f"Error opening Incibe blog page: {e}")
@@ -140,33 +144,25 @@ class IncibeScraper:
         """
         click the 'Ocultar' button in the cookie warning if it exists
         """
-        try:
-            # Wait for the 'Ocultar' button to be clickable
-            wait = WebDriverWait(self.driver, 10)
-            hide_button = wait.until(
-                EC.element_to_be_clickable((By.ID, "hide-banner-button"))
-            )
-            hide_button.click()
-            print(f"Hide cookies button clicked.")
-        except TimeoutException as e:
-            print(f"Hide cookies button not found")
+        ScrapUtils.click_element(
+            self.driver,
+            "#hide-banner-button",
+        )
 
-    def get_incibe_blog_urls(
-        self, url_to_open, page_num: int, date: str
+    def get_blog_urls(
+        self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
         """
         Get the Incibe blog posts
         """
-        url_to_open_incibe = url_to_open
+
         found_oldest = False
         try:
-            self.open_incibe_blog(url_to_open_incibe, page_num)
+            self.open_incibe_blog(url_to_open, page_num)
             # Esperar a que se carguen los elementos de la página
             time.sleep(5)
             # Encontrar todos los elementos de la lista
-            blog_posts = self.driver.find_elements(
-                By.XPATH, '//*[@id="views-bootstrap-blog-listado-page-1"]/div/div'
-            )
+            blog_posts = self.driver.find_elements(By.CSS_SELECTOR, posts_selector)
             # Extraer los enlaces de los elementos
             blog_urls: set[str] = set()
             for post in blog_posts:
@@ -186,27 +182,26 @@ class IncibeScraper:
         except NoSuchElementException as e:
             print(f"Error getting Incibe blog posts")
             return []
-    
-    def get_incibe_blog_urls_bitacora(
-        self, url_to_open, page_num: int, date: str
+        
+    def get_bitacora_urls(
+        self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
         """
         Get the Incibe blog posts
         """
-        url_to_open_incibe = url_to_open
+
         found_oldest = False
         try:
-            self.open_incibe_blog(url_to_open_incibe, page_num)
+            self.open_incibe_blog(url_to_open, page_num)
             # Esperar a que se carguen los elementos de la página
             time.sleep(5)
             # Encontrar todos los elementos de la lista
-            blog_posts = self.driver.find_elements(
-                By.XPATH, '//*[@id="views-bootstrap-noticias-listado-page-2"]'
-            )
+            blog_posts = self.driver.find_elements(By.CSS_SELECTOR, posts_selector)
             # Extraer los enlaces de los elementos
             blog_urls: set[str] = set()
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
+                
                 phrase = published_on_elem.text
                 published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
@@ -222,28 +217,34 @@ class IncibeScraper:
         except NoSuchElementException as e:
             print(f"Error getting Incibe blog posts")
             return []
+
+
 
     # Main execution (verificar con Álvaro)
     def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
-        '''
-        urls_to_scrap = self.get_urls_to_scrap(
-            "https://www.incibe.es/incibe-cert/blog/", from_days_ago
-        )
-        # Recorrer las URLs para obtener la información
-        for url in urls_to_scrap:
-            print(f"Obteniendo información de la URL: {url}")
-            info = self.getInformationByUrl(url)
-            print(info)
-        '''
-        urls_to_scrap = self.get_urls_to_scrap_bitacora(
-            "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad", from_days_ago
-        )
-        # Recorrer las URLs para obtener la información
-        for url in urls_to_scrap:
-            print(f"Obteniendo información de la URL: {url}")
-            info = self.get_information_by_url(url)
-            print(info)
+
+        patata = [ # Convert to dict (JSON)
+             (
+                "https://www.incibe.es/incibe-cert/blog/",
+                self.CLASSES["cert"],
+                "#views-bootstrap-blog-listado-page-1 > div > div",
+            ),
+            (
+                "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
+                self.CLASSES["bitacora"],
+                "#views-bootstrap-noticias-listado-page-2 > div > div",
+            ),
+        ]
+
+        for url, dict, id in patata:
+            urls_to_scrap = self.get_urls_to_scrap(url, id, from_days_ago, self.get_blog_urls)
+
+            # Recorrer las URLs para obtener la información
+            for url in urls_to_scrap:
+                print(f"Obteniendo información de la URL: {url}")
+                info = self.get_information_by_url(url, dict)
+                print(info)
 
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
         self.driver.quit()  # Cierra el navegador de forma controlada
