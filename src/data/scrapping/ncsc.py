@@ -20,7 +20,7 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 from selenium.webdriver.chrome.webdriver import WebDriver
 from utils.env_loader import EnvLoader
-from utils.scrap import Scrap
+from utils.scrap import ScrapUtils
 from utils.time import TimeUtils
 
 '''
@@ -31,7 +31,7 @@ https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
 class Ncsc:
     
     def __init__(self):
-        self.scrap = Scrap()
+        self.scrap = ScrapUtils()
         self.load = EnvLoader()
 
     def _show_all_articles(self, driver):
@@ -197,15 +197,75 @@ class Ncsc:
                 #time.sleep(self.load.webdriverwait_timeout)
                 #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
-                articles.append(self._get_article(driver, num_art, articles))
-                num_art += 1 
-                time.sleep(self.load.webdriverwait_timeout)
-                driver.back() # Vuelve a la pagina anterior
+                article = self._get_article_to_date(driver, num_art, articles, until_date)
+                if(article == False):
+                    break
+                else:
+                    articles.append(article)
+                    num_art += 1 
+                    time.sleep(self.load.webdriverwait_timeout)
+                    driver.back() # Vuelve a la pagina anterior
             driver.back()
         
         print("Total de articulos: ", len(articles))        
 
         return {topics, articles}
+
+    def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
+        '''
+        Return an article of a topic until date param
+
+        Args:
+            driver: Selenium browser instance.
+            index: counter of array articles
+            articles: array of all articles
+            until_date: 
+        Return:
+            An article of a topic
+            An article is divide:
+                date
+                title
+                summary
+                author
+                content
+        ''' 
+        if(driver is None):
+            raise("ERROR: drive not found")
+
+        time.sleep(self.load.webdriverwait_timeout) 
+        
+        if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+            date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
+        else:
+            date = articles[index-1]["date"]
+
+        if(until_date < date):  
+            if(self.scrap.exist_xpath(driver, '//div[@class="pcf-title"]')):
+                title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
+            else:
+                title = 'NONE'
+                
+            if(self.scrap.exist_xpath(driver, '//div[@class="summary-content-container"]')):
+                summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
+            else:
+                summary = 'NONE'
+                
+            if(self.scrap.exist_xpath(driver, '//div[@class="details"]/p[@class="details__name"]')):
+                author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
+            else:
+                author = 'Anonymous'
+
+            if(self.scrap.exist_xpath(driver, '//div[@data-testid="pcf-BodyText"]')):
+                contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
+                content = ''
+                for i in contents:
+                    content += i.text
+            else:
+                content = 'ERROR' 
+        else:
+            return False
+
+        return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
 
     def _get_topic(self, driver) -> dict[str, str]:
         '''
@@ -302,12 +362,12 @@ class Ncsc:
         try:    
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
  
-            driver = self.scrap.configuration()      
+            driver = self.scrap.get_driver()      
             driver.get(url_website_all_topics)   
             print(driver.title)
             
             # Function to disable the cookie popup
-            self.scrap.disablaled_cookie_popup(driver, '//div[@class="cookie-buttons"]/button[@data-testid="cookie-button-reject"]')
+            self.scrap.click_element(driver, 'button.pcf-button:nth-child(2)', 1)
 
             self._scrap_all_topics_articles(driver)
             
