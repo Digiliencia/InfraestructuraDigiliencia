@@ -228,11 +228,13 @@ class IncibeScraper:
               "url":  "https://www.incibe.es/incibe-cert/blog/",
               "class": self.CLASSES["cert"],
               "selector":"#views-bootstrap-blog-listado-page-1 > div > div",
+              "scrap_function": self.get_blog_urls,
             },
             {
               "url": "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
               "class":  self.CLASSES["bitacora"],
               "selector": "#views-bootstrap-noticias-listado-page-2 > div > div",
+              "scrap_function": self.get_bitacora_urls,
             },
         ]
 
@@ -240,13 +242,15 @@ class IncibeScraper:
             url = data["url"]
             class_name = data["class"]
             selector = data["selector"]
+            scrap_function = data["scrap_function"]
 
-            urls_to_scrap = self.get_urls_to_scrap(url, selector, from_days_ago, self.get_blog_urls)
+            urls_to_scrap = self.get_urls_to_scrap(url, selector, from_days_ago, scrap_function)
 
             # Recorrer las URLs para obtener la información
             for url in urls_to_scrap:
                 info = self.get_information_by_url(url, class_name)
                 print(info)
+
 
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
         self.driver.quit()  # Cierra el navegador de forma controlada
