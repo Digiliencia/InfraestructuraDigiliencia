@@ -251,7 +251,6 @@ class IncibeScraper:
                 info = self.get_information_by_url(url, class_name)
                 print(info)
 
-
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
         self.driver.quit()  # Cierra el navegador de forma controlada
         return None
