@@ -101,7 +101,6 @@ class IncibeScraper:
     def get_information_by_url(
         self, url: str, classes: dict[str, str]
     ) -> dict[str, str | datetime]:
-        print(f"Obteniendo información de la URL: {url}")
         try:
             self.driver.get(url)
             time.sleep(2)
@@ -191,7 +190,7 @@ class IncibeScraper:
         Get the Incibe blog posts
         """
 
-        found_oldest = False
+        found_oldest = True
         try:
             self.open_incibe_blog(url_to_open, page_num)
             # Esperar a que se carguen los elementos de la página
@@ -201,17 +200,16 @@ class IncibeScraper:
             # Extraer los enlaces de los elementos
             blog_urls: set[str] = set()
             for post in blog_posts:
-                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
-                
+                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")               
                 phrase = published_on_elem.text
                 published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
-                if TimeUtils.days_between_es_dates(date, published_date) > 0:
+                if  found_oldest and TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
                     blog_urls.add(link)
                 else:
-                    found_oldest = True
+                    found_oldest = False
                     break
 
             return (found_oldest, blog_urls)
@@ -225,25 +223,29 @@ class IncibeScraper:
     def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
 
-        patata = [ # Convert to dict (JSON)
-             (
-                "https://www.incibe.es/incibe-cert/blog/",
-                self.CLASSES["cert"],
-                "#views-bootstrap-blog-listado-page-1 > div > div",
-            ),
-            (
-                "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
-                self.CLASSES["bitacora"],
-                "#views-bootstrap-noticias-listado-page-2 > div > div",
-            ),
+        incibe_scrap = [ # Convert to dict (JSON)
+            {
+              "url":  "https://www.incibe.es/incibe-cert/blog/",
+              "class": self.CLASSES["cert"],
+              "selector":"#views-bootstrap-blog-listado-page-1 > div > div",
+            },
+            {
+              "url": "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
+              "class":  self.CLASSES["bitacora"],
+              "selector": "#views-bootstrap-noticias-listado-page-2 > div > div",
+            },
         ]
 
-        for url, dict, id in patata:
-            urls_to_scrap = self.get_urls_to_scrap(url, id, from_days_ago, self.get_blog_urls)
+        for data in incibe_scrap:
+            url = data["url"]
+            class_name = data["class"]
+            selector = data["selector"]
+
+            urls_to_scrap = self.get_urls_to_scrap(url, selector, from_days_ago, self.get_blog_urls)
 
             # Recorrer las URLs para obtener la información
             for url in urls_to_scrap:
-                info = self.get_information_by_url(url, dict)
+                info = self.get_information_by_url(url, class_name)
                 print(info)
 
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
