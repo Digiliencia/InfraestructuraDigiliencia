@@ -28,26 +28,7 @@ class IncibeScraper:
 
     def __init__(self):
 
-        self.driver = WebDriver()
-        options = Options()
-        options.add_argument(
-            "user-agent="
-            + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
-        )
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {
-            "profile.default_content_setting_values.geolocation": 2,
-            "credentials_enable_service": False,
-            "profile.password_manager_enabled": False,
-            "webrtc.ip_handling_policy": "disable_non_proxied_udp",
-            "webrtc.multiple_routes_enabled": False,
-            "webrtc.nonproxied_udp_enabled": False,
-        }
-        options.add_experimental_option("prefs", prefs)
-        options.add_experimental_option("useAutomationExtension", False)
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_argument("log-level=3")
-        options.add_argument("--start-maximized")
+        self.driver = ScrapUtils.get_driver()
 
         self.CLASSES = {
             "cert": {
@@ -63,28 +44,29 @@ class IncibeScraper:
             },
         }
 
-    def get_urls_to_scrap(self, url, selector: str, days: int, get_urls_function: callable) -> set[str]:
+    def get_urls_to_scrap(
+        self, url, selector: str, days: int, get_urls_function: callable
+    ) -> set[str]:
         """
-            Retrieves a set of URLs to scrape from the specified website.
+        Retrieves a set of URLs to scrape from the specified website.
 
-            This function extracts URLs based on a given CSS selector and filters 
-            them according to the specified number of days.
+        This function extracts URLs based on a given CSS selector and filters
+        them according to the specified number of days.
 
-            Args:
-                url (str): The target URL to scrape.
-                selector (str): The CSS selector used to identify URLs within the webpage.
-                days (int): The time range (in days) to filter the extracted URLs.
-                get_urls_function (callable): A function responsible for fetching and extracting URLs from the webpage.
+        Args:
+            url (str): The target URL to scrape.
+            selector (str): The CSS selector used to identify URLs within the webpage.
+            days (int): The time range (in days) to filter the extracted URLs.
+            get_urls_function (callable): A function responsible for fetching and extracting URLs from the webpage.
 
-            Returns:
-                set[str]: A set of URLs to be scraped.
+        Returns:
+            set[str]: A set of URLs to be scraped.
 
-            Example:
-                urls = get_urls_to_scrap(
-                    "https://example.com", ".article-links", 7, extract_urls
-                )
+        Example:
+            urls = get_urls_to_scrap(
+                "https://example.com", ".article-links", 7, extract_urls
+            )
         """
-
 
         until_date = TimeUtils.format_spanish_date(days)
         found_oldest = False
@@ -107,18 +89,18 @@ class IncibeScraper:
     def get_information_by_url(
         self, url: str, classes: dict[str, str]
     ) -> dict[str, str | datetime]:
-        #docstring
+        # docstring
         """
-            Get the information from the URL title, content, date and author
+        Get the information from the URL title, content, date and author
 
-            Args:
+        Args:
 
-            url (str): The URL to get the information from
-            classes (dict[str, str]): The classes to get the information from
+        url (str): The URL to get the information from
+        classes (dict[str, str]): The classes to get the information from
 
-            Returns:
+        Returns:
 
-            dict[str, str | datetime]: The information from the URL
+        dict[str, str | datetime]: The information from the URL
         """
 
         try:
@@ -150,19 +132,19 @@ class IncibeScraper:
             return {}
 
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
-        
-        #docstring
+
+        # docstring
         """
-            Open the Incibe blog page
+        Open the Incibe blog page
 
-            Args:
+        Args:
 
-            url_to_open_incibe (str): The URL to open the Incibe blog page
-            page_num (int): The page number to open
+        url_to_open_incibe (str): The URL to open the Incibe blog page
+        page_num (int): The page number to open
 
-            Returns:
+        Returns:
 
-            None
+        None
         """
 
         try:
@@ -172,18 +154,16 @@ class IncibeScraper:
             print(f"Error opening Incibe blog page: {e}")
 
     def manage_cookies(self):
-
-        #docstring
         """
-            Manage the cookies in the Incibe page
+        Manage the cookies in the Incibe page
 
-            Args:
+        Args:
 
-            None
+        None
 
-            Returns:
+        Returns:
 
-            None
+        None
         """
         ScrapUtils.click_element(
             self.driver,
@@ -200,20 +180,20 @@ class IncibeScraper:
     def get_blog_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
-        #docstring
+        # docstring
         """
-            Get the Incibe blog posts
+        Get the Incibe blog posts
 
-            Args:
+        Args:
 
-            url_to_open (str): The URL to open the Incibe blog page
-            date (str): The date to get the blog posts
-            posts_selector (str): The selector to get the blog posts
-            page_num (int): The page number to open
+        url_to_open (str): The URL to open the Incibe blog page
+        date (str): The date to get the blog posts
+        posts_selector (str): The selector to get the blog posts
+        page_num (int): The page number to open
 
-            Returns:
+        Returns:
 
-            tuple[bool, set[str]]: A tuple with a boolean and a set of strings
+        tuple[bool, set[str]]: A tuple with a boolean and a set of strings
         """
         found_oldest = False
         try:
@@ -241,27 +221,27 @@ class IncibeScraper:
         except NoSuchElementException as e:
             print(f"Error getting Incibe blog posts")
             return []
-        
+
     def get_bitacora_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
-        
         """
-            Get the Incibe bitacora posts
+        Get the Incibe bitacora posts
 
-            Args:
+        Args:
 
-            url_to_open (str): The URL to open the Incibe bitacora page
-            date (str): The date to get the bitacora posts
-            posts_selector (str): The selector to get the bitacora posts
-            page_num (int): The page number to open
-            
-            Returns:
+        url_to_open (str): The URL to open the Incibe bitacora page
+        date (str): The date to get the bitacora posts
+        posts_selector (str): The selector to get the bitacora posts
+        page_num (int): The page number to open
 
-            tuple[bool, set[str]]: A tuple with a boolean and a set of strings
+        Returns:
+
+        tuple[bool, set[str]]: The boolean indicates if every article is older than the date, and the set of strings containing articles published or updated after the given date.
         """
 
-        found_oldest = True
+        all_newer = False
+
         try:
             self.open_incibe_blog(url_to_open, page_num)
             # Esperar a que se carguen los elementos de la página
@@ -271,56 +251,55 @@ class IncibeScraper:
             # Extraer los enlaces de los elementos
             blog_urls: set[str] = set()
             for post in blog_posts:
-                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")               
+                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
                 published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
-                if  found_oldest and TimeUtils.days_between_es_dates(date, published_date) > 0:
+
+                is_newer = TimeUtils.days_between_es_dates(date, published_date) > 0
+                all_newer |= is_newer
+
+                if is_newer:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
                     blog_urls.add(link)
-                else:
-                    found_oldest = False
-                    break
 
-            return (found_oldest, blog_urls)
-        except NoSuchElementException as e:
+            return (not all_newer, blog_urls)
+        except NoSuchElementException:
             print(f"Error getting Incibe blog posts")
             return []
-
-
 
     # Main execution (verificar con Álvaro)
     def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
 
-        #docstring
+        # docstring
 
         """
-            Call the methods to get the information from the Incibe page
+        Call the methods to get the information from the Incibe page
 
-            Args:
+        Args:
 
-            from_days_ago (int): The number of days to get the information from
+        from_days_ago (int): The number of days to get the information from
 
-            Returns:
+        Returns:
 
-            tuple[dict[str, str]]: A tuple with a dictionary
+        tuple[dict[str, str]]: A tuple with a dictionary
         """
 
         self.driver.maximize_window()
 
-        incibe_scrap = [ # Convert to dict (JSON)
+        incibe_scrap = [  # Convert to dict (JSON)
             {
-              "url":  "https://www.incibe.es/incibe-cert/blog/",
-              "class": self.CLASSES["cert"],
-              "selector":"#views-bootstrap-blog-listado-page-1 > div > div",
-              "scrap_function": self.get_blog_urls,
+                "url": "https://www.incibe.es/incibe-cert/blog/",
+                "class": self.CLASSES["cert"],
+                "selector": "#views-bootstrap-blog-listado-page-1 > div > div",
+                "scrap_function": self.get_blog_urls,
             },
             {
-              "url": "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
-              "class":  self.CLASSES["bitacora"],
-              "selector": "#views-bootstrap-noticias-listado-page-2 > div > div",
-              "scrap_function": self.get_bitacora_urls,
+                "url": "https://www.incibe.es/incibe-cert/publicaciones/bitacora-ciberseguridad",
+                "class": self.CLASSES["bitacora"],
+                "selector": "#views-bootstrap-noticias-listado-page-2 > div > div",
+                "scrap_function": self.get_bitacora_urls,
             },
         ]
 
@@ -330,12 +309,16 @@ class IncibeScraper:
             selector = data["selector"]
             scrap_function = data["scrap_function"]
 
-            urls_to_scrap = self.get_urls_to_scrap(url, selector, from_days_ago, scrap_function)
+            urls_to_scrap = self.get_urls_to_scrap(
+                url, selector, from_days_ago, scrap_function
+            )
 
             # Recorrer las URLs para obtener la información
+            p = []
             for url in urls_to_scrap:
-                info = self.get_information_by_url(url, class_name)
-                print(info)
+                p.append(self.get_information_by_url(url, class_name))
+                # print(info)
+            print(len(p))
 
         input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
         self.driver.quit()  # Cierra el navegador de forma controlada
