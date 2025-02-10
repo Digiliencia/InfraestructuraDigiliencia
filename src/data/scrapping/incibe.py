@@ -63,22 +63,6 @@ class IncibeScraper:
             },
         }
 
-    def _if_element_exists(self, by: By, element: str) -> bool:
-        """
-        Check if an element exists on the web page.
-        Args:
-            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
-            element (str): The locator value of the element to find.
-        Returns:
-            bool: True if the element is found, False otherwise.
-        """
-
-        try:
-            self.driver.find_element(by, element)
-        except NoSuchElementException:
-            return False
-        return True
-
     def get_urls_to_scrap(self, url, selector: str, days: int, get_urls_function: callable) -> set[str]:
         until_date = TimeUtils.format_spanish_date(days)
         found_oldest = False
