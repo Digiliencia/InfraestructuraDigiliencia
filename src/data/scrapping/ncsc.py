@@ -227,7 +227,26 @@ class Ncsc:
 
 
     def _scrap_glosary(self, driver) -> dict[str, str]:
-        pass
+        '''
+        Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
+        
+        Args:
+            driver: Selenium browser instance.
+        Return:
+            A lsit with all definitions, each defitions have a:
+                Concept,
+                Description,
+        '''
+        time.sleep(self.load.webdriverwait_timeout)
+
+        next = True # Si hay siguiente definicion
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')):
+            driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
+
+            test = driver.find_element(By.XPATH, '//div[@data-testid="pcf-accordion"]').text
+
+            print(test)
+        
 
     def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
         '''
@@ -387,8 +406,11 @@ class Ncsc:
             # Function to disable the cookie popup
             self.scrap.click_element(driver, 'button.pcf-button:nth-child(2)', 1)
 
-            self._scrap_all_topics_articles(driver)
+            #self._scrap_all_topics_articles(driver)
             
+            # scrap glosary
+            self._scrap_glosary(driver)
+
         except Exception as e:
             print("ERROR: ", e)
             
