@@ -706,7 +706,7 @@ class WEForumScrapper:
         """
         if "https://theconversation.com/" not in url:
             raise WEForumError(
-                "Attempted to scrape invalid page for ProPublica article scrapper"
+                "Attempted to scrape invalid page for The Conversation article scrapper"
             )
 
         # Access the URL
@@ -752,9 +752,70 @@ class WEForumScrapper:
                     prev_sibling = prev_sibling[0]
                     next_sibling = next_sibling[0]
                     if prev_sibling.tag_name == "hr" and next_sibling.tag_name == "hr":
-                        pass
+                        continue
                 content += element.text + "\n\n"
         data["content"] = content
+
+        return data
+
+    def _scrap_the_atlantic(self, url: str) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes The Atlantic.
+
+        Args:
+            url (str): The Atlantic article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid The Atlantic URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://www.theatlantic.com" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for The Atlantic article scrapper"
+            )
+
+        # Disable JS
+        ScrapUtils.disable_js(self.driver)
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+
+        authors_line = self.driver.find_element(By.ID, "byline")
+        data["author"] = (", ").join(
+            [author.text for author in authors_line.find_elements(By.TAG_NAME, "a")]
+        )
+
+        time_elem = self.driver.find_element(By.TAG_NAME, "time")
+        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+
+        content_elem = self.driver.find_element(
+            By.CLASS_NAME, "ArticleBody_root__2gF81"
+        )
+        content = ""
+        for element in content_elem.find_elements(By.XPATH, "./*"):
+            if (
+                element.tag_name == "p"
+                and element.get_attribute("data-view-action") is not None
+            ):
+                continue
+            else:
+                content += element.text + "\n\n"
+
+        data["content"] = content
+        
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
 
         return data
 
@@ -778,6 +839,8 @@ class WEForumScrapper:
             "ProPublica": self._scrap_propbublica_article,
             "The Conversation (French)": self._scrap_the_conversation,
             "The Conversation (Spanish)": self._scrap_the_conversation,
+            "The Conversation": self._scrap_the_conversation,
+            "The Atlantic": self._scrap_the_atlantic,
         }
 
         scraped_publications = []
