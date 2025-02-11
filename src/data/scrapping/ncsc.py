@@ -242,10 +242,12 @@ class Ncsc:
         next = True # Si hay siguiente definicion
         if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')):
             driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
-
-            test = driver.find_element(By.XPATH, '//div[@data-testid="pcf-accordion"]').text
-
-            print(test)
+            
+            i = 1
+            while next:
+                definition = driver.find_element(By.XPATH, f'//div[@data-testid="pcf-accordionItem"][{i}]')
+                #print(definition.)
+            
         
 
     def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
