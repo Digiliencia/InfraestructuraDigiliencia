@@ -225,6 +225,10 @@ class Ncsc:
 
         return {topics, articles}
 
+
+    def _scrap_glosary(self, driver) -> dict[str, str]:
+        pass
+
     def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
         '''
         Return an article of a topic until date param
