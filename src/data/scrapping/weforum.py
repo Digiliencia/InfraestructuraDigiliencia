@@ -40,7 +40,6 @@ class WEForumScrapper:
         self.login_page = "https://login.weforum.org/"
         self.load_time = 2
 
-    
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
 
@@ -447,8 +446,6 @@ class WEForumScrapper:
         )  # Remove title from content
 
         return data
-
-    def _scrap_the_conversation(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -668,12 +665,9 @@ class WEForumScrapper:
         data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
 
         # Get the date
-        time_container = self.driver.find_element(
-            By.CSS_SELECTOR, "time.article-meta-1__pubdate"
-        )
-        time_elem = time_container.find_element(By.TAG_NAME, "time")
+        time_elem = self.driver.find_element(By.TAG_NAME, "time")
         data["date"] = datetime.strptime(
-            time_elem.get_attribute("datetime"), "%Y-%m-%dEST%H:%M"
+            time_elem.get_attribute("datetime"), "%Y-%m-%dEST%H:%M"  # type: ignore
         )
 
         # Get the author
@@ -689,6 +683,78 @@ class WEForumScrapper:
         data["content"] = ""
         for p in content_div.find_elements(By.TAG_NAME, "p"):
             data["content"] += p.text + "\n\n"
+
+        return data
+
+    def _scrap_the_conversation(self, url: str) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes the publication.
+
+        Args:
+            url (str): The Conversation article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid The Conversation URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://theconversation.com/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for ProPublica article scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        # Deny cookies if visible
+        ScrapUtils.click_element(self.driver, ".didomi-continue-without-agreeing", 1)
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+
+        authors_section = self.driver.find_element(By.CLASS_NAME, "content-authors")
+        authors_list = authors_section.find_elements(By.TAG_NAME, "li")
+        data["author"] = (", ").join(
+            [
+                author.find_element(By.CLASS_NAME, "author-name").text
+                for author in authors_list
+            ]
+        )
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".timestamps time")
+        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+
+        content_elem = self.driver.find_element(By.CLASS_NAME, "entry-content")
+        content = ""
+        for element in content_elem.find_elements(By.XPATH, "./*"):
+            if (
+                element.tag_name == "h1"
+                or element.tag_name == "h2"
+                or element.tag_name == "h3"
+            ):
+                content += f"\n\n{element.text}\n"
+            elif element.tag_name == "p":
+                prev_sibling = element.find_elements(
+                    By.XPATH, "preceding-sibling::*[1]"
+                )
+                next_sibling = element.find_elements(
+                    By.XPATH, "following-sibling::*[1]"
+                )
+                if prev_sibling and next_sibling:
+                    prev_sibling = prev_sibling[0]
+                    next_sibling = next_sibling[0]
+                    if prev_sibling.tag_name == "hr" and next_sibling.tag_name == "hr":
+                        pass
+                content += element.text + "\n\n"
+        data["content"] = content
 
         return data
 
@@ -710,6 +776,8 @@ class WEForumScrapper:
             "The Quantum Insider": self._scrap_the_quantum_insider,
             "Australian Strategic Policy Institute": self._scrap_australian_strategic_policy_institute,
             "ProPublica": self._scrap_propbublica_article,
+            "The Conversation (French)": self._scrap_the_conversation,
+            "The Conversation (Spanish)": self._scrap_the_conversation,
         }
 
         scraped_publications = []
