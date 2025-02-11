@@ -78,18 +78,18 @@ class IncibeScraper:
                 url_to_open, until_date, selector, i
             )
             total_size = len(urls)
-            # Si no funciona el set union, se puede hacer un for para añadir los elementos
+            # If set union does not work, a for loop can be used to add the elements
+            # for url in retrieved_urls:
+            #     urls.add(url)
             urls.update(retrieved_urls)
             i += 1
             if len(urls) == total_size:
                 break
         return urls
 
-    # Get the information from the URL (Verificar con Álvaro)
     def get_information_by_url(
         self, url: str, classes: dict[str, str]
     ) -> dict[str, str | datetime]:
-        # docstring
         """
         Get the information from the URL title, content, date and author
 
@@ -133,7 +133,6 @@ class IncibeScraper:
 
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
 
-        # docstring
         """
         Open the Incibe blog page
 
@@ -180,9 +179,8 @@ class IncibeScraper:
     def get_blog_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
-        # docstring
         """
-        Get the Incibe blog posts
+        Get the Incibe blog posts from the main page
 
         Args:
 
@@ -198,11 +196,11 @@ class IncibeScraper:
         found_oldest = False
         try:
             self.open_incibe_blog(url_to_open, page_num)
-            # Esperar a que se carguen los elementos de la página
+            # Wait for the page elements to load
             time.sleep(5)
-            # Encontrar todos los elementos de la lista
+            # Find all the elements in the list
             blog_posts = self.driver.find_elements(By.CSS_SELECTOR, posts_selector)
-            # Extraer los enlaces de los elementos
+            # Extract the links from the elements
             blog_urls: set[str] = set()
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
@@ -226,7 +224,7 @@ class IncibeScraper:
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
     ) -> tuple[bool, set[str]]:
         """
-        Get the Incibe bitacora posts
+        Get the Incibe bitacora posts from the main page
 
         Args:
 
@@ -244,11 +242,11 @@ class IncibeScraper:
 
         try:
             self.open_incibe_blog(url_to_open, page_num)
-            # Esperar a que se carguen los elementos de la página
+            # Wait for the page elements to load
             time.sleep(5)
-            # Encontrar todos los elementos de la lista
+            # Find all the elements in the list
             blog_posts = self.driver.find_elements(By.CSS_SELECTOR, posts_selector)
-            # Extraer los enlaces de los elementos
+            # Extract the links from the elements
             blog_urls: set[str] = set()
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
@@ -269,10 +267,8 @@ class IncibeScraper:
             print(f"Error getting Incibe blog posts")
             return []
 
-    # Main execution (verificar con Álvaro)
     def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
 
-        # docstring
 
         """
         Call the methods to get the information from the Incibe page
@@ -288,7 +284,7 @@ class IncibeScraper:
 
         self.driver.maximize_window()
 
-        incibe_scrap = [  # Convert to dict (JSON)
+        incibe_scrap = [ 
             {
                 "url": "https://www.incibe.es/incibe-cert/blog/",
                 "class": self.CLASSES["cert"],
@@ -313,13 +309,13 @@ class IncibeScraper:
                 url, selector, from_days_ago, scrap_function
             )
 
-            # Recorrer las URLs para obtener la información
+            # Iterate over the URLs to get the information
             p = []
             for url in urls_to_scrap:
                 p.append(self.get_information_by_url(url, class_name))
                 # print(info)
             print(len(p))
 
-        input("Presiona Enter para cerrar el navegador...")  # Mantén la página abierta
-        self.driver.quit()  # Cierra el navegador de forma controlada
+        input("Press Enter to close the browser...")  # Keep the page open
+        self.driver.quit()  # Close the browser in a controlled manner
         return None
