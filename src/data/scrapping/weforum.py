@@ -6,13 +6,10 @@ Created on Wed Jan 21 12:39:40 2025
 Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.chrome.webdriver import WebDriver
-from selenium.webdriver.chrome.options import Options
 from utils.env_loader import EnvLoader
 from utils.time import TimeUtils
 from utils.scrap import ScrapUtils
@@ -30,26 +27,7 @@ class WEForumError(Exception):
 class WEForumScrapper:
     def __init__(self):
         EnvLoader()  # Call EnvLoader to force reading the .env file
-        self.driver = WebDriver()
-        options = Options()
-        options.add_argument(
-            "user-agent="
-            + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
-        )
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {
-            "profile.default_content_setting_values.geolocation": 2,
-            "credentials_enable_service": False,
-            "profile.password_manager_enabled": False,
-            "webrtc.ip_handling_policy": "disable_non_proxied_udp",
-            "webrtc.multiple_routes_enabled": False,
-            "webrtc.nonproxied_udp_enabled": False,
-        }
-        options.add_experimental_option("prefs", prefs)
-        options.add_experimental_option("useAutomationExtension", False)
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_argument("log-level=3")
-        options.add_argument("--start-maximized")
+        self.driver = ScrapUtils.get_driver()
 
         self.weforum_email = EnvLoader.weforum_email
         self.weforum_passwd = EnvLoader.weforum_passwd
@@ -59,11 +37,10 @@ class WEForumScrapper:
         )
         self.home_page = "https://www.weforum.org/"
         self.stories_url = "https://www.weforum.org/stories"
-        self.load_time = 2
         self.login_page = "https://login.weforum.org/"
+        self.load_time = 2
 
-        self.scrapUtils = ScrapUtils()
-
+    
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
 
@@ -72,7 +49,7 @@ class WEForumScrapper:
         """
 
         # Accept cookies if pop-up visible
-        if self.scrapUtils._if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
+        if ScrapUtils._if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
             if cookies_popup.is_displayed():
                 accept_bttn = self.driver.find_element(
@@ -261,7 +238,7 @@ class WEForumScrapper:
             )
 
         # If the user logo (id: mf_user-icon) exists, user is loged in
-        return self.scrapUtils._if_element_exists(self.driver, By.ID, "mf_user-icon")
+        return ScrapUtils._if_element_exists(self.driver, By.ID, "mf_user-icon")
 
     def _accept_cookies_if_visible(self, accept_bttn_id: str):
         """Accepts the cookies if the pop-up is visible.
@@ -269,13 +246,13 @@ class WEForumScrapper:
         Args:
             accept_bttn_id (str): The ID of the accept button.
         """
-        if self.scrapUtils._if_element_exists(self.driver, By.ID, accept_bttn_id):
+        if ScrapUtils._if_element_exists(self.driver, By.ID, accept_bttn_id):
             accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
             if accept_bttn.is_displayed():
                 accept_bttn.click()
-        time.sleep(self.load_time)
+                time.sleep(self.load_time)
 
-    def _scrap_wired_story(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_wired_story(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -291,11 +268,12 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        # Disable JS
+        ScrapUtils.disable_js(self.driver)
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)
-
-        # TODO: check if login, as it is not free to access the content
 
         self._accept_cookies_if_visible("onetrust-accept-btn-handler")
 
@@ -324,10 +302,10 @@ class WEForumScrapper:
             content += element.text + "\n"
 
         data["content"] = content
-
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
         return data
 
-    def _scrap_WEF_story_publication(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_WEF_story_publication(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -417,7 +395,7 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _scrap_globaldata_newsletter(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_globaldata_newsletter(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -470,7 +448,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrap_the_conversation(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_the_conversation(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -524,7 +502,7 @@ class WEForumScrapper:
 
         return data
 
-    def _scrap_the_quantum_insider(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_the_quantum_insider(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the post.
 
         Args:
@@ -592,7 +570,7 @@ class WEForumScrapper:
 
     def _scrap_australian_strategic_policy_institute(
         self, url: str
-    ) -> dict[str, str | datetime]:
+    ) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -658,7 +636,7 @@ class WEForumScrapper:
         data["content"] = content
         return data
 
-    def _scrap_propbublica_article(self, url: str) -> dict[str, str | datetime]:
+    def _scrap_propbublica_article(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -756,4 +734,5 @@ class WEForumScrapper:
             # print(publication)
             pass
 
+        self._close()
         return None  # type: ignore
