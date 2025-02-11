@@ -3,4 +3,4 @@ from utils.env_loader import EnvLoader
 
 EnvLoader()
 scrapper = IncibeScraper()
-scrapper.scrapper(62)
+scrapper.scrapper(30)

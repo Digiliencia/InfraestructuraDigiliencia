@@ -42,6 +42,15 @@ class IncibeScraper:
                 "content": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-hidden.field__item",
                 "date": ".node__content.field--type-text-with-summary .field__item",
             },
+            "avisos": {
+                "title": ".field--name-title",
+                "affected_resources": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-field-recursos-afectados.field--type-text-with-summary.field--label-above .field__item",
+                "description": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-body.field--type-text-with-summary.field--label-above .field__item",
+                "solution": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-field-solucion.field--type-text-with-summary.field--label-above .field__item",
+                "details": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-field-detalle.field--type-text-with-summary.field--label-above .field__item",
+                "date": ".node__content.field--type-text-with-summary .field__item",
+            }
+,
         }
 
     def get_urls_to_scrap(
@@ -107,10 +116,12 @@ class IncibeScraper:
             self.driver.get(url)
             time.sleep(2)
             title = self.driver.find_element(By.CSS_SELECTOR, classes["title"]).text
-            content = self.driver.find_element(
-                By.CSS_SELECTOR,
-                classes["content"],
-            ).text
+            content = None
+            if classes.get("content"):
+                content = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["content"],
+                ).text
             date = self.driver.find_element(
                 By.CSS_SELECTOR,
                 classes["date"],
@@ -123,16 +134,38 @@ class IncibeScraper:
                 ).text
             else:
                 author = "INCIBE"
-
+            affected_resources = None  
+            if classes.get("affected_resources"):
+                affected_resources = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["affected_resources"],
+                ).text
+            description = None
+            if classes.get("description"):
+                description = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["description"],
+                ).text
+            solution = None
+            if classes.get("solution"):
+                solution = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["solution"],
+                ).text
+            details = None
+            if classes.get("details"):
+                details = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    classes["details"],
+                ).text
             date = date.split(" ")[-1]
             date = datetime.strptime(date, "%d/%m/%Y")
-            return {"title": title, "content": content, "date": date, "author": author}
+            return {"title": title, "content": content, "date": date, "author": author, "affected_resources": affected_resources, "description": description, "solution": solution, "details": details}
         except Exception as e:
             print(f"Error al obtener la información de la URL: {e}")
             return {}
 
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
-
         """
         Open the Incibe blog page
 
@@ -175,6 +208,50 @@ class IncibeScraper:
             self.driver,
             "#hide-banner-button",
         )
+
+    def get_warning_urls(
+        self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
+    ) -> tuple[bool, set[str]]:
+        """
+        Get the Incibe warning posts from the main page
+
+        Args:
+
+        url_to_open (str): The URL to open the Incibe warning page
+        date (str): The date to get the warning posts
+        posts_selector (str): The selector to get the warning posts
+        page_num (int): The page number to open
+
+        Returns:
+
+        tuple[bool, set[str]]: A tuple with a boolean and a set of strings
+        """
+        found_oldest = False
+        try:
+            self.open_incibe_blog(url_to_open, page_num)
+            # Wait for the page elements to load
+            time.sleep(5)
+            # Find all the elements in the list
+            blog_posts = self.driver.find_elements(By.CSS_SELECTOR, posts_selector)
+            # Extract the links from the elements
+            blog_urls: set[str] = set()
+            for post in blog_posts:
+                published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
+                phrase = published_on_elem.text
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
+                if TimeUtils.days_between_es_dates(date, published_date) > 0:
+                    link = post.find_element(
+                        By.CSS_SELECTOR, ".node__links a"
+                    ).get_attribute("href")
+                    blog_urls.add(link)
+                else:
+                    found_oldest = True
+                    break
+
+            return (found_oldest, blog_urls)
+        except NoSuchElementException as e:
+            print(f"Error getting Incibe blog posts")
+            return []
 
     def get_blog_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
@@ -268,8 +345,6 @@ class IncibeScraper:
             return []
 
     def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
-
-
         """
         Call the methods to get the information from the Incibe page
 
@@ -284,7 +359,7 @@ class IncibeScraper:
 
         self.driver.maximize_window()
 
-        incibe_scrap = [ 
+        incibe_scrap = [
             {
                 "url": "https://www.incibe.es/incibe-cert/blog/",
                 "class": self.CLASSES["cert"],
@@ -296,6 +371,12 @@ class IncibeScraper:
                 "class": self.CLASSES["bitacora"],
                 "selector": "#views-bootstrap-noticias-listado-page-2 > div > div",
                 "scrap_function": self.get_bitacora_urls,
+            },
+            {
+                "url": "https://www.incibe.es/index.php/incibe-cert/alerta-temprana/avisos",
+                "class": self.CLASSES["avisos"],
+                "selector": "#views-bootstrap-at-avisos-page-1 > div > div",
+                "scrap_function": self.get_warning_urls,
             },
         ]
 
@@ -313,7 +394,7 @@ class IncibeScraper:
             p = []
             for url in urls_to_scrap:
                 p.append(self.get_information_by_url(url, class_name))
-                # print(info)
+                print(p)
             print(len(p))
 
         input("Press Enter to close the browser...")  # Keep the page open
