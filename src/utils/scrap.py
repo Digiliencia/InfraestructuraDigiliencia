@@ -68,6 +68,32 @@ class ScrapUtils:
             return False
 
     @staticmethod
+    def disable_js(driver: WebDriver) -> None:
+        """
+        Disables JavaScript in the given driver.
+
+        Args:
+            driver: Selenium browser instance.
+
+        Returns:
+            None
+        """
+        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
+
+    @staticmethod
+    def enable_js(driver: WebDriver) -> None:
+        """
+        Enables JavaScript in the given driver.
+
+        Args:
+            driver: Selenium browser instance.
+
+        Returns:
+            None
+        """
+        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
+    
+    @staticmethod
     def if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
         """
         Check if an element exists on the web page.
