@@ -229,7 +229,8 @@ class Ncsc:
     def _scrap_glosary(self, driver) -> dict[str, str]:
         '''
         Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
-        
+        The definitions is divided by sections
+
         Args:
             driver: Selenium browser instance.
         Return:
@@ -239,15 +240,35 @@ class Ncsc:
         '''
         time.sleep(self.load.webdriverwait_timeout)
 
-        next = True # Si hay siguiente definicion
         if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')):
             driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
-            
+            time.sleep(self.load.webdriverwait_timeout)
+            next_section = self.scrap.if_element_exists(driver, By.XPATH, '(//div[@data-testid="pcf-article-content-item"])[position()=1]')
+            next_definition = self.scrap.if_element_exists(driver, By.XPATH, '(//div[@class="pcf-accordionItem whiteBg"])[position()=1]')
+            """
             i = 1
-            while next:
-                definition = driver.find_element(By.XPATH, f'//div[@data-testid="pcf-accordionItem"][{i}]')
-                #print(definition.)
-            
+            j = 1
+            while next_section is True:
+
+                while next_definition is True:
+                    driver.find_element(By.XPATH, f'//div[@data-testid="pcf-accordionItem"][{j}]').click()
+                    time.sleep(self.load.webdriverwait_timeout)
+                    next_definition = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@data-testid="pcf-accordionItem"])[position()={j+1}]')
+
+                next_section = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@data-testid="pcf-article-content-item"])[position()={i+1}]')
+                pass
+            """
+
+            i = 1
+            while next_definition is True:
+                driver.find_element(By.XPATH, f'//div[@class="pcf-accordionItem whiteBg"][{i}]').click()
+                time.sleep(self.load.webdriverwait_timeout)
+                next_definition = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@class="pcf-accordionItem whiteBg"])[position()={i+1}]')
+                i = i+1
+                print("Dentro del Loop: ", i)
+
+        else:
+            print("There are not a button glosary")    
         
 
     def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:

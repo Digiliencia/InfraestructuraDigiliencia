@@ -77,7 +77,6 @@ class ScrapUtils:
         Returns:
             bool: True if the element is found, False otherwise.
         """
-
         try:
             driver.find_element(by, element)
         except NoSuchElementException:
