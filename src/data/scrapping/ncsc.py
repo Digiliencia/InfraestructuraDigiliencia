@@ -224,7 +224,7 @@ class Ncsc:
         Args:
             driver: Selenium browser instance.
         Return:
-            A lsit with all definitions, each defitions have a:
+            A list with all definitions, each defitions have a:
                 Concept,
                 Description,
         '''
@@ -233,7 +233,7 @@ class Ncsc:
         concepts = []
         descriptions = []
 
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')):
+        if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')): # ¿Are there button glosary?
             driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
             time.sleep(self.load.webdriverwait_timeout)
 
