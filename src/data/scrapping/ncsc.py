@@ -240,36 +240,26 @@ class Ncsc:
         '''
         time.sleep(self.load.webdriverwait_timeout)
 
+        concepts = []
+        descriptions = []
+
         if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')):
             driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
             time.sleep(self.load.webdriverwait_timeout)
-            next_section = self.scrap.if_element_exists(driver, By.XPATH, '(//div[@data-testid="pcf-article-content-item"])[position()=1]')
-            next_definition = self.scrap.if_element_exists(driver, By.XPATH, '(//div[@class="pcf-accordionItem whiteBg"])[position()=1]')
-            """
-            i = 1
-            j = 1
-            while next_section is True:
 
-                while next_definition is True:
-                    driver.find_element(By.XPATH, f'//div[@data-testid="pcf-accordionItem"][{j}]').click()
-                    time.sleep(self.load.webdriverwait_timeout)
-                    next_definition = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@data-testid="pcf-accordionItem"])[position()={j+1}]')
-
-                next_section = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@data-testid="pcf-article-content-item"])[position()={i+1}]')
-                pass
-            """
-
-            i = 1
-            while next_definition is True:
-                driver.find_element(By.XPATH, f'//div[@class="pcf-accordionItem whiteBg"][{i}]').click()
+            definitions = driver.find_elements(By.XPATH, f'//div[@class="pcf-accordionItem whiteBg"]')
+            for i in definitions:
+                i.click()
                 time.sleep(self.load.webdriverwait_timeout)
-                next_definition = self.scrap.if_element_exists(driver, By.XPATH, f'(//div[@class="pcf-accordionItem whiteBg"])[position()={i+1}]')
-                i = i+1
-                print("Dentro del Loop: ", i)
+                concept = i.find_element(By.CSS_SELECTOR, 'div.pcf-accordionItem.whiteBg h3').text
+                concepts.append(concept)
+                description = i.find_element(By.CSS_SELECTOR, 'div.pcf-BodyText p').text
+                descriptions.append(description)
 
         else:
             print("There are not a button glosary")    
         
+        return {"concepts": concepts, "descriptions": descriptions}
 
     def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
         '''
