@@ -51,7 +51,7 @@ class Ncsc:
         # Loop to load all articles
         while True:
             try:
-                # Try to find the "Load more items" button     div.pcf-button button button--normalised button--secondary
+                # Try to find the "Load more items" button     
                 button_load = driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
                 button_load.click()  # Click the button
                 time.sleep(self.load.webdriverwait_timeout) # Wait a few seconds for new articles to load
@@ -97,7 +97,6 @@ class Ncsc:
             print("Anomalia detectada")
             driver.back()
             time.sleep(self.load.webdriverwait_timeout)
-            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]')
             driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]').click()
 
     def _scrap_all_topics_articles(self, driver)-> dict[str, str]:
@@ -113,7 +112,7 @@ class Ncsc:
         '''  
         if(driver is None):
             raise TypeError("ERROR: drive not found")
-        # //div[@data-testid="all-topics-panel-row"]/div[i]
+
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
         num_all_topics = int(num_topics[0])
@@ -122,7 +121,6 @@ class Ncsc:
         articles = []
         num_art = 0
         for i in range(1, (num_all_topics+1)):
-            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
 
             time.sleep(self.load.webdriverwait_timeout)
@@ -140,8 +138,6 @@ class Ncsc:
             print("Num de articulos por tema: " + str(num_articles_page))
             for j in range(0, num_articles_page):  
                 print("Num articulo: " + str(j))
-                #self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
-                #driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click()
 
                 page = WebDriverWait(driver, self.load.webdriverwait_timeout).until(
                     EC.element_to_be_clickable(
@@ -150,13 +146,11 @@ class Ncsc:
                 )
                 page.click()
 
-                #time.sleep(self.load.webdriverwait_timeout)
-                #self._is_error_not_found(driver, j)  
                 time.sleep(self.load.webdriverwait_timeout)
                 articles.append(self._get_article(driver, num_art, articles))
                 num_art += 1 
                 time.sleep(self.load.webdriverwait_timeout)
-                driver.back() # Vuelve a la pagina anterior
+                driver.back() # Back to last page
             driver.back()
         
         print("Total de articulos: ", len(articles))        
@@ -189,7 +183,6 @@ class Ncsc:
         articles = []
         num_art = 0
         for i in range(1, (num_all_topics+1)):
-            #self.scrap.load_subpage(driver, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]')
             driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
             time.sleep(self.load.webdriverwait_timeout)
             
@@ -206,10 +199,7 @@ class Ncsc:
             print("Num de articulos por tema: " + str(num_articles_page))
             for j in range(0, num_articles_page):  
                 print("Num articulo: " + str(j))
-                #self.scrap.load_subpage(driver, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
-                driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click()
-                #time.sleep(self.load.webdriverwait_timeout)
-                #self._is_error_not_found(driver, j)  
+                driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click() 
                 time.sleep(self.load.webdriverwait_timeout)
                 article = self._get_article_to_date(driver, num_art, articles, until_date)
                 if(article == False):
@@ -218,7 +208,7 @@ class Ncsc:
                     articles.append(article)
                     num_art += 1 
                     time.sleep(self.load.webdriverwait_timeout)
-                    driver.back() # Vuelve a la pagina anterior
+                    driver.back() # Back to last page
             driver.back()
         
         print("Total de articulos: ", len(articles))        
