@@ -38,7 +38,7 @@ class WEForumScrapper:
         self.home_page = "https://www.weforum.org/"
         self.stories_url = "https://www.weforum.org/stories"
         self.login_page = "https://login.weforum.org/"
-        self.load_time = 2
+        self.load_time = 3
 
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
@@ -446,58 +446,6 @@ class WEForumScrapper:
         )  # Remove title from content
 
         return data
-        """Access the given URL and scrapes the publication.
-
-        Args:
-            url (str): The Conversation publication URL
-
-        Raises:
-            WEForumError: If the URL is not a valid The Conversation URL
-            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
-
-        Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
-        """
-        if "https://theconversation.com/" not in url:
-            raise WEForumError(
-                "Attempted to scrape invalid page for The Conversation scrapper"
-            )
-
-        # Access the URL
-        self.driver.get(url)
-        time.sleep(self.load_time)
-
-        data = {}
-
-        # Get the title
-        article = self.driver.find_element(By.ID, "article")
-        title_element = article.find_element(By.TAG_NAME, "h1")
-        data["title"] = title_element.text
-
-        # Get the date
-        time_element = article.find_element(
-            By.CSS_SELECTOR, "figure div.timestamps > time"
-        )
-        data["date"] = datetime.fromisoformat(time_element.get_attribute("datetime"))
-
-        # Get the author
-        author_elements = article.find_elements(
-            By.CSS_SELECTOR, "section.content-authors span.nobr"
-        )
-        data["author"] = ", ".join(
-            [author_element.text for author_element in author_elements]
-        )
-
-        # Get the content
-        container = article.find_element(By.CLASS_NAME, "content-body")
-        ct = container.text
-        data["content"] = ct
-
-        return data
 
     def _scrap_the_quantum_insider(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the post.
@@ -665,10 +613,13 @@ class WEForumScrapper:
         data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
 
         # Get the date
-        time_elem = self.driver.find_element(By.TAG_NAME, "time")
-        data["date"] = datetime.strptime(
-            time_elem.get_attribute("datetime"), "%Y-%m-%dEST%H:%M"  # type: ignore
-        )
+        time_elems = self.driver.find_elements(By.TAG_NAME, "time")
+        for elm in time_elems:
+            if elm.get_attribute("datetime"):
+                time_elem = elm
+                break
+        time_data = time_elem.get_attribute("datetime")
+        data["date"] = datetime.strptime(time_data, "%Y-%m-%dEST%H:%M")  # type: ignore
 
         # Get the author
         authors_elem = self.driver.find_element(By.CLASS_NAME, "article-meta-1__byline")
@@ -814,7 +765,7 @@ class WEForumScrapper:
                 content += element.text + "\n\n"
 
         data["content"] = content
-        
+
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
         return data
