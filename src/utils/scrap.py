@@ -39,8 +39,9 @@ class ScrapUtils:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
-
-        return WebDriver(options=options)
+        driver = WebDriver(options=options)
+        driver.implicitly_wait(EnvLoader.implicit_wait)
+        return driver
 
     @staticmethod
     def click_element(driver: WebDriver, css_selector: str, timeout: int = 2) -> bool:

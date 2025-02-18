@@ -1,6 +1,6 @@
-from data.scrapping.incibe import IncibeScraper
+from data.scrapping.weforum import WEForumScrapper
 from utils.env_loader import EnvLoader
 
 EnvLoader()
-scrapper = IncibeScraper()
-scrapper.scrapper(150)
+scrapper = WEForumScrapper()
+scrapper.scrap(25)

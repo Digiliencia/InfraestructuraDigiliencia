@@ -18,6 +18,7 @@ class EnvLoader:
     weforum_email: str = ""
     weforum_passwd: str = ""
     webdriverwait_timeout: int = 5
+    implicit_wait: int = 10
 
     def __new__(cls):
         if cls._instance is None:
@@ -31,6 +32,7 @@ class EnvLoader:
             cls.webdriverwait_timeout = int(
                 cls._instance.get_env_var("WEBDRIVERWAIT_TIMEOUT", 5)
             )
+            cls.implicit_wait = int(cls._instance.get_env_var("IMPLICIT_WAIT", 10))
         return cls._instance
 
     @staticmethod

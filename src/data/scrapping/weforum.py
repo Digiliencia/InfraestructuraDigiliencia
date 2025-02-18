@@ -17,6 +17,7 @@ import time
 import random
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
+from rich.progress import Progress
 
 
 class WEForumError(Exception):
@@ -67,14 +68,14 @@ class WEForumScrapper:
         email_input = self.driver.find_element(By.ID, "loginradius-login-emailid")
         email_input.send_keys(self.weforum_email)
         time.sleep(1)
-        next_bttn = self.driver.find_element(By.ID, "login-check-email")
-        next_bttn.click()
+        next_btn = self.driver.find_element(By.ID, "login-check-email")
+        next_btn.click()
 
         # Wait until the log-in button is visible or timeout after 5 seconds
-        submit_bttn = WebDriverWait(self.driver, self.timeout).until(
+        submit_btn = WebDriverWait(self.driver, self.timeout).until(
             EC.visibility_of_element_located((By.ID, "loginradius-submit-login"))
         )
-        if submit_bttn is None:
+        if submit_btn is None:
             raise TimeoutError("Login button not found")
 
         # Introduce password
@@ -82,7 +83,7 @@ class WEForumScrapper:
         passwd_input = self.driver.find_element(By.ID, "loginradius-login-password")
         passwd_input.send_keys(self.weforum_passwd)
         time.sleep(1)
-        submit_bttn.click()
+        submit_btn.click()
 
         # Wait for about 10 seconds
         time.sleep(13)
@@ -622,7 +623,9 @@ class WEForumScrapper:
         data["date"] = datetime.strptime(time_data, "%Y-%m-%dEST%H:%M")  # type: ignore
 
         # Get the author
-        authors_elem = self.driver.find_element(By.CLASS_NAME, "article-meta-1__byline")
+        authors_elem = self.driver.find_element(
+            By.XPATH, '//*[@id="main"]/article/div[2]/div[1]/span'
+        )
         authors = []
         for elem in authors_elem.find_elements(By.XPATH, ".//p"):
             if elem.tag_name in ["span", "a"]:
@@ -796,21 +799,25 @@ class WEForumScrapper:
 
         scraped_publications = []
 
-        for article in articles:
-            if article["type"] == "publication":
-                scrapper_function: Optional[Callable] = publicaion_scrappers.get(
-                    article["publisher"]
-                )
-                if scrapper_function:
-                    try:
-                        publication_data = scrapper_function(article["url"])
-                        scraped_publications.append(publication_data)
-                    except Exception as e:
-                        print(f"Error scraping {article['url']}:\n {e}")
-                else:
-                    print(
-                        f"No scrapper function found for publisher: {article['publisher']}"
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
+
+            for article in articles:
+                if article["type"] == "publication":
+                    scrapper_function: Optional[Callable] = publicaion_scrappers.get(
+                        article["publisher"]
                     )
+                    if scrapper_function:
+                        try:
+                            publication_data = scrapper_function(article["url"])
+                            scraped_publications.append(publication_data)
+                        except Exception as e:
+                            print(f"Error scraping {article['url']}:\n {e}")
+                    else:
+                        print(
+                            f"No scrapper function found for publisher: {article['publisher']}"
+                        )
+                progress.advance(task)
 
         for publication in scraped_publications:
             # print(publication)
