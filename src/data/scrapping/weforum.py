@@ -821,7 +821,56 @@ class WEForumScrapper:
         data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
 
         content_elem = self.driver.find_element(By.CSS_SELECTOR, "main > article")
-        data["content"] = content_elem.text # TODO: improve content extraction
+        data["content"] = content_elem.text  # TODO: improve content extraction
+
+        return data
+
+    def _scrap_electronic_frontier_foundation_deeplink(
+        self, url: str
+    ) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes Electronic Frontier Foundation deeplink.
+
+        Args:
+            url (str): Electronic Frontier Foundation deeplink URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Electronic Frontier Foundation deeplink URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://www.eff.org/deeplinks/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Electronic Frontier Foundation deeplink scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)# Reject cookies if visible
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+
+        authors_line = self.driver.find_element(By.CLASS_NAME, "byline")
+        data["author"] = (", ").join(
+            [author.text for author in authors_line.find_elements(By.TAG_NAME, "a")]
+        )
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "date")
+        data["date"] = datetime.strptime(time_elem.text, "%B %d, %Y")  # type: ignore
+
+        article = self.driver.find_element(By.CSS_SELECTOR, 'article[role="article"]')
+        content_container = article.find_element(
+            By.CSS_SELECTOR, "div.field--name-body"
+        )
+        data["content"] = content_container.text
 
         return data
 
@@ -848,6 +897,7 @@ class WEForumScrapper:
             "The Conversation": self._scrap_the_conversation,
             "The Atlantic": self._scrap_the_atlantic,
             "SpringerOpen": self._scrap_springeropen,
+            "Electronic Frontier Foundation": self._scrap_electronic_frontier_foundation_deeplink,
         }
 
         scraped_publications = []
