@@ -39,7 +39,7 @@ class WEForumScrapper:
         self.home_page = "https://www.weforum.org/"
         self.stories_url = "https://www.weforum.org/stories"
         self.login_page = "https://login.weforum.org/"
-        self.load_time = 3
+        self.load_time = 2
 
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
@@ -606,7 +606,7 @@ class WEForumScrapper:
 
         # Access the URL
         self.driver.get(url)
-        time.sleep(self.load_time)
+        time.sleep(self.load_time * 1.5)
 
         data = {}
 
@@ -624,7 +624,7 @@ class WEForumScrapper:
 
         # Get the author
         authors_elem = self.driver.find_element(
-            By.XPATH, '//*[@id="main"]/article/div[2]/div[1]/span'
+            By.XPATH, '//*[@id="main"]/article/div[2]/span[1]'
         )
         authors = []
         for elem in authors_elem.find_elements(By.XPATH, ".//p"):
@@ -773,6 +773,58 @@ class WEForumScrapper:
 
         return data
 
+    def _scrap_springeropen(self, url: str) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes SpringerOpen.
+
+        Args:
+            url (str): SpringerOpen article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid SpringerOpen article URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "springeropen.com/articles" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for SpringerOpen article scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)
+
+        ScrapUtils.click_element(
+            self.driver, "[data-cc-action=reject]"
+        )  # Reject cookies if visible
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+
+        data["author"] = (", ").join(
+            [
+                author.text
+                for author in self.driver.find_elements(
+                    By.CSS_SELECTOR, "[data-author-search]"
+                )
+            ]
+        )
+
+        time_elem = self.driver.find_element(By.TAG_NAME, "time")
+        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+
+        content_elem = self.driver.find_element(By.CSS_SELECTOR, "main > article")
+        data["content"] = content_elem.text # TODO: improve content extraction
+
+        return data
+
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
@@ -795,6 +847,7 @@ class WEForumScrapper:
             "The Conversation (Spanish)": self._scrap_the_conversation,
             "The Conversation": self._scrap_the_conversation,
             "The Atlantic": self._scrap_the_atlantic,
+            "SpringerOpen": self._scrap_springeropen,
         }
 
         scraped_publications = []
