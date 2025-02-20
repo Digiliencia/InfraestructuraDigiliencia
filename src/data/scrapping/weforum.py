@@ -852,7 +852,7 @@ class WEForumScrapper:
 
         # Access the URL
         self.driver.get(url)
-        time.sleep(self.load_time)# Reject cookies if visible
+        time.sleep(self.load_time)  # Reject cookies if visible
 
         data = {}
 
@@ -874,7 +874,53 @@ class WEForumScrapper:
 
         return data
 
-    
+    def _scrap_australian_institute_international_affairs(
+        self, url: str
+    ) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes Australian Institute Of International Affairs page.
+
+        Args:
+            url (str): Australian Institute Of International Affairs URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Australian Institute Of International Affairs URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            dict: A dictionary with the publication information. Contains:
+                - title: The title of the publication
+                - date: The publication date
+                - author: The author of the publication
+                - content: The content of the publication
+        """
+        if "https://www.internationalaffairs.org.au/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Australian Institute Of International Affairs scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.CLASS_NAME, "post-title").text
+
+        authors_line = self.driver.find_element(By.CLASS_NAME, "author-name").text
+        authors_line = authors_line.replace("By ", "")
+        authors = [
+            author.strip() for author in authors_line.replace(" and ", ", ").split(",")
+        ]
+        data["author"] = ", ".join(authors)
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
+        data["date"] = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+
+        content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
+        data["content"] = content_container.text
+
+        return data
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
@@ -900,6 +946,7 @@ class WEForumScrapper:
             "The Atlantic": self._scrap_the_atlantic,
             "SpringerOpen": self._scrap_springeropen,
             "Electronic Frontier Foundation": self._scrap_electronic_frontier_foundation_deeplink,
+            "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
         }
 
         scraped_publications = []
