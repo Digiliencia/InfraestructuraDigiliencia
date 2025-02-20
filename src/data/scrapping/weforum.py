@@ -624,7 +624,7 @@ class WEForumScrapper:
 
         # Get the author
         authors_elem = self.driver.find_element(
-            By.XPATH, '//*[@id="main"]/article/div[2]/span[1]'
+            By.XPATH, '//*[@id="main"]/article/div[2]/div/[1]span[1]'
         )
         authors = []
         for elem in authors_elem.find_elements(By.XPATH, ".//p"):
@@ -873,6 +873,8 @@ class WEForumScrapper:
         data["content"] = content_container.text
 
         return data
+
+    
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         self.driver.maximize_window()
