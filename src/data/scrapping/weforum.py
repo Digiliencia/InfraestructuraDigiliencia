@@ -117,8 +117,8 @@ class WEForumScrapper:
         age_words = TimeUtils.format_days_ago(max_age_date)
 
         aside_div = self.driver.find_element(
-            By.CSS_SELECTOR,
-            "div.TopicDetailPanel__StyledContainer-sc-5e58f9d5-0.jZMWga",
+            By.CLASS_NAME,
+            "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0",
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
@@ -132,7 +132,7 @@ class WEForumScrapper:
             By.CSS_SELECTOR, "div[data-test-id='latest-knowledge-feed']"
         )  # Div containing articles, placed just under the articles search bar
         articles = latest_articles_div.find_elements(
-            By.CSS_SELECTOR, ".ListItemBox-sc-47508d61-0.gLXmsV"
+            By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
         )
         found_old_article: bool = False
         checked_articles: int = 0
@@ -142,7 +142,7 @@ class WEForumScrapper:
                 age = (
                     articles[checked_articles]
                     .find_element(
-                        By.CSS_SELECTOR, ".SourceLabel__StyledDate-sc-b4751e57-4.ejkvkk"
+                        By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
                     )
                     .text
                 )
@@ -164,7 +164,7 @@ class WEForumScrapper:
                 )
                 time.sleep(random.uniform(self.load_time, self.load_time + 2))
                 new_articles = latest_articles_div.find_elements(
-                    By.CSS_SELECTOR, ".ListItemBox-sc-47508d61-0.gLXmsV"
+                    By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
                 )
                 if len(new_articles) == len(articles):
                     # No more articles to load
@@ -176,7 +176,7 @@ class WEForumScrapper:
         for article in articles:
 
             type = article.find_element(
-                By.CSS_SELECTOR, ".shared__StyledType-sc-fd9f989e-0.lhiwEc"
+                By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
             ).text.lower()
 
             if type == "video":
@@ -185,14 +185,14 @@ class WEForumScrapper:
             elif type == "publication":
                 # Get the publisher, title and link
                 publisher = article.find_element(
-                    By.CSS_SELECTOR, ".SourceLabel__StyledText-sc-b4751e57-2.fzCMaX"
+                    By.CLASS_NAME, "SourceLabel__StyledText-sc-b4751e57-2"
                 ).text
                 title = article.find_element(
-                    By.CSS_SELECTOR, ".shared__StyledTitle-sc-fd9f989e-1.hOLaLK"
+                    By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
                 ).text
                 link_element = article.find_element(
-                    By.CSS_SELECTOR,
-                    ".UIActionButton__StyledButton-sc-384a1b53-2.jLISFv",
+                    By.CLASS_NAME,
+                    "UIActionButton__StyledButton-sc-ce337a4a-2",
                 )
                 link = (
                     link_element.get_attribute("href")
@@ -930,6 +930,11 @@ class WEForumScrapper:
         # Sign in if not already
         if not self._is_logged_in():
             self._login()
+
+        ScrapUtils.click_element(
+            self.driver, ".CallToAction__CloseButton-sc-7e1451ff-7.dqHIyC"
+        )
+        time.sleep(self.load_time)
 
         articles = self._get_websites_to_scrap(from_days_ago)
 
