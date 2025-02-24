@@ -1,9 +1,11 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.webdriver import WebDriver
+from loguru import logger
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 from utils.env_loader import EnvLoader
 
 
@@ -20,6 +22,7 @@ class ScrapUtils:
         Returns:
             Driver
         """
+        logger.debug("Creating Selenium driver")
         options = Options()
         options.add_argument(
             "user-agent="
@@ -65,7 +68,7 @@ class ScrapUtils:
             cookie_button.click()
             return True
         except TimeoutException:
-            print(f"{css_selector} elem not found")
+            logger.debug(f"{css_selector} elem not found")
             return False
 
     @DeprecationWarning
@@ -124,6 +127,7 @@ class ScrapUtils:
         Returns:
             None
         """
+        logger.debug("Disabling JavaScript in driver")
         driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
 
     @staticmethod
@@ -137,4 +141,5 @@ class ScrapUtils:
         Returns:
             None
         """
+        logger.debug("Enabling JavaScript in driver")
         driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})

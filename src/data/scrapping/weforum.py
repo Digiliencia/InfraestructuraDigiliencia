@@ -6,18 +6,21 @@ Created on Wed Jan 21 12:39:40 2025
 Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
-from typing import Callable, Optional, Union
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from utils.env_loader import EnvLoader
-from utils.time import TimeUtils
-from utils.scrap import ScrapUtils
-import time
 import random
+import time
 from datetime import datetime
-from urllib.parse import urlparse, parse_qs
+from typing import Callable, Optional, Union
+from urllib.parse import parse_qs, urlparse
+
+from loguru import logger
 from rich.progress import Progress
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from utils.env_loader import EnvLoader
+from utils.scrap import ScrapUtils
+from utils.time import TimeUtils
 
 
 class WEForumError(Exception):
@@ -27,6 +30,7 @@ class WEForumError(Exception):
 
 class WEForumScrapper:
     def __init__(self):
+        logger.debug("Initializing WEForumScrapper")
         EnvLoader()  # Call EnvLoader to force reading the .env file
         self.driver = ScrapUtils.get_driver()
 
@@ -49,6 +53,7 @@ class WEForumScrapper:
         """
 
         # Accept cookies if pop-up visible
+        logger.debug("Loging in to WEForum")
         if ScrapUtils._if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
             if cookies_popup.is_displayed():
@@ -110,8 +115,9 @@ class WEForumScrapper:
         Returns:
             list: List of ditct with the type (video, publication, ...), publisher, title and url of each article
         """
-
+        logger.debug("Getting the websites to scrap")
         if max_age_date < 1:
+            logger.error("max_age_date must be greater than 0")
             raise ValueError("max_age_date must be greater than 0")
 
         age_words = TimeUtils.format_days_ago(max_age_date)
@@ -172,6 +178,7 @@ class WEForumScrapper:
                 articles = new_articles
 
         # Process each article:
+        logger.debug(f"Found {len(articles)} articles to process")
         processed_articles: list = []
         for article in articles:
 
@@ -209,8 +216,10 @@ class WEForumScrapper:
                         }
                     )
                 else:
+                    logger.warning("Link not found: " + title)
                     raise WEForumError("Link not found: " + title)
             else:
+                logger.warning("Unknown article type: " + type)
                 raise WEForumError("Unknown article type: " + type)
 
         return processed_articles
@@ -221,6 +230,7 @@ class WEForumScrapper:
 
         This method will close the browser window that is currently controlled by the driver instance.
         """
+        logger.debug("Closing the browser window")
         self.driver.close()
 
     def _is_logged_in(self) -> bool:
@@ -233,6 +243,9 @@ class WEForumScrapper:
             WEForumError: If the user is not in the topic page
         """
         if self.driver.current_url != self.cybersecturity_topic_url:
+            logger.error(
+                "Cannot check if logged in because browser is not in the topic page"
+            )
             raise WEForumError(
                 "Cannot check if logged in because browser is not in the topic page"
             )
@@ -246,6 +259,7 @@ class WEForumScrapper:
         Args:
             accept_bttn_id (str): The ID of the accept button.
         """
+        logger.debug("Accepting cookies if visible")
         if ScrapUtils._if_element_exists(self.driver, By.ID, accept_bttn_id):
             accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
             if accept_bttn.is_displayed():
@@ -268,6 +282,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping Wired story: {url}")
         # Disable JS
         ScrapUtils.disable_js(self.driver)
 
@@ -322,6 +337,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping WEForum story: {url}")
         if self.stories_url not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for WEForum stories scrapper"
@@ -354,7 +370,9 @@ class WEForumScrapper:
             "/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]",
         )
 
-        data["content"] = content_container.text #TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
+        data["content"] = (
+            content_container.text
+        )  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
         return data
 
     def _scrap_globaldata_newsletter(self, url: str) -> dict[str, Union[str, datetime]]:
@@ -374,6 +392,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping GlobalData newsletter: {url}")
         # Verify URL
         if "https://www.globaldata.com/newsletter/details" not in url:
             raise WEForumError(
@@ -427,6 +446,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping The Quantum Insider: {url}")
         if not url.startswith("https://thequantuminsider.com/"):
             raise WEForumError(
                 "Attempted to scrape invalid page for The Quantum Insider scrapper"
@@ -495,6 +515,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping Australian Strategic Policy Institute: {url}")
         if "https://www.aspistrategist.org.au/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Australian Strategic Policy Institute scrapper"
@@ -561,6 +582,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping ProPublica article: {url}")
         if "https://www.propublica.org/article/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for ProPublica article scrapper"
@@ -620,6 +642,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping The Conversation article: {url}")
         if "https://theconversation.com/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for The Conversation article scrapper"
@@ -692,6 +715,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping The Atlantic article: {url}")
         if "https://www.theatlantic.com" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for The Atlantic article scrapper"
@@ -753,6 +777,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping SpringerOpen article: {url}")
         if "springeropen.com/articles" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for SpringerOpen article scrapper"
@@ -807,6 +832,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping Electronic Frontier Foundation deeplink: {url}")
         if "https://www.eff.org/deeplinks/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Electronic Frontier Foundation deeplink scrapper"
@@ -856,6 +882,7 @@ class WEForumScrapper:
                 - author: The author of the publication
                 - content: The content of the publication
         """
+        logger.debug(f"Scraping Australian Institute Of International Affairs: {url}")
         if "https://www.internationalaffairs.org.au/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Australian Institute Of International Affairs scrapper"
@@ -885,6 +912,8 @@ class WEForumScrapper:
         return data
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
+
+        logger.info("Scraping WEForum")
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
 
@@ -931,7 +960,7 @@ class WEForumScrapper:
                             publication_data = scrapper_function(article["url"])
                             scraped_publications.append(publication_data)
                         except Exception as e:
-                            print(f"Error scraping {article['url']}:\n {e}")
+                            logger.error(f"Error scraping {article['url']}:\n {e}")
                     else:
                         print(
                             f"No scrapper function found for publisher: {article['publisher']}"
@@ -943,4 +972,5 @@ class WEForumScrapper:
             pass
 
         self._close()
+        logger.info("WEForum scraping finished")
         return None  # type: ignore
