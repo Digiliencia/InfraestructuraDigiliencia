@@ -349,50 +349,12 @@ class WEForumScrapper:
         # TODO: fix if more than one person wrote the article (list?)
 
         # Get the content
-        classes: dict = {
-            "main_section_div": "wef-1a11yf0",  # Includes inside a div with information
-            # about the context of the article and a "wef-0" with the main content and a last
-            # one with license and other info (like footer).
-            "paragraphs": "wef-zw4tnc",
-            "related_readings": "wef-1mv5kk8",
-            "videos": "wef-hwdz70",
-            "podcasts": "wef-1bs0642",
-            "subtitles": "wef-1qmtbdn",
-            "discover_more": "wef-1r70254",
-            "imgs": "wef-ha4kjk",
-            "bullet_point_paragraphs": "wef-aa063t",
-            "main_bullet_points": "wef-1anm32a",
-        }
+        content_container = self.driver.find_element(
+            By.XPATH,
+            "/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]",
+        )
 
-        """ For getting the main section div containing the rest of divs
-        I first search for a normal paragraph, then I go up to the parent (containing the p)
-        and after the parent, which will contain every div with
-        the classes specified before.
-        """
-        any_p = self.driver.find_element(By.CLASS_NAME, classes["paragraphs"])
-        p_div = any_p.find_element(By.XPATH, "../../..")
-        divs = p_div.find_elements(By.XPATH, "./div")
-        content = ""
-
-        for div in divs:
-            cl = div.get_attribute("class")
-            if cl == classes["paragraphs"]:
-                content += div.text + "\n"
-            elif cl == classes["subtitles"]:
-                content += f"\n\n{div.text}\n"
-            elif cl == classes["bullet_point_paragraphs"]:
-                for li in div.find_elements(By.TAG_NAME, "li"):
-                    content += f"\t- {li.text}\n"
-            elif cl == classes["main_bullet_points"]:
-                for li in div.find_elements(By.TAG_NAME, "li"):
-                    content += f"\t- {li.text}\n"
-            elif cl == classes["imgs"]:
-                img = div.find_element(By.TAG_NAME, "img")
-                img_link = img.get_attribute("src")
-                img_alt = img.get_attribute("alt")
-                content += f"![{img_alt}]({img_link})\n"
-
-        data["content"] = content
+        data["content"] = content_container.text #TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
         return data
 
     def _scrap_globaldata_newsletter(self, url: str) -> dict[str, Union[str, datetime]]:
