@@ -8,6 +8,7 @@ Class to load environment variables from a .env file
 
 import os
 from dotenv import load_dotenv
+from loguru import logger
 
 
 class EnvLoader:
@@ -18,8 +19,10 @@ class EnvLoader:
     weforum_email: str = ""
     weforum_passwd: str = ""
     webdriverwait_timeout: int = 5
+    implicit_wait: int = 2
 
     def __new__(cls):
+        logger.debug("Loading environment variables")
         if cls._instance is None:
             cls._instance = super(EnvLoader, cls).__new__(cls)
             cls._instance.load_env_vars()
@@ -31,15 +34,18 @@ class EnvLoader:
             cls.webdriverwait_timeout = int(
                 cls._instance.get_env_var("WEBDRIVERWAIT_TIMEOUT", 5)
             )
+            cls.implicit_wait = int(cls._instance.get_env_var("IMPLICIT_WAIT", 2))
         return cls._instance
 
     @staticmethod
     def load_env_vars():
         load_dotenv(override=True)
+        logger.debug("Environment variables loaded")
 
     @staticmethod
     def get_env_var(var_name, default=None):
         value = os.getenv(var_name, default)
         if value is None:
+            logger.error(f"Environment variable {var_name} is not set")
             raise ValueError(f"Environment variable {var_name} is not set")
         return value
