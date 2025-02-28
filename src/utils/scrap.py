@@ -1,9 +1,11 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.webdriver import WebDriver
+from loguru import logger
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 from utils.env_loader import EnvLoader
 
 
@@ -20,6 +22,7 @@ class ScrapUtils:
         Returns:
             Driver
         """
+        logger.debug("Creating Selenium driver")
         options = Options()
         options.add_argument(
             "user-agent="
@@ -39,8 +42,9 @@ class ScrapUtils:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
-
-        return WebDriver(options=options)
+        driver = WebDriver(options=options)
+        driver.implicitly_wait(EnvLoader.implicit_wait)
+        return driver
 
     @staticmethod
     def click_element(driver: WebDriver, css_selector: str, timeout: int = 2) -> bool:
@@ -64,36 +68,8 @@ class ScrapUtils:
             cookie_button.click()
             return True
         except TimeoutException:
-            print(f"{css_selector} elem not found")
+            logger.debug(f"{css_selector} elem not found")
             return False
-
-    @DeprecationWarning
-    def load_subpage(self, driver, xpath):
-        """
-        Load subpage of a website
-        Args:
-            driver : Selenium browser instance.
-            xpath (String): xpath of a element
-
-        Return:
-            subpage_link
-        """
-        # Wait until the subpage link is visible and click on it
-        subpage_link = WebDriverWait(driver, self.timeout).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, xpath)
-            )  # Adjust the XPATH according to the link
-        )
-        subpage_link.click()
-
-        # Wait for the subpage to load
-        WebDriverWait(driver, self.timeout).until(
-            EC.presence_of_element_located(
-                (By.TAG_NAME, "body")
-            )  # Wait until the body content is loaded
-        )
-
-        return subpage_link
 
     @staticmethod
     def _if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
@@ -111,3 +87,31 @@ class ScrapUtils:
         except NoSuchElementException:
             return False
         return True
+
+    @staticmethod
+    def disable_js(driver: WebDriver) -> None:
+        """
+        Disables JavaScript in the given driver.
+
+        Args:
+            driver: Selenium browser instance.
+
+        Returns:
+            None
+        """
+        logger.debug("Disabling JavaScript in driver")
+        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
+
+    @staticmethod
+    def enable_js(driver: WebDriver) -> None:
+        """
+        Enables JavaScript in the given driver.
+
+        Args:
+            driver: Selenium browser instance.
+
+        Returns:
+            None
+        """
+        logger.debug("Enabling JavaScript in driver")
+        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
