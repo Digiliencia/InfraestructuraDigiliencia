@@ -120,6 +120,9 @@ class Ncsc:
         Return:
             all topics and all articles on topics
         '''  
+        ############################################
+        #  REFACTOR: Using function find_elements  #
+        ############################################
         if(driver is None):
             logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
@@ -182,6 +185,9 @@ class Ncsc:
         Return:
             all topics and all articles on topics
         '''  
+        ############################################
+        #  REFACTOR: Using function find_elements  #
+        ############################################
         if(driver is None):
             raise TypeError("ERROR: drive not found")
 
