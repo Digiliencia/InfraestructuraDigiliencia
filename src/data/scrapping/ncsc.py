@@ -18,6 +18,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import time
+from loguru import logger
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from utils.env_loader import EnvLoader
@@ -32,6 +33,7 @@ https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
 class Ncsc:
     
     def __init__(self):
+        logger.debug("Initializing Scrapping of NCSC")
         self.scrap = ScrapUtils()
         self.load = EnvLoader()
 
@@ -47,7 +49,10 @@ class Ncsc:
             None
         '''
         if(driver is None):
+            logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
+        
+        logger.debug("Show all articles of topic")
         # Loop to load all articles
         while True:
             try:
@@ -72,9 +77,11 @@ class Ncsc:
             number all articles of a topic
         '''
         if(driver is None):
+            logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
         
         show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
+        logger.debug(f"Get number of all articles: {int(show_art[5])}")
         return int(show_art[5])
 
     def _is_error_not_found(self, driver, num_topic: int = 1):
@@ -91,8 +98,11 @@ class Ncsc:
             FALSE -> There is a topic
         ''' 
         if(driver is None):
+            logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
+        
         # Error page not found, page back and go to page
+        logger.debug("ERROR of website: Topic NCSC not found")
         if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
             print("Anomalia detectada")
             driver.back()
@@ -111,22 +121,24 @@ class Ncsc:
             all topics and all articles on topics
         '''  
         if(driver is None):
+            logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
 
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
         num_all_topics = int(num_topics[0])
+        logger.debug(f"Num of all topics: {num_all_topics}")
         
         topics = []
         articles = []
         num_art = 0
-        for i in range(1, (num_all_topics+1)):
+        for i in range(1, (num_all_topics+1)): # COMMENT
             driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
 
             time.sleep(self.load.webdriverwait_timeout)
             
             # Extract Topic
-            print("Num tema: " + str(i))
+            logger.debug(f"Num tema: {str(i)}")
             topics.append(self._get_topic(driver))
 
             self._is_error_not_found(driver, i)  
@@ -135,9 +147,9 @@ class Ncsc:
             time.sleep(self.load.webdriverwait_timeout)
             self._show_all_articles(driver)
             
-            print("Num de articulos por tema: " + str(num_articles_page))
+            logger.debug("Num de articulos por tema: " + str(num_articles_page))
             for j in range(0, num_articles_page):  
-                print("Num articulo: " + str(j))
+                logger.debug("Num articulo: " + str(j))
 
                 page = WebDriverWait(driver, self.load.webdriverwait_timeout).until(
                     EC.element_to_be_clickable(
@@ -228,6 +240,7 @@ class Ncsc:
                 Concept,
                 Description,
         '''
+        logger.debug("Scrap of glosarry")
         time.sleep(self.load.webdriverwait_timeout)
 
         concepts = []
@@ -247,7 +260,7 @@ class Ncsc:
                 descriptions.append(description)
 
         else:
-            print("There are not a button glosary")    
+            logger.error("There are not a button glosary")    
         
         return {"concepts": concepts, "descriptions": descriptions}
 
@@ -270,6 +283,7 @@ class Ncsc:
                 content
         ''' 
         if(driver is None):
+            logger.error("driver not found")
             raise("ERROR: drive not found")
 
         time.sleep(self.load.webdriverwait_timeout) 
@@ -322,6 +336,7 @@ class Ncsc:
                 description
         '''
         if(driver is None):
+            logger.error("driver not found")
             raise TypeError("ERROR: drive not found")
         
         time.sleep(self.load.webdriverwait_timeout)
@@ -356,6 +371,7 @@ class Ncsc:
                 content
         ''' 
         if(driver is None):
+            logger.error("driver not found")
             raise("ERROR: drive not found")
 
         time.sleep(self.load.webdriverwait_timeout) 
