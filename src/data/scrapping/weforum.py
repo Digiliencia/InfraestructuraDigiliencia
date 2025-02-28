@@ -266,6 +266,45 @@ class WEForumScrapper:
                 accept_bttn.click()
                 time.sleep(self.load_time)
 
+    def _scrap_sciencedaily(self, url: str) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes Science Daily
+
+        Args:
+            url (str): Science Daily url article
+
+        Raises:
+            WEForumError: If the URL is not a valid Science Daily article URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Return:
+            dict: A dictionary with the article information. Contains:
+                - title: The title of the article
+                - date: The article date
+                - authors: The authors of the article
+                - content: The content of the article
+        """
+        # Verify URL
+        if "https://www.sciencedaily.com/releases/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Science Daily newsletter scrapper"
+            )
+        
+        logger.debug(f"Scraping Science Daily story: {url}")
+        # Access the URL
+        self.driver.get(url) 
+        time.sleep(self.load_time)
+
+        data = {}
+        try:
+            data["title"] = self.driver.find_element(By.ID, "headline").text
+            data["content"] = self.driver.find_element(By.ID, "text").text
+            data["authors"] = self.driver.find_element(By.CLASS_NAME, '//ol[@class="journal"]/li/text()[1]').text  
+            data["date"] = self.driver.find_element(By.ID, "date_posted").text  # Mirar el formato de la fecha
+            return data      
+        except WEForumError as e:
+            print("ERROR NoSuchElementException: ", e)
+
     def _scrap_wired_story(self, url: str) -> dict[str, Union[str, datetime]]:
         """Access the given URL and scrapes the publication.
 
@@ -943,6 +982,7 @@ class WEForumScrapper:
             "SpringerOpen": self._scrap_springeropen,
             "Electronic Frontier Foundation": self._scrap_electronic_frontier_foundation_deeplink,
             "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
+            "Science Daily": self._scrap_sciencedaily
         }
 
         scraped_publications = []
