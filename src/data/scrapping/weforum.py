@@ -266,6 +266,8 @@ class WEForumScrapper:
                 accept_bttn.click()
                 time.sleep(self.load_time)
 
+    
+
     def _scrap_sciencedaily(self, url: str) -> dict[str, Union[str, datetime]]:
         """
         Access the given URL and scrapes Science Daily
@@ -299,8 +301,9 @@ class WEForumScrapper:
         try:
             data["title"] = self.driver.find_element(By.ID, "headline").text
             data["content"] = self.driver.find_element(By.ID, "text").text
-            data["authors"] = self.driver.find_element(By.CLASS_NAME, '//ol[@class="journal"]/li/text()[1]').text  
             data["date"] = self.driver.find_element(By.ID, "date_posted").text  # Mirar el formato de la fecha
+            data["authors"] = self.driver.find_element(By.XPATH, '//ol[@class="journal"]/li/text()[1]').text  
+
             return data      
         except WEForumError as e:
             print("ERROR NoSuchElementException: ", e)
