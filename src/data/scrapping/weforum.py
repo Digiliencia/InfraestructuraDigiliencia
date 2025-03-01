@@ -1049,7 +1049,8 @@ class WEForumScrapper:
             "SpringerOpen": self._scrap_springeropen,
             "Electronic Frontier Foundation": self._scrap_electronic_frontier_foundation_deeplink,
             "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
-            "Science Daily": self._scrap_sciencedaily
+            "Science Daily": self._scrap_sciencedaily,
+            "Rand Corporation": self._scrap_rand_corporation
         }
 
         scraped_publications = []
