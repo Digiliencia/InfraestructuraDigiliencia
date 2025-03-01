@@ -27,6 +27,28 @@ class WEForumError(Exception):
     def __init__(self, message):
         self.message = message
 
+##########################################################################################################
+#                                                                                                        #
+#                           PAGE TO SCRAP                                                                #
+#   No scrapper function found for publisher: MIT Sloan Management Review                                #
+#   No scrapper function found for publisher: International Service for Human Rights                     #
+#   No scrapper function found for publisher: GovLab - Living Library                                    #
+#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
+#   No scrapper function found for publisher: CyberPeace Institute                                       #
+#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
+#   No scrapper function found for publisher: IDIAP Research Institute                                   #
+#   No scrapper function found for publisher: ReliefWeb                                                  #
+#   No scrapper function found for publisher: The Tokenist                                               #
+#   No scrapper function found for publisher: LSE Business Review                                        #
+#   No scrapper function found for publisher: The Hague Centre for Strategic Studies                     #
+#   No scrapper function found for publisher: CGAP Blog                                                  #
+#   No scrapper function found for publisher: War on the Rocks                                           #
+#   No scrapper function found for publisher: Revista PLUS                                               #
+#   No scrapper function found for publisher: Oliver Wyman                                               #
+#   No scrapper function found for publisher: London School of Economics and Political Science           #
+#   No scrapper function found for publisher: Der Spiegel                                                #
+#                                                                                                        #
+##########################################################################################################
 
 class WEForumScrapper:
     def __init__(self):
@@ -266,7 +288,49 @@ class WEForumScrapper:
                 accept_bttn.click()
                 time.sleep(self.load_time)
 
-    
+    def _scrap_rand_corporation(self, url: str) -> dict[str, Union[str, datetime]]:
+        """
+        Access the given URL and scrapes Rand Corporation
+
+        Args:
+            url (str): Rand Corporation url article
+
+        Raises:
+            WEForumError: If the URL is not a valid Rand Corporation article URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Return:
+            dict: A dictionary with the article information. Contains:
+                - title: The title of the article
+                - date: The article date
+                - authors: The authors of the article
+                - content: The content of the article
+        """
+        # Verify URL
+        if "https://www.rand.org/pubs/research_reports/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Rand Corporation newsletter scrapper"
+            )
+        
+        logger.debug(f"Scraping Rand Corporation story: {url}")
+        # Access the URL
+        self.driver.get(url) 
+        time.sleep(self.load_time)
+
+        data = {}
+
+        data["title"] = self.driver.find_element(By.ID, "RANDTitleHeadingId").text
+        data["authors"] = self.driver.find_element(By.CLASS_NAME, 'authors').text  
+        date = self.driver.find_element(By.CLASS_NAME, "published").text  # Mirar el formato de la fecha
+        data["date"] = date[9:]
+
+        introduction = self.driver.find_element(By.CLASS_NAME, "abstract-first-letter").text
+        sections = self.driver.find_elements(By.TAG_NAME, "li").text
+        content = introduction + sections
+        data["content"] = content
+
+        return data      
+
 
     def _scrap_sciencedaily(self, url: str) -> dict[str, Union[str, datetime]]:
         """
