@@ -47,6 +47,10 @@ class WEForumError(Exception):
 #   No scrapper function found for publisher: Oliver Wyman                                               #
 #   No scrapper function found for publisher: London School of Economics and Political Science           #
 #   No scrapper function found for publisher: Der Spiegel                                                #
+#   No scrapper function found for publisher: UNIDIR                                                     #
+#   No scrapper function found for publisher: Asian Development Bank                                     #
+#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
+#   No scrapper function found for publisher: Frontiers                                                  #
 #                                                                                                        #
 ##########################################################################################################
 
