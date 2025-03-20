@@ -25,39 +25,24 @@ from utils.env_loader import EnvLoader
 from utils.scrap import ScrapUtils
 from utils.time import TimeUtils
 
-'''
-https://www.ncsc.gov.uk/section/advice-guidance/glossary
-https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-news?q=&defaultTypes=news,information&sort=date%2Bdesc
-https://www.ncsc.gov.uk/section/keep-up-to-date/ncsc-blog
-'''
 class Ncsc:
     
     def __init__(self):
         logger.debug("Initializing Scrapping of NCSC")
         self.scrap = ScrapUtils()
         self.load = EnvLoader()
+        self.driver = ScrapUtils.get_driver()
+        self.articles = []
+        self.topics = []
 
-    def _show_all_articles(self, driver):
-        '''
-        Shows the browser all articles in a topic. Click the "Show 10 more" button repeatedly until it disappears.
-
-        Args:
-            driver: Selenium browser instance.
-        Raise:
-            TypeError: not found drive
-        Return:
-            None
-        '''
-        if(driver is None):
-            logger.error("driver not found")
-            raise TypeError("ERROR: drive not found")
-        
+    def _show_all_articles(self):
+        '''  Shows the browser all articles in a topic. Click the "Show 10 more" button repeatedly until it disappears.  '''
         logger.debug("Show all articles of topic")
         # Loop to load all articles
         while True:
             try:
                 # Try to find the "Load more items" button     
-                button_load = driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
+                button_load = self.driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
                 button_load.click()  # Click the button
                 time.sleep(self.load.webdriverwait_timeout) # Wait a few seconds for new articles to load
             except NoSuchElementException:
@@ -65,96 +50,43 @@ class Ncsc:
                 print("No hay más artículos para cargar.")
                 break
 
-    def _get_num_all_articles(self, driver) -> int:
-        '''
-        Return number all articles of a topic
-        
-        Args:
-            driver: Selenium browser instance.
-        Raise:
-            TypeError: not found drive
-        Return:
-            number all articles of a topic
-        '''
-        if(driver is None):
-            logger.error("driver not found")
-            raise TypeError("ERROR: drive not found")
-        
-        show_art = driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
+    def _get_num_all_articles(self) -> int:
+        '''  Return number all articles of a topic. '''
+        show_art = self.driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
         logger.debug(f"Get number of all articles: {int(show_art[5])}")
         return int(show_art[5])
 
-    def _is_error_not_found(self, driver, num_topic: int = 1):
+    def _scrap_all_topics_articles(self, days:int=0):
         '''
-        The website has a bug. Sometimes, if you access a topic you can find the 404 page and if you exit and select the same topic again, it lets you access the same topic.
+        Scrap all articles and topics of website: https://www.ncsc.gov.uk/
 
         Args:
-            driver: Selenium browser instance.
-            num_topic: topic number of the topics to be scraped
-        Raise:
-            TypeError: Not found drive
-        Return:
-            TRUE -> There is a page not found 404
-            FALSE -> There is a topic
+            days(int) default = 0, days back to scrape 
         ''' 
-        if(driver is None):
-            logger.error("driver not found")
-            raise TypeError("ERROR: drive not found")
-        
-        # Error page not found, page back and go to page
-        logger.debug("ERROR of website: Topic NCSC not found")
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-error" or @data-testid="pcf-error"]')):
-            print("Anomalia detectada")
-            driver.back()
-            time.sleep(self.load.webdriverwait_timeout)
-            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{num_topic}]').click()
-
-    def _scrap_all_topics_articles(self, driver)-> dict[str, str]:
-        '''
-        main function of website scraping https://www.ncsc.gov.uk/
-
-        Raise:
-            TypeError: Not found driver
-        Args:
-            driver: Selenium browser instance.
-        Return:
-            all topics and all articles on topics
-        '''  
-        ############################################
-        #  REFACTOR: Using function find_elements  #
-        ############################################
-        if(driver is None):
-            logger.error("driver not found")
-            raise TypeError("ERROR: drive not found")
-
+        until_date = TimeUtils.format_subtract_days_to_actual_date(days) # Calculate date to scrap
         time.sleep(self.load.webdriverwait_timeout)
-        num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
-        num_all_topics = int(num_topics[0])
-        logger.debug(f"Num of all topics: {num_all_topics}")
-        
-        topics = []
-        articles = []
-        num_art = 0
-        for i in range(1, (num_all_topics+1)): # COMMENT
-            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
+        num_topics = self.driver.find_elements(By.XPATH, '(//div[@data-testid="all-topics-panel-row"]/div)')
+        logger.debug(f"Num de temas: {len(num_topics)}")
 
+        for i in range(1, len(num_topics)+1): # +1 is for taking the last topic
             time.sleep(self.load.webdriverwait_timeout)
+            self.driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
             
             # Extract Topic
             logger.debug(f"Num tema: {str(i)}")
-            topics.append(self._get_topic(driver))
-
-            self._is_error_not_found(driver, i)  
+            self.topics.append(self._get_topic())
+ 
             time.sleep(self.load.webdriverwait_timeout)
-            num_articles_page = self._get_num_all_articles(driver)
+            num_articles_page = self._get_num_all_articles()
             time.sleep(self.load.webdriverwait_timeout)
-            self._show_all_articles(driver)
+            self._show_all_articles()
             
             logger.debug("Num de articulos por tema: " + str(num_articles_page))
+
             for j in range(0, num_articles_page):  
                 logger.debug("Num articulo: " + str(j))
 
-                page = WebDriverWait(driver, self.load.webdriverwait_timeout).until(
+                page = WebDriverWait(self.driver, self.load.webdriverwait_timeout).until(
                     EC.element_to_be_clickable(
                         (By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
                     )  # Adjust the XPATH according to the link
@@ -162,123 +94,55 @@ class Ncsc:
                 page.click()
 
                 time.sleep(self.load.webdriverwait_timeout)
-                articles.append(self._get_article(driver, num_art, articles))
-                num_art += 1 
-                time.sleep(self.load.webdriverwait_timeout)
-                driver.back() # Back to last page
-            driver.back()
-        
-        print("Total de articulos: ", len(articles))        
-
-        return {topics, articles}
-
-
-    def _scrap_all_topics_articles_to_days(self, driver, days:int=0)-> dict[str, str]:
-        '''
-        main function of website scraping https://www.ncsc.gov.uk/
-
-        Raise:
-            TypeError: Not found driver
-        Args:
-            driver: Selenium browser instance.
-            days: days from today's date to extract data
-        Return:
-            all topics and all articles on topics
-        '''  
-        ############################################
-        #  REFACTOR: Using function find_elements  #
-        ############################################
-        if(driver is None):
-            raise TypeError("ERROR: drive not found")
-
-        until_date = TimeUtils.format_subtract_days_to_actual_date(days)
-
-        time.sleep(self.load.webdriverwait_timeout)
-        num_topics = driver.find_element(By.XPATH, '//p[@data-testid="panel-subtitle"]').text.split()
-        num_all_topics = int(num_topics[0])
-        
-        topics = []
-        articles = []
-        num_art = 0
-        for i in range(1, (num_all_topics+1)):
-            driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
-            time.sleep(self.load.webdriverwait_timeout)
-            
-            # Extract Topic
-            print("Num tema: " + str(i))
-            topics.append(self._get_topic(driver))
-
-            self._is_error_not_found(driver, i)  
-            time.sleep(self.load.webdriverwait_timeout)
-            num_articles_page = self._get_num_all_articles(driver)
-            time.sleep(self.load.webdriverwait_timeout)
-            self._show_all_articles(driver)
-            
-            print("Num de articulos por tema: " + str(num_articles_page))
-            for j in range(0, num_articles_page):  
-                print("Num articulo: " + str(j))
-                driver.find_element(By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]').click() 
-                time.sleep(self.load.webdriverwait_timeout)
-                article = self._get_article_to_date(driver, num_art, articles, until_date)
+                article = self._get_article_to_date(until_date) 
                 if(article == False):
                     break
                 else:
-                    articles.append(article)
-                    num_art += 1 
+                    self.articles.append(article)
                     time.sleep(self.load.webdriverwait_timeout)
-                    driver.back() # Back to last page
-            driver.back()
-        
-        print("Total de articulos: ", len(articles))        
+                    self.driver.back() # Back to last page
+            self.driver.back()
+                
+        logger.debug(f"Total articles: {len(self.articles)}")
 
-        return {topics, articles}
-
-
-    def _scrap_glosary(self, driver) -> dict[str, str]:
+    def _scrap_glosary(self) -> dict[str, str]:
         '''
         Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
         The definitions is divided by sections
 
-        Args:
-            driver: Selenium browser instance.
         Return:
             A list with all definitions, each defitions have a:
                 Concept,
                 Description,
         '''
-        logger.debug("Scrap of glosarry")
-        time.sleep(self.load.webdriverwait_timeout)
-
         concepts = []
         descriptions = []
 
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//li[@id="2"]/a')): # ¿Are there button glosary?
-            driver.find_element(By.XPATH, '//li[@id="2"]/a').click() # Click button Glosary
+        self.driver.get("https://www.ncsc.gov.uk/section/advice-guidance/glossary")
+        self.scrap.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1) # Function to disable the cookie popup
+
+        logger.debug(f"Scrap of glosarry title: {self.driver.title}")
+
+        definitions = self.driver.find_elements(By.CSS_SELECTOR, '.pcf-accordionItem.whiteBg')
+        logger.debug(f"Num total de definiciones {len(definitions)}")
+        for i in definitions:
+            i.click()
             time.sleep(self.load.webdriverwait_timeout)
-
-            definitions = driver.find_elements(By.XPATH, f'//div[@class="pcf-accordionItem whiteBg"]')
-            for i in definitions:
-                i.click()
-                time.sleep(self.load.webdriverwait_timeout)
-                concept = i.find_element(By.CSS_SELECTOR, 'div.pcf-accordionItem.whiteBg h3').text
-                concepts.append(concept)
-                description = i.find_element(By.CSS_SELECTOR, 'div.pcf-BodyText p').text
-                descriptions.append(description)
-
-        else:
-            logger.error("There are not a button glosary")    
+            concept = i.find_element(By.CSS_SELECTOR, 'div.pcf-accordionItem.whiteBg h3').text
+            logger.debug(f"Definition: {concept}")
+            concepts.append(concept)
+            description = i.find_element(By.CSS_SELECTOR, 'div.pcf-BodyText p').text
+            descriptions.append(description)
         
         return {"concepts": concepts, "descriptions": descriptions}
 
-    def _get_article_to_date(self, driver, index: int = 0, articles: dict = [], until_date: str = '') -> dict[str, str]:
+    def _get_article_to_date(self, until_date: str = '') -> dict[str, str]:
         '''
-        Return an article of a topic until date param
+        Return an articles of a topic until date param
 
         Args:
-            driver: Selenium browser instance.
-            index: counter of array articles
-            articles: array of all articles
-            until_date: 
+            until_date (str)    
+        
         Return:
             An article of a topic
             An article is divide:
@@ -287,161 +151,92 @@ class Ncsc:
                 summary
                 author
                 content
-        ''' 
-        if(driver is None):
-            logger.error("driver not found")
-            raise("ERROR: drive not found")
-
-        time.sleep(self.load.webdriverwait_timeout) 
-        
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
-            date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
-        else:
-            date = articles[index-1]["date"]
-
-        if(until_date < date):  
-            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-title"]')):
-                title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
+        '''               
+        try:
+            if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+                date = self.driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
             else:
-                title = 'NONE'
-                
-            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="summary-content-container"]')):
-                summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
-            else:
-                summary = 'NONE'
-                
-            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
-                author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
-            else:
-                author = 'Anonymous'
+                date = self.articles[len(self.articles)-1]["date"]
 
-            if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-BodyText"]')):
-                contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
-                content = ''
-                for i in contents:
-                    content += i.text
+            if(TimeUtils.compare_two_dates(until_date, date)):
+                title = self.driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
+                summary = self.driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
+                contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
+                content = ''.join(i.text for i in contents)
+
+                if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
+                    author = self.driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
+                else:
+                    author = "Guidance" # Case there is a Guidance, there is not an author
+
+                return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
             else:
-                content = 'ERROR' 
-        else:
-            return False
+                return False
+    
+        except NoSuchElementException as e:
+            logger.error(f"ERROR NoSuchElementException {e}")
 
-        return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
-
-    def _get_topic(self, driver) -> dict[str, str]:
+    def _get_topic(self) -> dict[str, str]:
         '''
         Return a topic of NCSC
 
-        Args:       
-            driver: Selenium browser instance.
-        Raise:
-            TypeError: Not found driver
         Return:
             A topic of NCSC
             A topic is divide:
                 title
                 description
         '''
-        if(driver is None):
-            logger.error("driver not found")
-            raise TypeError("ERROR: drive not found")
-        
-        time.sleep(self.load.webdriverwait_timeout)
+        try:
+            title_topic = self.driver.find_element(By.ID, 'title').text
+            if(self.scrap.if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
+                description_topic = self.driver.find_element(By.CSS_SELECTOR, '.pcf-summary.main-summary p').text
+            else:
+                if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
+                    description_topic = self.driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
+                else:
+                    description_topic = ""
 
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-title"]')):
-            title_topic = driver.find_element(By.XPATH, '//div[@data-testid="pcf-title"]').text
-        else:
-            title_topic = 'NONE'
+            return {"title_topic": title_topic, "description": description_topic}
+        except NoSuchElementException as e:
+            logger.error(f"ERROR NoSuchElementException {e}")
 
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="summary"]')):
-            description_topic = driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
-        else:
-            description_topic = title_topic
-
-        return {"title_topic": title_topic, "description": description_topic}
-
-    def _get_article(self, driver, index: int = 0, articles: dict = []) -> dict[str, str]:
-        '''
-        Return an article of a topic
-
-        Args:
-            driver: Selenium browser instance.
-            index: counter of array articles
-            articles: array of all articles
-        Return:
-            An article of a topic
-            An article is divide:
-                date
-                title
-                summary
-                author
-                content
-        ''' 
-        if(driver is None):
-            logger.error("driver not found")
-            raise("ERROR: drive not found")
-
-        time.sleep(self.load.webdriverwait_timeout) 
-        
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
-            date = driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
-        else:
-            date = articles[index-1]["date"]
-        
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="pcf-title"]')):
-            title = driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
-        else:
-            title = 'NONE'
-            
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="summary-content-container"]')):
-            summary = driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
-        else:
-            summary = 'NONE'
-               
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
-            author = driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
-        else:
-            author = 'Anonymous'
-
-        if(self.scrap.if_element_exists(driver, By.XPATH, '//div[@data-testid="pcf-BodyText"]')):
-            contents = driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
-            content = ''
-            for i in contents:
-                content += i.text
-        else:
-            content = 'ERROR' 
-
-        return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
-
-    def start_scrapping(self): 
+    def start_scrapping(self, days: int = 0): 
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/
 
         Args:
-            None
+            days(int) default = 0, days back to scrape 
+
+        Example:
+            >>> strat_scrapping(7)  # Run date in 20/03/2025, scrape all articles to 13/03/2025
+            
         Return:
-            None
+            3 dict
+                all articles (dict)
+                all topics (dict)
+                glosary (dict)
         """
         try:    
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
- 
-            driver = self.scrap.get_driver()      
-            driver.get(url_website_all_topics)   
-            print(driver.title)
+      
+            self.driver.get(url_website_all_topics)   
+            logger.debug(f"Title {self.driver.title}")
             
             # Function to disable the cookie popup
-            self.scrap.click_element(driver, 'button.pcf-button:nth-child(2)', 1)
+            self.scrap.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
 
-            #self._scrap_all_topics_articles(driver)
+            self._scrap_all_topics_articles(days)
             
             # scrap glosary
-            self._scrap_glosary(driver)
+            glosary = self._scrap_glosary()
+
+            return {self.articles, self.topics, glosary}
 
         except Exception as e:
-            print("ERROR: ", e)
+            logger.error(f"ERROR: {e}")
             
-        finally: # It always runs whether an error occurs or not.
-            # Close navegator
-            driver.quit()
+        finally: # It always runs whether an error occurs or not. 
+            self.driver.quit() # Close navegator
 
 ''''''
 # DEVELOP
