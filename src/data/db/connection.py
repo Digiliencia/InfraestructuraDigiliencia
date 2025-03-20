@@ -1,6 +1,7 @@
 from neo4j import GraphDatabase
 from typing import Tuple
 from utils.env_loader import EnvLoader
+from loguru import logger
 
 
 class DBConnection:
@@ -33,20 +34,23 @@ class DBConnection:
         """
         self.driver = GraphDatabase.driver(self.uri, auth=self.auth)
         self.driver.verify_connectivity()
+        logger.info("Connected to the database")
+        
 
-    def close(self) -> None:
+    def _close(self) -> None:
         """
         Closes the database connection if the driver instance is active.
         """
         if self.driver:
             self.driver.close()  # type: ignore
+            logger.info("Closed the database connection")
 
     def __del__(self) -> None:
         """
         Ensures the database connection is closed when the instance is deleted.
         This is a destructor method that calls the `close` method.
         """
-        self.close()
+        self._close()
 
     def get_driver(self) -> GraphDatabase.driver:  # type: ignore
         """
