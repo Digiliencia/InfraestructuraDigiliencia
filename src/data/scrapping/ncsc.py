@@ -6,15 +6,6 @@ Created on Wed Jan 15 10:08:33 2025
 Scrapping of website: https://www.ncsc.gov.uk/
 """
 
-'''DEVELOP'''
-
-# Importing the necessary libraries
-import sys
-import os
-# Add the parent directory (src) to the Python path 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-''''''
-
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import time
@@ -237,10 +228,3 @@ class Ncsc:
             
         finally: # It always runs whether an error occurs or not. 
             self.driver.quit() # Close navegator
-
-''''''
-# DEVELOP
-if __name__ == "__main__":
-    ncsc = Ncsc()
-    ncsc.start_scrapping()
-''''''
