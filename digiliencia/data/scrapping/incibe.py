@@ -12,22 +12,16 @@ import re
 
 # Add the parent directory (src) to the Python path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from utils.time import TimeUtils
+from digiliencia.utils.time import TimeUtils
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.webdriver import WebDriver
-from selenium.webdriver.chrome.options import Options
-from datetime import datetime
-from utils.scrap import ScrapUtils
+from selenium.common.exceptions import NoSuchElementException
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 import time
 
 
-class IncibeScraper:
-
+class IncibeScraper(AbstractScraper):
     def __init__(self):
-
         self.driver = ScrapUtils.get_driver()
 
         self.CLASSES = {
@@ -49,8 +43,7 @@ class IncibeScraper:
                 "solution": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-field-solucion.field--type-text-with-summary.field--label-above .field__item",
                 "details": "article[data-history-node-id] div.node__content div.clearfix.text-formatted.field.field--name-field-detalle.field--type-text-with-summary.field--label-above .field__item",
                 "date": ".node__content.field--type-text-with-summary .field__item",
-            }
-,
+            },
         }
 
     def get_urls_to_scrap(
@@ -134,7 +127,7 @@ class IncibeScraper:
                 ).text
             else:
                 author = "INCIBE"
-            affected_resources = None  
+            affected_resources = None
             if classes.get("affected_resources"):
                 affected_resources = self.driver.find_element(
                     By.CSS_SELECTOR,
@@ -160,7 +153,16 @@ class IncibeScraper:
                 ).text
             date = date.split(" ")[-1]
             date = datetime.strptime(date, "%d/%m/%Y")
-            return {"title": title, "content": content, "date": date, "author": author, "affected_resources": affected_resources, "description": description, "solution": solution, "details": details}
+            return {
+                "title": title,
+                "content": content,
+                "date": date,
+                "author": author,
+                "affected_resources": affected_resources,
+                "description": description,
+                "solution": solution,
+                "details": details,
+            }
         except Exception as e:
             print(f"Error al obtener la información de la URL: {e}")
             return {}
@@ -344,7 +346,7 @@ class IncibeScraper:
             print(f"Error getting Incibe blog posts")
             return []
 
-    def scrapper(self, from_days_ago: int) -> tuple[dict[str, str]]:
+    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
         """
         Call the methods to get the information from the Incibe page
 

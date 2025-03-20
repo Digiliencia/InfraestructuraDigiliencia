@@ -1,5 +1,6 @@
-from data.db.connection import DBConnection
-from utils.env_loader import EnvLoader
+from digiliencia.data.db.connection import DBConnection
+from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.data.scrapping.weforum import WEForumScraper
 from loguru import logger
 
 
@@ -13,3 +14,4 @@ if __name__ == "__main__":
     set_up_logging()
     EnvLoader()
     DBConnection().connect()
+    WEForumScraper().scrap(from_days_ago=1)

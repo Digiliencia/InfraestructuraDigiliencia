@@ -18,43 +18,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from utils.env_loader import EnvLoader
-from utils.scrap import ScrapUtils
-from utils.time import TimeUtils
+from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
+from digiliencia.exc.WEForum_exc import WEForumError
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 
 
-class WEForumError(Exception):
-    def __init__(self, message):
-        self.message = message
 
-##########################################################################################################
-#                                                                                                        #
-#                           PAGE TO SCRAP                                                                #
-#   No scrapper function found for publisher: MIT Sloan Management Review                                #
-#   No scrapper function found for publisher: International Service for Human Rights                     #
-#   No scrapper function found for publisher: GovLab - Living Library                                    #
-#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
-#   No scrapper function found for publisher: CyberPeace Institute                                       #
-#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
-#   No scrapper function found for publisher: IDIAP Research Institute                                   #
-#   No scrapper function found for publisher: ReliefWeb                                                  #
-#   No scrapper function found for publisher: The Tokenist                                               #
-#   No scrapper function found for publisher: LSE Business Review                                        #
-#   No scrapper function found for publisher: The Hague Centre for Strategic Studies                     #
-#   No scrapper function found for publisher: CGAP Blog                                                  #
-#   No scrapper function found for publisher: War on the Rocks                                           #
-#   No scrapper function found for publisher: Revista PLUS                                               #
-#   No scrapper function found for publisher: Oliver Wyman                                               #
-#   No scrapper function found for publisher: London School of Economics and Political Science           #
-#   No scrapper function found for publisher: Der Spiegel                                                #
-#   No scrapper function found for publisher: UNIDIR                                                     #
-#   No scrapper function found for publisher: Asian Development Bank                                     #
-#   No scrapper function found for publisher: Stockholm International Peace Research Institute           #
-#   No scrapper function found for publisher: Frontiers                                                  #
-#                                                                                                        #
-##########################################################################################################
+class WEForumScraper(AbstractScraper):
+    """Scraps the World Economic Forum website for articles on the Cybersecurity topic."""
 
-class WEForumScrapper:
     def __init__(self):
         logger.debug("Initializing WEForumScrapper")
         EnvLoader()  # Call EnvLoader to force reading the .env file
@@ -207,7 +181,6 @@ class WEForumScrapper:
         logger.debug(f"Found {len(articles)} articles to process")
         processed_articles: list = []
         for article in articles:
-
             type = article.find_element(
                 By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
             ).text.lower()
@@ -315,26 +288,29 @@ class WEForumScrapper:
             raise WEForumError(
                 "Attempted to scrape invalid page for Rand Corporation newsletter scrapper"
             )
-        
+
         logger.debug(f"Scraping Rand Corporation story: {url}")
         # Access the URL
-        self.driver.get(url) 
+        self.driver.get(url)
         time.sleep(self.load_time)
 
         data = {}
 
         data["title"] = self.driver.find_element(By.ID, "RANDTitleHeadingId").text
-        data["authors"] = self.driver.find_element(By.CLASS_NAME, 'authors').text  
-        date = self.driver.find_element(By.CLASS_NAME, "published").text  # Mirar el formato de la fecha
+        data["authors"] = self.driver.find_element(By.CLASS_NAME, "authors").text
+        date = self.driver.find_element(
+            By.CLASS_NAME, "published"
+        ).text  # Mirar el formato de la fecha
         data["date"] = date[9:]
 
-        introduction = self.driver.find_element(By.CLASS_NAME, "abstract-first-letter").text
+        introduction = self.driver.find_element(
+            By.CLASS_NAME, "abstract-first-letter"
+        ).text
         sections = self.driver.find_elements(By.TAG_NAME, "li").text
         content = introduction + sections
         data["content"] = content
 
-        return data      
-
+        return data
 
     def _scrap_sciencedaily(self, url: str) -> dict[str, Union[str, datetime]]:
         """
@@ -359,20 +335,24 @@ class WEForumScrapper:
             raise WEForumError(
                 "Attempted to scrape invalid page for Science Daily newsletter scrapper"
             )
-        
+
         logger.debug(f"Scraping Science Daily story: {url}")
         # Access the URL
-        self.driver.get(url) 
+        self.driver.get(url)
         time.sleep(self.load_time)
 
         data = {}
         try:
             data["title"] = self.driver.find_element(By.ID, "headline").text
             data["content"] = self.driver.find_element(By.ID, "text").text
-            data["date"] = self.driver.find_element(By.ID, "date_posted").text  # Mirar el formato de la fecha
-            data["authors"] = self.driver.find_element(By.XPATH, '//ol[@class="journal"]/li/text()[1]').text  
+            data["date"] = self.driver.find_element(
+                By.ID, "date_posted"
+            ).text  # Mirar el formato de la fecha
+            data["authors"] = self.driver.find_element(
+                By.XPATH, '//ol[@class="journal"]/li/text()[1]'
+            ).text
 
-            return data      
+            return data
         except WEForumError as e:
             print("ERROR NoSuchElementException: ", e)
 
@@ -1022,7 +1002,6 @@ class WEForumScrapper:
         return data
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
-
         logger.info("Scraping WEForum")
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
@@ -1054,7 +1033,7 @@ class WEForumScrapper:
             "Electronic Frontier Foundation": self._scrap_electronic_frontier_foundation_deeplink,
             "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
             "Science Daily": self._scrap_sciencedaily,
-            "Rand Corporation": self._scrap_rand_corporation
+            "Rand Corporation": self._scrap_rand_corporation,
         }
 
         scraped_publications = []
@@ -1074,7 +1053,7 @@ class WEForumScrapper:
                         except Exception as e:
                             logger.error(f"Error scraping {article['url']}:\n {e}")
                     else:
-                        print(
+                        logger.warning(
                             f"No scrapper function found for publisher: {article['publisher']}"
                         )
                 progress.advance(task)
