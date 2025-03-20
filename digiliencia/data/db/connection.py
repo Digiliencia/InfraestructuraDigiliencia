@@ -1,6 +1,6 @@
 from neo4j import GraphDatabase
 from typing import Tuple
-from utils.env_loader import EnvLoader
+from digiliencia.utils.env_loader import EnvLoader
 from loguru import logger
 
 
@@ -35,7 +35,6 @@ class DBConnection:
         self.driver = GraphDatabase.driver(self.uri, auth=self.auth)
         self.driver.verify_connectivity()
         logger.info("Connected to the database")
-        
 
     def _close(self) -> None:
         """

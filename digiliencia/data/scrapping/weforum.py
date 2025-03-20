@@ -18,14 +18,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from utils.env_loader import EnvLoader
-from utils.scrap import ScrapUtils
-from utils.time import TimeUtils
-from exc.WEForum_exc import WEForumError
+from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
+from digiliencia.exc.WEForum_exc import WEForumError
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 
 
 
-class WEForumScraper:
+class WEForumScraper(AbstractScraper):
     """Scraps the World Economic Forum website for articles on the Cybersecurity topic."""
 
     def __init__(self):
@@ -1052,7 +1053,7 @@ class WEForumScraper:
                         except Exception as e:
                             logger.error(f"Error scraping {article['url']}:\n {e}")
                     else:
-                        print(
+                        logger.warning(
                             f"No scrapper function found for publisher: {article['publisher']}"
                         )
                 progress.advance(task)

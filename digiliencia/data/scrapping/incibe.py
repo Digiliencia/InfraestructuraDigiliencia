@@ -12,7 +12,7 @@ import re
 
 # Add the parent directory (src) to the Python path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from utils.time import TimeUtils
+from digiliencia.utils.time import TimeUtils
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime
-from utils.scrap import ScrapUtils
+from digiliencia.utils.scrap import ScrapUtils
 import time
 
 
