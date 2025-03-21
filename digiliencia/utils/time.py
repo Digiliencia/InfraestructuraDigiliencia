@@ -9,7 +9,6 @@ Class to load environment variables from a .env file
 from datetime import datetime, timedelta
 import platform
 
-
 class TimeUtils:
     @staticmethod
     def format_days_ago(days_ago: int) -> str:
@@ -139,3 +138,47 @@ class TimeUtils:
         date2 = datetime.strptime(date_str2, date_format)
         delta = date2 - date1
         return delta.days
+
+    @staticmethod
+    def format_subtract_days_to_actual_date(days: int=0) -> str:
+        '''
+       
+        Args:
+            days:
+        Return: 
+            A date subtract a days to actual date. If days = 0, else return actual date
+            str: actual date or an earlier date with fomat: Year-Month-Day 
+        Example:
+            >>> subtract_days_to_actual_date()
+            21 January 2025 # Actual Date
+            >>> subtract_days_to_actual_date(2)
+            19 January 2025
+        '''
+        date_actual = datetime.now()
+        if(days == 0):
+            format_date = date_actual.strftime("%d %B %Y") 
+            return format_date
+        else:
+            days_subtract = timedelta(days)
+            new_date = date_actual - days_subtract
+            format_date = new_date.strftime("%d %B %Y") 
+            return format_date
+
+    @staticmethod
+    def compare_two_dates(first_date: datetime, second_date:datetime) -> bool:
+        '''
+
+        Args:
+            first_date
+            second_date
+        Return:
+            True -> the first date is greater than the second
+            False -> the second date is greater than the first
+        '''
+        date_first = datetime.strptime(first_date, "%d %B %Y").date()
+        date_second = datetime.strptime(second_date, "%d %B %Y").date()
+
+        if(date_first > date_second):
+            return True
+        else: 
+            return False
