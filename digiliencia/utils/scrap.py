@@ -1,16 +1,18 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.webdriver import WebDriver
+from loguru import logger
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from utils.env_loader import EnvLoader
+from selenium.webdriver.support.ui import WebDriverWait
+
+from digiliencia.utils.env_loader import EnvLoader
 
 
 class ScrapUtils:
 
     def __init__(self):
-        self.timeout = 1
+        self.timeout = EnvLoader.webdriverwait_timeout
 
     @staticmethod
     def get_driver() -> WebDriver:
@@ -20,6 +22,7 @@ class ScrapUtils:
         Returns:
             Driver
         """
+        logger.debug("Creating Selenium driver")
         options = Options()
         options.add_argument(
             "user-agent="
@@ -39,8 +42,9 @@ class ScrapUtils:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
-
-        return WebDriver(options=options)
+        driver = WebDriver(options=options)
+        driver.implicitly_wait(EnvLoader.implicit_wait)
+        return driver
 
     @staticmethod
     def click_element(driver: WebDriver, css_selector: str, timeout: int = 2) -> bool:
@@ -64,8 +68,25 @@ class ScrapUtils:
             cookie_button.click()
             return True
         except TimeoutException:
-            print(f"{css_selector} elem not found")
+            logger.debug(f"{css_selector} elem not found")
             return False
+
+    @staticmethod
+    def _if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
+        """
+        Check if an element exists on the web page.
+        Args:
+            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
+            element (str): The locator value of the element to find.
+        Returns:
+            bool: True if the element is found, False otherwise.
+        """
+
+        try:
+            driver.find_element(by, element)
+        except NoSuchElementException:
+            return False
+        return True
 
     @staticmethod
     def disable_js(driver: WebDriver) -> None:
@@ -78,6 +99,7 @@ class ScrapUtils:
         Returns:
             None
         """
+        logger.debug("Disabling JavaScript in driver")
         driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
 
     @staticmethod
@@ -91,20 +113,5 @@ class ScrapUtils:
         Returns:
             None
         """
+        logger.debug("Enabling JavaScript in driver")
         driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
-    
-    @staticmethod
-    def if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
-        """
-        Check if an element exists on the web page.
-        Args:
-            by: The type of locator (e.g., By.ID, By.XPATH, etc.).
-            element (str): The locator value of the element to find.
-        Returns:
-            bool: True if the element is found, False otherwise.
-        """
-        try:
-            driver.find_element(by, element)
-        except NoSuchElementException:
-            return False
-        return True

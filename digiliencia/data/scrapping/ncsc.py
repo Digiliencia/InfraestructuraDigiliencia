@@ -12,15 +12,15 @@ import time
 from loguru import logger
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from utils.env_loader import EnvLoader
-from utils.scrap import ScrapUtils
-from utils.time import TimeUtils
+from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
 
 class Ncsc:
     
     def __init__(self):
         logger.debug("Initializing Scrapping of NCSC")
-        self.scrap = ScrapUtils()
+        self.scrapUtils = ScrapUtils()
         self.load = EnvLoader()
         self.driver = ScrapUtils.get_driver()
         self.articles = []
@@ -110,7 +110,7 @@ class Ncsc:
         descriptions = []
 
         self.driver.get("https://www.ncsc.gov.uk/section/advice-guidance/glossary")
-        self.scrap.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1) # Function to disable the cookie popup
+        self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1) # Function to disable the cookie popup
 
         logger.debug(f"Scrap of glosarry title: {self.driver.title}")
 
@@ -144,7 +144,7 @@ class Ncsc:
                 content
         '''               
         try:
-            if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+            if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
                 date = self.driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
             else:
                 date = self.articles[len(self.articles)-1]["date"]
@@ -155,7 +155,7 @@ class Ncsc:
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''.join(i.text for i in contents)
 
-                if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
+                if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
                     author = self.driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
                 else:
                     author = "Guidance" # Case there is a Guidance, there is not an author
@@ -179,10 +179,10 @@ class Ncsc:
         '''
         try:
             title_topic = self.driver.find_element(By.ID, 'title').text
-            if(self.scrap.if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
+            if(self.scrapUtils._if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
                 description_topic = self.driver.find_element(By.CSS_SELECTOR, '.pcf-summary.main-summary p').text
             else:
-                if(self.scrap.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
+                if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
                     description_topic = self.driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
                 else:
                     description_topic = ""
@@ -214,7 +214,7 @@ class Ncsc:
             logger.debug(f"Title {self.driver.title}")
             
             # Function to disable the cookie popup
-            self.scrap.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
+            self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
 
             self._scrap_all_topics_articles(days)
             
