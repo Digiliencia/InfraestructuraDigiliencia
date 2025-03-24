@@ -16,7 +16,6 @@ from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-import re
 
 class Ncsc(AbstractScraper):
     
