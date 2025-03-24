@@ -15,8 +15,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 
-class Ncsc:
+class Ncsc(AbstractScraper):
     
     def __init__(self):
         logger.debug("Initializing Scrapping of NCSC")
@@ -191,12 +192,12 @@ class Ncsc:
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
-    def start_scrapping(self, days: int = 0): 
+    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]: 
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/
 
         Args:
-            days(int) default = 0, days back to scrape 
+            from_days_ago(int) default = 0, days back to scrape 
 
         Example:
             >>> strat_scrapping(7)  # Run date in 20/03/2025, scrape all articles to 13/03/2025
@@ -216,7 +217,7 @@ class Ncsc:
             # Function to disable the cookie popup
             self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
 
-            self._scrap_all_topics_articles(days)
+            self._scrap_all_topics_articles(from_days_ago)
             
             # scrap glosary
             glosary = self._scrap_glosary()
