@@ -39,7 +39,7 @@ class Ncsc(AbstractScraper):
                 time.sleep(self.load.webdriverwait_timeout) # Wait a few seconds for new articles to load
             except NoSuchElementException:
                 # If the button is not found, we assume that there are no more items to load.
-                print("No hay más artículos para cargar.")
+                logger.debug("there are not articles to load.") 
                 break
 
     def _get_num_all_articles(self) -> int:
@@ -48,7 +48,7 @@ class Ncsc(AbstractScraper):
         logger.debug(f"Get number of all articles: {int(show_art[5])}")
         return int(show_art[5])
 
-    def _scrap_all_topics_articles(self, days:int=0):
+    def _scrap_all_topics_articles(self, days:int=0): # Refactor in a future variable 'next_article' by a flag in 2 loops 
         '''
         Scrap all articles and topics of website: https://www.ncsc.gov.uk/
 
@@ -58,7 +58,7 @@ class Ncsc(AbstractScraper):
         until_date = TimeUtils.format_subtract_days_to_actual_date(days) # Calculate date to scrap
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = self.driver.find_elements(By.XPATH, '(//div[@data-testid="all-topics-panel-row"]/div)')
-        logger.debug(f"Num de temas: {len(num_topics)}")
+        logger.debug(f"Num of topics: {len(num_topics)}")
 
         next_article = True
         for i in range(1, len(num_topics)+1): # +1 is for taking the last topic
@@ -66,7 +66,7 @@ class Ncsc(AbstractScraper):
             self.driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
             
             # Extract Topic
-            logger.debug(f"Num tema: {str(i)}")
+            logger.debug(f"Num topic: {str(i)}")
             self.topics.append(self._get_topic())
  
             time.sleep(self.load.webdriverwait_timeout)
@@ -74,10 +74,10 @@ class Ncsc(AbstractScraper):
             time.sleep(self.load.webdriverwait_timeout)
             self._show_all_articles()
             
-            logger.debug("Num de articulos por tema: " + str(num_articles_page))
+            logger.debug("Num artciles each topic: " + str(num_articles_page))
 
             for j in range(0, num_articles_page):  
-                logger.debug("Num articulo: " + str(j))
+                logger.debug("Num article: " + str(j))
 
                 page = WebDriverWait(self.driver, self.load.webdriverwait_timeout).until(
                     EC.element_to_be_clickable(
@@ -120,7 +120,7 @@ class Ncsc(AbstractScraper):
         logger.debug(f"Scrap of glosarry title: {self.driver.title}")
 
         definitions = self.driver.find_elements(By.CSS_SELECTOR, '.pcf-accordionItem.whiteBg')
-        logger.debug(f"Num total de definiciones {len(definitions)}")
+        logger.debug(f"Num total of definitions: {len(definitions)}")
         for i in definitions:
             i.click()
             time.sleep(self.load.webdriverwait_timeout)
