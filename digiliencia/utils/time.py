@@ -178,7 +178,10 @@ class TimeUtils:
         date_first = datetime.strptime(first_date, "%d %B %Y").date()
         date_second = datetime.strptime(second_date, "%d %B %Y").date()
 
-        if(date_first > date_second):
+        if((date_second == datetime.now().date()) or (date_first == datetime.now().date())):
             return True
-        else: 
-            return False
+        else:
+            if(date_first > date_second):
+                return True
+            else: 
+                return False
