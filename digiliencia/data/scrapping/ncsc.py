@@ -16,6 +16,7 @@ from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+import re
 
 class Ncsc(AbstractScraper):
     
@@ -60,6 +61,7 @@ class Ncsc(AbstractScraper):
         num_topics = self.driver.find_elements(By.XPATH, '(//div[@data-testid="all-topics-panel-row"]/div)')
         logger.debug(f"Num de temas: {len(num_topics)}")
 
+        next_article = True
         for i in range(1, len(num_topics)+1): # +1 is for taking the last topic
             time.sleep(self.load.webdriverwait_timeout)
             self.driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
@@ -86,15 +88,18 @@ class Ncsc(AbstractScraper):
                 page.click()
 
                 time.sleep(self.load.webdriverwait_timeout)
-                article = self._get_article_to_date(until_date) 
-                if(article == False):
+                next_article = self._get_article_to_date(until_date) 
+                if(next_article == False):
                     break
                 else:
-                    self.articles.append(article)
+                    self.articles.append(next_article)
                     time.sleep(self.load.webdriverwait_timeout)
                     self.driver.back() # Back to last page
             self.driver.back()
                 
+            if(next_article == False):
+                break
+        
         logger.debug(f"Total articles: {len(self.articles)}")
 
     def _scrap_glosary(self) -> dict[str, str]:
@@ -150,7 +155,7 @@ class Ncsc(AbstractScraper):
             else:
                 date = self.articles[len(self.articles)-1]["date"]
 
-            if(TimeUtils.compare_two_dates(until_date, date)):
+            if(TimeUtils.compare_two_dates(date, until_date)):
                 title = self.driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
                 summary = self.driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
@@ -192,7 +197,7 @@ class Ncsc(AbstractScraper):
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
-    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]: 
+    def scrap(self, from_days_ago: int = 0) -> tuple[dict[str, str]]: 
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/
 
