@@ -277,3 +277,75 @@
 ### Blockchain and Digital Identity
 ### Decentralized Governance and New Models
 
+## Supply Chain and Transport
+### Artificial Intelligence and Supply Chains
+### E-commerce and the future of Retail 
+### Physical and Digital Infrastructure
+### Labour Market Trends and Demographic Change
+### Decarbonizing, Supply Chains, Logistical and Transport
+### Resilience and Adaptability 
+
+## Quantum Economy
+### A Virtuous Cycle of Disruptive Innovation
+### Building a Skilled Quantum Workforce
+### Quantum and Sustainable Development
+### Quantum Policy and Governance
+### Quantum, Trade and Investment
+### Quantum and International Security
+
+## Artificial Intelligence 
+### Generative AI
+### Bias and Fairness in AI Algorithms
+### AI and Jobs
+### Can AI Overcome its Limitations?
+### Geopolitical Impacts of AI
+### Responsible AI
+### AI, Diversity, and Inclusion Operationalizing
+### AI for what Purpose?
+
+## Peace and Resilience
+### Global Governance and Maintaining Peace
+### Trust and Locally-Owned Solutions
+### A voice for the Young
+### Social Cohesion and Civic Participation
+### Human Rights and Peace
+### Peace and Human Development
+### Humanitarian Action in Response to Conflict
+### Inclusive Peace Processes
+
+## Geoeconomics
+### Economic and Technological Power Transition
+### Resilience and Supply Chain Security
+### Economic Decoupling and Balkanization
+### Securing Economics
+### Technological Containment
+### Economic Coercion
+### Localization and Sovereignty
+### Economic and Technological Power Transition
+
+## Space
+### Education and Research
+### Space Sustainability
+### Space Security
+### Space Commercialization
+### Space Exploration
+### Space Policy
+### Socio-economic Benefits
+### Climate and Nature
+
+## Retail, Consumer Goods and Lifestyle
+### New Patterns of Consumption
+### Inconspicuous Consumption
+### The Global Luxury Market
+### Global Middle Class Consumers
+### Artisanal Production
+### New Patterns of Consumption
+
+## Illicit Economy
+### Cybercrime
+### Cybercrime and Connectivity
+### Corruption and Impunity
+### Crime the Environment
+### Violence and Instability
+### Illicit Trade and Financial Flow
+### Human Mobility and Exploitation
