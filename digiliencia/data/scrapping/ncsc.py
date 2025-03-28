@@ -101,37 +101,6 @@ class Ncsc(AbstractScraper):
         
         logger.debug(f"Total articles: {len(self.articles)}")
 
-    def _scrap_glosary(self) -> dict[str, str]:
-        '''
-        Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
-        The definitions is divided by sections
-
-        Return:
-            A list with all definitions, each defitions have a:
-                Concept,
-                Description,
-        '''
-        concepts = []
-        descriptions = []
-
-        self.driver.get("https://www.ncsc.gov.uk/section/advice-guidance/glossary")
-        self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1) # Function to disable the cookie popup
-
-        logger.debug(f"Scrap of glosarry title: {self.driver.title}")
-
-        definitions = self.driver.find_elements(By.CSS_SELECTOR, '.pcf-accordionItem.whiteBg')
-        logger.debug(f"Num total of definitions: {len(definitions)}")
-        for i in definitions:
-            i.click()
-            time.sleep(self.load.webdriverwait_timeout)
-            concept = i.find_element(By.CSS_SELECTOR, 'div.pcf-accordionItem.whiteBg h3').text
-            logger.debug(f"Definition: {concept}")
-            concepts.append(concept)
-            description = i.find_element(By.CSS_SELECTOR, 'div.pcf-BodyText p').text
-            descriptions.append(description)
-        
-        return {"concepts": concepts, "descriptions": descriptions}
-
     def _get_article_to_date(self, until_date: str = '') -> dict[str, str]:
         '''
         Return an articles of a topic until date param
@@ -196,7 +165,38 @@ class Ncsc(AbstractScraper):
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
-    def scrap(self, from_days_ago: int = 0) -> tuple[dict[str, str]]: 
+    def scrap_glosary(self) -> dict[str, str]:
+        '''
+        Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
+        The definitions is divided by sections
+
+        Return:
+            A list with all definitions, each defitions have a:
+                Concept,
+                Description,
+        '''
+        concepts = []
+        descriptions = []
+
+        self.driver.get("https://www.ncsc.gov.uk/section/advice-guidance/glossary")
+        self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1) # Function to disable the cookie popup
+
+        logger.info(f"Scrap of glosarry title: {self.driver.title}")
+
+        definitions = self.driver.find_elements(By.CSS_SELECTOR, '.pcf-accordionItem.whiteBg')
+        logger.info(f"Num total of definitions: {len(definitions)}")
+        for i in definitions:
+            i.click()
+            time.sleep(self.load.webdriverwait_timeout)
+            concept = i.find_element(By.CSS_SELECTOR, 'div.pcf-accordionItem.whiteBg h3').text
+            logger.debug(f"Definition: {concept}")
+            concepts.append(concept)
+            description = i.find_element(By.CSS_SELECTOR, 'div.pcf-BodyText p').text
+            descriptions.append(description)
+        
+        return {"concepts": concepts, "descriptions": descriptions}
+
+    def scrap(self, from_days_ago: int = 0) -> dict[str, str]: 
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/
 
@@ -216,17 +216,14 @@ class Ncsc(AbstractScraper):
             url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
       
             self.driver.get(url_website_all_topics)   
-            logger.debug(f"Title {self.driver.title}")
+            logger.info(f"Title {self.driver.title}")
             
             # Function to disable the cookie popup
             self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
 
             self._scrap_all_topics_articles(from_days_ago)
-            
-            # scrap glosary
-            glosary = self._scrap_glosary()
-
-            return {self.articles, self.topics, glosary}
+        
+            return {self.articles, self.topics}
 
         except Exception as e:
             logger.error(f"ERROR: {e}")
