@@ -385,24 +385,24 @@ class IncibeScraper(AbstractScraper):
         ]
 
         for data in incibe_scrap:
-            url = data["url"]
+            source_url = data["url"]
             class_name = data["class"]
             selector = data["selector"]
             scrap_function = data["scrap_function"]
 
-            logger.debug(f"Getting URLs to scrap from {url}")
+            logger.debug(f"Getting URLs to scrap from {source_url}")
 
             urls_to_scrap = self.get_urls_to_scrap(
-                url, selector, from_days_ago, scrap_function
+                source_url, selector, from_days_ago, scrap_function
             )
 
-            logger.info(f"Found {len(urls_to_scrap)} URLs to scrap from {url}")
+            logger.info(f"Found {len(urls_to_scrap)} URLs to scrap from {source_url}")
 
             # Iterate over the URLs to get the information
             p = []
             for url in urls_to_scrap:
                 p.append(self.get_information_by_url(url, class_name))
-            logger.info(f"Succesfully scraped {len(p)} items from {url}")
+            logger.info(f"Succesfully scraped {len(p)} items from {source_url}")
 
         self.driver.quit()  # Close the browser in a controlled manner
         return None
