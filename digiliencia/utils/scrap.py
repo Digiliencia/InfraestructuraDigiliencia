@@ -72,9 +72,9 @@ class ScrapUtils:
             return False
 
     @staticmethod
-    def _if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
+    def if_element_exists(driver: WebDriver, by: By, element: str) -> bool:
         """
-        Check if an element exists on the web page.
+        Checks if an element exists on the web page.
         Args:
             by: The type of locator (e.g., By.ID, By.XPATH, etc.).
             element (str): The locator value of the element to find.

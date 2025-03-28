@@ -118,7 +118,7 @@ class Ncsc(AbstractScraper):
                 content
         '''               
         try:
-            if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
+            if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
                 date = self.driver.find_element(By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]').text
             else:
                 date = self.articles[len(self.articles)-1]["date"]
@@ -129,7 +129,7 @@ class Ncsc(AbstractScraper):
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''.join(i.text for i in contents)
 
-                if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
+                if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
                     author = self.driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
                 else:
                     author = "Guidance" # Case there is a Guidance, there is not an author
@@ -153,10 +153,10 @@ class Ncsc(AbstractScraper):
         '''
         try:
             title_topic = self.driver.find_element(By.ID, 'title').text
-            if(self.scrapUtils._if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
+            if(self.scrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
                 description_topic = self.driver.find_element(By.CSS_SELECTOR, '.pcf-summary.main-summary p').text
             else:
-                if(self.scrapUtils._if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
+                if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
                     description_topic = self.driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
                 else:
                     description_topic = ""

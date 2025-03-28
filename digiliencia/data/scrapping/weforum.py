@@ -54,7 +54,7 @@ class WEForumScraper(AbstractScraper):
 
         # Accept cookies if pop-up visible
         logger.debug("Loging in to WEForum")
-        if ScrapUtils._if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.ID, "CybotCookiebotDialog"):  # type: ignore
             cookies_popup = self.driver.find_element(By.ID, "CybotCookiebotDialog")
             if cookies_popup.is_displayed():
                 accept_bttn = self.driver.find_element(
@@ -250,7 +250,7 @@ class WEForumScraper(AbstractScraper):
             )
 
         # If the user logo (id: mf_user-icon) exists, user is loged in
-        return ScrapUtils._if_element_exists(self.driver, By.ID, "mf_user-icon")
+        return ScrapUtils.if_element_exists(self.driver, By.ID, "mf_user-icon")
 
     def _accept_cookies_if_visible(self, accept_bttn_id: str):
         """Accepts the cookies if the pop-up is visible.
@@ -259,7 +259,7 @@ class WEForumScraper(AbstractScraper):
             accept_bttn_id (str): The ID of the accept button.
         """
         logger.debug("Accepting cookies if visible")
-        if ScrapUtils._if_element_exists(self.driver, By.ID, accept_bttn_id):
+        if ScrapUtils.if_element_exists(self.driver, By.ID, accept_bttn_id):
             accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
             if accept_bttn.is_displayed():
                 accept_bttn.click()
