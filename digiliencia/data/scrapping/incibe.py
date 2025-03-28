@@ -8,6 +8,7 @@ Web scrapping: https://www.incibe.es/
 
 # Importing the necessary libraries
 from datetime import datetime
+from loguru import logger
 import re
 
 # Add the parent directory (src) to the Python path
@@ -164,7 +165,7 @@ class IncibeScraper(AbstractScraper):
                 "details": details,
             }
         except Exception as e:
-            print(f"Error al obtener la información de la URL: {e}")
+            logger.warn(f"Error al obtener la información de la URL: {e}")
             return {}
 
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
@@ -183,9 +184,9 @@ class IncibeScraper(AbstractScraper):
 
         try:
             self.driver.get(url_to_open_incibe + "?page=" + str(page_num))
-            print("Incibe blog page opened")
+            logger.debug("Incibe blog page opened")
         except Exception as e:
-            print(f"Error opening Incibe blog page: {e}")
+            logger.warn(f"Error opening Incibe blog page: {e}")
 
     def manage_cookies(self):
         """
@@ -251,8 +252,8 @@ class IncibeScraper(AbstractScraper):
                     break
 
             return (found_oldest, blog_urls)
-        except NoSuchElementException as e:
-            print(f"Error getting Incibe blog posts")
+        except NoSuchElementException:
+            logger.warn(f"Error getting Incibe blog posts {url_to_open}")
             return []
 
     def get_blog_urls(
@@ -295,8 +296,8 @@ class IncibeScraper(AbstractScraper):
                     break
 
             return (found_oldest, blog_urls)
-        except NoSuchElementException as e:
-            print(f"Error getting Incibe blog posts")
+        except NoSuchElementException:
+            logger.warn(f"Error getting Incibe blog posts {url_to_open}")
             return []
 
     def get_bitacora_urls(
@@ -343,7 +344,7 @@ class IncibeScraper(AbstractScraper):
 
             return (not all_newer, blog_urls)
         except NoSuchElementException:
-            print(f"Error getting Incibe blog posts")
+            logger.warn(f"Error getting Incibe blog posts from {url_to_open}")
             return []
 
     def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
@@ -396,9 +397,7 @@ class IncibeScraper(AbstractScraper):
             p = []
             for url in urls_to_scrap:
                 p.append(self.get_information_by_url(url, class_name))
-                print(p)
-            print(len(p))
-
-        input("Press Enter to close the browser...")  # Keep the page open
+            logger.info(f"Scraped {len(p)} items from INCIBE")
+            
         self.driver.quit()  # Close the browser in a controlled manner
         return None
