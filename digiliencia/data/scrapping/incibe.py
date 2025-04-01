@@ -6,19 +6,20 @@ Created on Wed Jan 15 10:08:33 2025
 Web scrapping: https://www.incibe.es/
 """
 
+import time
+
 # Importing the necessary libraries
 from datetime import datetime
+
 from loguru import logger
 import re
 
-# Add the parent directory (src) to the Python path
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from digiliencia.utils.time import TimeUtils
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-import time
+from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.utils.scrap import ScrapUtils
 
 
 class IncibeScraper(AbstractScraper):
@@ -48,8 +49,8 @@ class IncibeScraper(AbstractScraper):
         }
 
     def get_urls_to_scrap(
-        self, url, selector: str, days: int, get_urls_function: callable
-    ) -> set[str]:
+        self, url, selector: str, days: int, get_urls_function: callable # type: ignore[valid-type]
+    ) -> set[str]: 
         """
         Retrieves a set of URLs to scrape from the specified website.
 
@@ -77,9 +78,9 @@ class IncibeScraper(AbstractScraper):
         i = 0
         urls: set[str] = set()
         while not found_oldest:
-            found_oldest, retrieved_urls = get_urls_function(
+            found_oldest, retrieved_urls = get_urls_function( # type: ignore
                 url_to_open, until_date, selector, i
-            )
+            ) 
             total_size = len(urls)
             # If set union does not work, a for loop can be used to add the elements
             # for url in retrieved_urls:
@@ -92,7 +93,7 @@ class IncibeScraper(AbstractScraper):
 
     def get_information_by_url(
         self, url: str, classes: dict[str, str]
-    ) -> dict[str, str | datetime]:
+    ) -> ScrapedNewsModel:
         """
         Get the information from the URL title, content, date and author
 
@@ -103,71 +104,67 @@ class IncibeScraper(AbstractScraper):
 
         Returns:
 
-        dict[str, str | datetime]: The information from the URL
+        ScrapedNewsModel: The information from the URL
         """
 
-        try:
-            logger.debug(f"Scraping URL {url}")
-            self.driver.get(url)
-            time.sleep(2)
-            title = self.driver.find_element(By.CSS_SELECTOR, classes["title"]).text
-            content = None
-            if classes.get("content"):
-                content = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["content"],
-                ).text
-            date = self.driver.find_element(
+        logger.debug(f"Scraping URL {url}")
+        self.driver.get(url)
+        time.sleep(2)
+        title = self.driver.find_element(By.CSS_SELECTOR, classes["title"]).text
+        content = ""
+        if classes.get("content"):
+            content = self.driver.find_element(
                 By.CSS_SELECTOR,
-                classes["date"],
+                classes["content"],
             ).text
-            author = None
-            if classes.get("author"):
-                author = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["author"],
-                ).text
-            else:
-                author = "INCIBE"
-            affected_resources = None
-            if classes.get("affected_resources"):
-                affected_resources = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["affected_resources"],
-                ).text
-            description = None
-            if classes.get("description"):
-                description = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["description"],
-                ).text
-            solution = None
-            if classes.get("solution"):
-                solution = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["solution"],
-                ).text
-            details = None
-            if classes.get("details"):
-                details = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    classes["details"],
-                ).text
-            date = date.split(" ")[-1]
-            date = datetime.strptime(date, "%d/%m/%Y")
-            return {
-                "title": title,
-                "content": content,
-                "date": date,
-                "author": author,
-                "affected_resources": affected_resources,
-                "description": description,
-                "solution": solution,
-                "details": details,
-            }
-        except Exception as e:
-            logger.warning(f"Error al obtener la información de la URL: {e}")
-            return {}
+        date = self.driver.find_element(
+            By.CSS_SELECTOR,
+            classes["date"],
+        ).text
+        author = None
+        if classes.get("author"):
+            author = self.driver.find_element(
+                By.CSS_SELECTOR,
+                classes["author"],
+            ).text
+        else:
+            author = "INCIBE"
+        affected_resources = None
+        if classes.get("affected_resources"):
+            affected_resources = self.driver.find_element(
+                By.CSS_SELECTOR,
+                classes["affected_resources"],
+            ).text
+        description = None
+        if classes.get("description"):
+            description = self.driver.find_element(
+                By.CSS_SELECTOR,
+                classes["description"],
+            ).text
+        solution = None
+        if classes.get("solution"):
+            solution = self.driver.find_element(
+                By.CSS_SELECTOR,
+                classes["solution"],
+            ).text
+        details = None
+        if classes.get("details"):
+            details = self.driver.find_element(
+                By.CSS_SELECTOR,
+                classes["details"],
+            ).text
+        date = date.split(" ")[-1]
+        date = datetime.strptime(date, "%d/%m/%Y")
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="INCIBE",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
 
     def open_incibe_blog(self, url_to_open_incibe, page_num: int = 0) -> None:
         """
@@ -242,12 +239,12 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link)
+                    blog_urls.add(link) # type: ignore
                 else:
                     found_oldest = True
                     break
@@ -255,7 +252,7 @@ class IncibeScraper(AbstractScraper):
             return (found_oldest, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts {url_to_open}")
-            return []
+            return [] # type: ignore
 
     def get_blog_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
@@ -286,12 +283,12 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link)
+                    blog_urls.add(link) # type: ignore
                 else:
                     found_oldest = True
                     break
@@ -299,7 +296,7 @@ class IncibeScraper(AbstractScraper):
             return (found_oldest, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts {url_to_open}")
-            return []
+            return [] # type: ignore
 
     def get_bitacora_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
@@ -332,7 +329,7 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
 
                 is_newer = TimeUtils.days_between_es_dates(date, published_date) > 0
                 all_newer |= is_newer
@@ -341,14 +338,14 @@ class IncibeScraper(AbstractScraper):
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link)
+                    blog_urls.add(link) # type: ignore
 
             return (not all_newer, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts from {url_to_open}")
-            return []
+            return [] # type: ignore
 
-    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
+    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
         """
         Call the methods to get the information from the Incibe page
 
@@ -384,6 +381,8 @@ class IncibeScraper(AbstractScraper):
             },
         ]
 
+        news_articles: list[ScrapedNewsModel] = []
+
         for data in incibe_scrap:
             source_url = data["url"]
             class_name = data["class"]
@@ -399,10 +398,14 @@ class IncibeScraper(AbstractScraper):
             logger.info(f"Found {len(urls_to_scrap)} URLs to scrap from {source_url}")
 
             # Iterate over the URLs to get the information
-            p = []
             for url in urls_to_scrap:
-                p.append(self.get_information_by_url(url, class_name))
-            logger.info(f"Succesfully scraped {len(p)} items from {source_url}")
+                try:
+                    news_articles.append(self.get_information_by_url(url, class_name))
+                except Exception as e:
+                    logger.warning(f"Error al obtener la información de la URL: {e}")
+            logger.info(
+                f"Succesfully scraped {len(news_articles)} items from {source_url}"
+            )
 
         self.driver.quit()  # Close the browser in a controlled manner
-        return None
+        return news_articles

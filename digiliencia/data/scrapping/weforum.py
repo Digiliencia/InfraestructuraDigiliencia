@@ -9,7 +9,7 @@ Scrapper for the World Economic Forum website. It allows to scrape the articles 
 import random
 import time
 from datetime import datetime
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
@@ -18,12 +18,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
-from digiliencia.exc.WEForum_exc import WEForumError
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-
 
 
 class WEForumScraper(AbstractScraper):
@@ -250,7 +250,7 @@ class WEForumScraper(AbstractScraper):
             )
 
         # If the user logo (id: mf_user-icon) exists, user is loged in
-        return ScrapUtils.if_element_exists(self.driver, By.ID, "mf_user-icon")
+        return ScrapUtils.if_element_exists(self.driver, By.ID, "mf_user-icon")  # type: ignore
 
     def _accept_cookies_if_visible(self, accept_bttn_id: str):
         """Accepts the cookies if the pop-up is visible.
@@ -259,13 +259,13 @@ class WEForumScraper(AbstractScraper):
             accept_bttn_id (str): The ID of the accept button.
         """
         logger.debug("Accepting cookies if visible")
-        if ScrapUtils.if_element_exists(self.driver, By.ID, accept_bttn_id):
+        if ScrapUtils.if_element_exists(self.driver, By.ID, accept_bttn_id):  # type: ignore
             accept_bttn = self.driver.find_element(By.ID, accept_bttn_id)
             if accept_bttn.is_displayed():
                 accept_bttn.click()
                 time.sleep(self.load_time)
 
-    def _scrap_rand_corporation(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_rand_corporation(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Rand Corporation
 
@@ -277,11 +277,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Return:
-            dict: A dictionary with the article information. Contains:
-                - title: The title of the article
-                - date: The article date
-                - authors: The authors of the article
-                - content: The content of the article
+            ScrapedNewsModel: An object with the publication information.
         """
         # Verify URL
         if "https://www.rand.org/pubs/research_reports/" not in url:
@@ -294,25 +290,30 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
-        data["title"] = self.driver.find_element(By.ID, "RANDTitleHeadingId").text
-        data["authors"] = self.driver.find_element(By.CLASS_NAME, "authors").text
+        title = self.driver.find_element(By.ID, "RANDTitleHeadingId").text
+        authors = self.driver.find_element(By.CLASS_NAME, "authors").text
         date = self.driver.find_element(
             By.CLASS_NAME, "published"
         ).text  # Mirar el formato de la fecha
-        data["date"] = date[9:]
+        date = date[9:]
 
         introduction = self.driver.find_element(
             By.CLASS_NAME, "abstract-first-letter"
         ).text
-        sections = self.driver.find_elements(By.TAG_NAME, "li").text
+        sections = self.driver.find_elements(By.TAG_NAME, "li").text  # type: ignore
         content = introduction + sections
-        data["content"] = content
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=datetime.strptime(date, "%B %d, %Y"),
+            source="Rand Corporation",
+            content=content,
+            url=url,
+            authors=[authors],
+            topics=None,
+        )
 
-    def _scrap_sciencedaily(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_sciencedaily(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Science Daily
 
@@ -324,11 +325,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Return:
-            dict: A dictionary with the article information. Contains:
-                - title: The title of the article
-                - date: The article date
-                - authors: The authors of the article
-                - content: The content of the article
+            ScrapedNewsModel: An object with the publication information.
         """
         # Verify URL
         if "https://www.sciencedaily.com/releases/" not in url:
@@ -341,22 +338,26 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-        try:
-            data["title"] = self.driver.find_element(By.ID, "headline").text
-            data["content"] = self.driver.find_element(By.ID, "text").text
-            data["date"] = self.driver.find_element(
-                By.ID, "date_posted"
-            ).text  # Mirar el formato de la fecha
-            data["authors"] = self.driver.find_element(
-                By.XPATH, '//ol[@class="journal"]/li/text()[1]'
-            ).text
+        title = self.driver.find_element(By.ID, "headline").text
+        content = self.driver.find_element(By.ID, "text").text
+        date = self.driver.find_element(
+            By.ID, "date_posted"
+        ).text  # Mirar el formato de la fecha
+        authors = self.driver.find_element(
+            By.XPATH, '//ol[@class="journal"]/li/text()[1]'
+        ).text
 
-            return data
-        except WEForumError as e:
-            print("ERROR NoSuchElementException: ", e)
+        return ScrapedNewsModel(
+            header=title,
+            date=datetime.strptime(date, "%B %d, %Y"),
+            source="Science Daily",
+            content=content,
+            url=url,
+            authors=[authors],
+            topics=None,
+        )
 
-    def _scrap_wired_story(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_wired_story(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -366,11 +367,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping Wired story: {url}")
         # Disable JS
@@ -382,22 +379,21 @@ class WEForumScraper(AbstractScraper):
 
         self._accept_cookies_if_visible("onetrust-accept-btn-handler")
 
-        data = {}
         time_element = self.driver.find_element(By.TAG_NAME, "time")
         date_str = time_element.text
-        data["date"] = datetime.strptime(
+        date = datetime.strptime(
             date_str, "%b %d, %Y %I:%M %p"
         )  # TODO: take into account case like "Updated a month ago": https://www.wired.com/live/tiktok-scotus-live-coverage/
 
         author_element = self.driver.find_element(
             By.CSS_SELECTOR, '[data-testid="BylineName"]'
         )
-        data["author"] = author_element.text
+        author = author_element.text
 
         title_element = self.driver.find_element(
             By.CSS_SELECTOR, 'h1[data-testid="ContentHeaderHed"]'
         )
-        data["title"] = title_element.text
+        title = title_element.text
 
         content_elements = self.driver.find_elements(
             By.CSS_SELECTOR, "div.body__inner-container > p"
@@ -406,11 +402,19 @@ class WEForumScraper(AbstractScraper):
         for element in content_elements:
             content += element.text + "\n"
 
-        data["content"] = content
+        content = content
         ScrapUtils.enable_js(self.driver)  # Enable JS again
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Wired",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
 
-    def _scrap_WEF_story_publication(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_WEF_story_publication(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -421,11 +425,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel with the publication information.
         """
         logger.debug(f"Scraping WEForum story: {url}")
         if self.stories_url not in url:
@@ -437,19 +437,17 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
         # Get the title
         title_element = self.driver.find_element(By.TAG_NAME, "h1")
-        data["title"] = title_element.text
+        header = title_element.text
 
         # Get the date
         time_element = self.driver.find_element(By.TAG_NAME, "time")
-        data["time"] = datetime.fromisoformat(time_element.get_attribute("datetime"))
+        date = datetime.fromisoformat(time_element.get_attribute("datetime"))  # type: ignore
 
         # Get the author
         author_div = self.driver.find_element(By.CSS_SELECTOR, "div.wef-1upaxcp")
-        data["author"] = author_div.find_element(
+        author = author_div.find_element(
             By.TAG_NAME, "a"
         ).text  # TODO: assess whether it is worthwhile to get the author's profile link and scrape it to.
         # TODO: fix if more than one person wrote the article (list?)
@@ -460,12 +458,18 @@ class WEForumScraper(AbstractScraper):
             "/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]",
         )
 
-        data["content"] = (
-            content_container.text
-        )  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
-        return data
+        content = content_container.text  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
+        return ScrapedNewsModel(
+            header=header,
+            date=date,
+            source="World Economic Forum",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
 
-    def _scrap_globaldata_newsletter(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_globaldata_newsletter(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -476,11 +480,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping GlobalData newsletter: {url}")
         # Verify URL
@@ -493,33 +493,35 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
         # Extract date from URL parameter if available
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
         newsletter_date = query_params.get("newsletterdate", [None])[0]
         if newsletter_date:
-            data["date"] = datetime.strptime(newsletter_date, "%Y-%m-%d")
+            date = datetime.strptime(newsletter_date, "%Y-%m-%d")
         else:
             raise WEForumError(
                 "newsletter date not found in URL. Cannot set publication date."
             )
 
-        data["author"] = "GlobalData"
-
         title_element = self.driver.find_element(By.CSS_SELECTOR, "h2>a")
-        data["title"] = title_element.text
+        title = title_element.text
 
         content_container = title_element.find_element(By.XPATH, "./../../..")
         content = content_container.text
-        data["content"] = content.replace(
-            data["title"], ""
-        )  # Remove title from content
+        content = content.replace(title, "")  # Remove title from content
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="GlobalData",
+            content=content,
+            url=url,
+            authors=[],
+            topics=None,
+        )
 
-    def _scrap_the_quantum_insider(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_the_quantum_insider(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the post.
 
         Args:
@@ -530,11 +532,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping The Quantum Insider: {url}")
         if not url.startswith("https://thequantuminsider.com/"):
@@ -546,17 +544,15 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
         # Get the title
-        data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
+        title = self.driver.find_element(By.TAG_NAME, "h1").text
 
         # Get the date
         date_element = self.driver.find_element(By.TAG_NAME, "time")
-        data["date"] = datetime.strptime(date_element.text, "%B %d, %Y")
+        date = datetime.strptime(date_element.text, "%B %d, %Y")
 
         # Get the author
-        data["author"] = self.driver.find_element(
+        author = self.driver.find_element(
             By.CLASS_NAME, "elementor-post-info__item--type-author"
         ).text
 
@@ -583,12 +579,20 @@ class WEForumScraper(AbstractScraper):
                 img_alt = element.get_attribute("alt")
                 content += f"![{img_alt}]({img_link})\n"
 
-        data["content"] = content
-        return data
+        content = content
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="The Quantum Insider",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
 
     def _scrap_australian_strategic_policy_institute(
         self, url: str
-    ) -> dict[str, Union[str, datetime]]:
+    ) -> ScrapedNewsModel:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -599,11 +603,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping Australian Strategic Policy Institute: {url}")
         if "https://www.aspistrategist.org.au/" not in url:
@@ -615,22 +615,20 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
         # Get the title
-        data["title"] = self.driver.find_element(By.CLASS_NAME, "entry-title").text
+        title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
 
         # Get the date
         date_elem = self.driver.find_element(
             By.CSS_SELECTOR, "article > header > .meta"
         )
-        data["date"] = datetime.fromisoformat(date_elem.get_attribute("datetime"))
+        date = datetime.fromisoformat(date_elem.get_attribute("datetime"))  # type: ignore
 
         # Get the author
         author_elems = self.driver.find_elements(
             By.CSS_SELECTOR, "article > header > .meta > .author"
         )
-        data["author"] = ", ".join([author_elem.text for author_elem in author_elems])
+        authors = [author_elem.text for author_elem in author_elems]
 
         # Get the content
         content_div = self.driver.find_element(By.CLASS_NAME, "entry-content")
@@ -652,10 +650,18 @@ class WEForumScraper(AbstractScraper):
                 img_alt = element.get_attribute("alt")
                 content += f"![{img_alt}]({img_link})\n"
 
-        data["content"] = content
-        return data
+        content = content
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Strategic Policy Institute",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
-    def _scrap_propbublica_article(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_propbublica_article(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -666,11 +672,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping ProPublica article: {url}")
         if "https://www.propublica.org/article/" not in url:
@@ -682,10 +684,8 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time * 1.5)
 
-        data = {}
-
         # Get the title
-        data["title"] = self.driver.find_element(By.TAG_NAME, "h1").text
+        title = self.driver.find_element(By.TAG_NAME, "h1").text
 
         # Get the date
         time_elems = self.driver.find_elements(By.TAG_NAME, "time")
@@ -693,8 +693,8 @@ class WEForumScraper(AbstractScraper):
             if elm.get_attribute("datetime"):
                 time_elem = elm
                 break
-        time_data = time_elem.get_attribute("datetime")
-        data["date"] = datetime.strptime(time_data, "%Y-%m-%dEST%H:%M")  # type: ignore
+        time_data = time_elem.get_attribute("datetime")  # type: ignore
+        date = datetime.strptime(time_data, "%Y-%m-%dEST%H:%M")  # type: ignore
 
         # Get the author
         authors_elem = self.driver.find_element(
@@ -704,17 +704,24 @@ class WEForumScraper(AbstractScraper):
         for elem in authors_elem.find_elements(By.XPATH, ".//p"):
             if elem.tag_name in ["span", "a"]:
                 authors.append(elem.text)
-        data["author"] = ", ".join(authors)
 
         # Get the content
         content_div = self.driver.find_element(By.CLASS_NAME, "article-body")
-        data["content"] = ""
+        content = ""
         for p in content_div.find_elements(By.TAG_NAME, "p"):
-            data["content"] += p.text + "\n\n"
+            content += p.text + "\n\n"
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="ProPublica",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
-    def _scrap_the_conversation(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_the_conversation(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes the publication.
 
@@ -726,11 +733,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping The Conversation article: {url}")
         if "https://theconversation.com/" not in url:
@@ -745,21 +748,17 @@ class WEForumScraper(AbstractScraper):
         # Deny cookies if visible
         ScrapUtils.click_element(self.driver, ".didomi-continue-without-agreeing", 1)
 
-        data = {}
-
-        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1").text
 
         authors_section = self.driver.find_element(By.CLASS_NAME, "content-authors")
         authors_list = authors_section.find_elements(By.TAG_NAME, "li")
-        data["author"] = (", ").join(
-            [
-                author.find_element(By.CLASS_NAME, "author-name").text
-                for author in authors_list
-            ]
-        )
+        authors = [
+            author.find_element(By.CLASS_NAME, "author-name").text
+            for author in authors_list
+        ]
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, ".timestamps time")
-        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+        date = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
 
         content_elem = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = ""
@@ -783,11 +782,18 @@ class WEForumScraper(AbstractScraper):
                     if prev_sibling.tag_name == "hr" and next_sibling.tag_name == "hr":
                         continue
                 content += element.text + "\n\n"
-        data["content"] = content
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="The Conversation",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
-    def _scrap_the_atlantic(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_the_atlantic(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes The Atlantic.
 
@@ -799,11 +805,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping The Atlantic article: {url}")
         if "https://www.theatlantic.com" not in url:
@@ -818,17 +820,15 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)
 
-        data = {}
-
-        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1").text
 
         authors_line = self.driver.find_element(By.ID, "byline")
-        data["author"] = (", ").join(
-            [author.text for author in authors_line.find_elements(By.TAG_NAME, "a")]
-        )
+        authors = [
+            author.text for author in authors_line.find_elements(By.TAG_NAME, "a")
+        ]
 
         time_elem = self.driver.find_element(By.TAG_NAME, "time")
-        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+        date = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
 
         content_elem = self.driver.find_element(
             By.CLASS_NAME, "ArticleBody_root__2gF81"
@@ -843,13 +843,19 @@ class WEForumScraper(AbstractScraper):
             else:
                 content += element.text + "\n\n"
 
-        data["content"] = content
-
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="The Atlantic",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
-    def _scrap_springeropen(self, url: str) -> dict[str, Union[str, datetime]]:
+    def _scrap_springeropen(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes SpringerOpen.
 
@@ -861,11 +867,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping SpringerOpen article: {url}")
         if "springeropen.com/articles" not in url:
@@ -881,30 +883,34 @@ class WEForumScraper(AbstractScraper):
             self.driver, "[data-cc-action=reject]"
         )  # Reject cookies if visible
 
-        data = {}
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1").text
 
-        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
-
-        data["author"] = (", ").join(
-            [
-                author.text
-                for author in self.driver.find_elements(
-                    By.CSS_SELECTOR, "[data-author-search]"
-                )
-            ]
-        )
+        authors = [
+            author.text
+            for author in self.driver.find_elements(
+                By.CSS_SELECTOR, "[data-author-search]"
+            )
+        ]
 
         time_elem = self.driver.find_element(By.TAG_NAME, "time")
-        data["date"] = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
+        date = datetime.fromisoformat(time_elem.get_attribute("datetime"))  # type: ignore
 
         content_elem = self.driver.find_element(By.CSS_SELECTOR, "main > article")
-        data["content"] = content_elem.text  # TODO: improve content extraction
+        content = content_elem.text  # TODO: improve content extraction
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="SpringerOpen",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
     def _scrap_electronic_frontier_foundation_deeplink(
         self, url: str
-    ) -> dict[str, Union[str, datetime]]:
+    ) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Electronic Frontier Foundation deeplink.
 
@@ -916,11 +922,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping Electronic Frontier Foundation deeplink: {url}")
         if "https://www.eff.org/deeplinks/" not in url:
@@ -932,29 +934,35 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        data = {}
-
-        data["title"] = self.driver.find_element(By.CSS_SELECTOR, "h1").text
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1").text
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "byline")
-        data["author"] = (", ").join(
-            [author.text for author in authors_line.find_elements(By.TAG_NAME, "a")]
-        )
+        authors = [
+            author.text for author in authors_line.find_elements(By.TAG_NAME, "a")
+        ]
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "date")
-        data["date"] = datetime.strptime(time_elem.text, "%B %d, %Y")  # type: ignore
+        date = datetime.strptime(time_elem.text, "%B %d, %Y")  # type: ignore
 
         article = self.driver.find_element(By.CSS_SELECTOR, 'article[role="article"]')
         content_container = article.find_element(
             By.CSS_SELECTOR, "div.field--name-body"
         )
-        data["content"] = content_container.text
+        content = content_container.text
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Electronic Frontier Foundation",
+            content=content,
+            url=url,
+            authors=authors,
+            topics=None,
+        )
 
     def _scrap_australian_institute_international_affairs(
         self, url: str
-    ) -> dict[str, Union[str, datetime]]:
+    ) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Australian Institute Of International Affairs page.
 
@@ -966,11 +974,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            dict: A dictionary with the publication information. Contains:
-                - title: The title of the publication
-                - date: The publication date
-                - author: The author of the publication
-                - content: The content of the publication
+            ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping Australian Institute Of International Affairs: {url}")
         if "https://www.internationalaffairs.org.au/" not in url:
@@ -982,26 +986,32 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        data = {}
-
-        data["title"] = self.driver.find_element(By.CLASS_NAME, "post-title").text
+        title = self.driver.find_element(By.CLASS_NAME, "post-title").text
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "author-name").text
         authors_line = authors_line.replace("By ", "")
         authors = [
             author.strip() for author in authors_line.replace(" and ", ", ").split(",")
         ]
-        data["author"] = ", ".join(authors)
+        author = ", ".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
-        data["date"] = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+        date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
 
         content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
-        data["content"] = content_container.text
+        content = content_container.text
 
-        return data
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Institute Of International Affairs",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
 
-    def scrap(self, from_days_ago: int) -> tuple[dict[str, str]]:
+    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
         logger.info("Scraping WEForum")
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
@@ -1036,7 +1046,7 @@ class WEForumScraper(AbstractScraper):
             "Rand Corporation": self._scrap_rand_corporation,
         }
 
-        scraped_publications = []
+        scraped_publications: list[ScrapedNewsModel] = []
 
         with Progress() as progress:
             task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
@@ -1058,10 +1068,6 @@ class WEForumScraper(AbstractScraper):
                         )
                 progress.advance(task)
 
-        for publication in scraped_publications:
-            # print(publication)
-            pass
-
         self._close()
         logger.info("WEForum scraping finished")
-        return None  # type: ignore
+        return scraped_publications
