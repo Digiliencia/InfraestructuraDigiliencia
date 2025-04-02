@@ -170,25 +170,3 @@ class TimeUtils:
             new_date = date_actual - days_subtract
             format_date = new_date.strftime("%d %B %Y") 
             return format_date
-
-    @staticmethod
-    def compare_two_dates(first_date: datetime, second_date:datetime) -> bool:
-        '''
-
-        Args:
-            first_date
-            second_date
-        Return:
-            True -> the first date is greater than the second
-            False -> the second date is greater than the first
-        '''
-        date_first = datetime.strptime(first_date, "%d %B %Y").date()
-        date_second = datetime.strptime(second_date, "%d %B %Y").date()
-
-        if((date_second == datetime.now().date()) or (date_first == datetime.now().date())):
-            return True
-        else:
-            if(date_first > date_second):
-                return True
-            else: 
-                return False

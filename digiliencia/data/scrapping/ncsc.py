@@ -80,12 +80,12 @@ class Ncsc(AbstractScraper):
 
                 return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
             else:
-                return False
+                return {"flag": "false"}
     
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
-    def scrap_glosary(self) -> dict[str, str]:
+    def scrap_glosary(self):
         '''
         Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
         The definitions is divided by sections
@@ -148,7 +148,7 @@ class Ncsc(AbstractScraper):
                 self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
                 article = self._get_article_to_date(until_date)
-                if(article == False):
+                if(article.get("flag") == "false"):
                     break
                 else:
                     self.articles.append(article)
@@ -159,4 +159,4 @@ class Ncsc(AbstractScraper):
             logger.error(f"ERROR: {e}")
             
         self.driver.quit() # Close navegator
-        return None
+        
