@@ -77,11 +77,13 @@ class TimeUtils:
                 formats = [
                     "%b %#d, %Y",
                     "%b %d, %Y",
+                    "%d %B %Y"
                 ]  # Handle both variants for Windows
             else:
                 formats = [
                     "%b %-d, %Y",
                     "%b %d, %Y",
+                    "%d %B %Y"
                 ]  # Handle both variants for Unix/Linux/MacOS
 
             for date_format in formats:
@@ -133,11 +135,16 @@ class TimeUtils:
             >>> TimeUtils.days_between_dates('1/10/2023', '10/10/2023')
             9
         """
-        date_format = "%d/%m/%Y"
-        date1 = datetime.strptime(date_str1, date_format)
-        date2 = datetime.strptime(date_str2, date_format)
-        delta = date2 - date1
-        return delta.days
+        date_formats = ["%d/%m/%Y", "%d %B %Y"]
+        for date_format in date_formats:
+                try:
+                    date1 = datetime.strptime(date_str1, date_format)
+                    date2 = datetime.strptime(date_str2, date_format)
+                    delta = date2 - date1
+                    return delta.days
+                except ValueError:
+                    continue
+        raise ValueError("No format matched date text")
 
     @staticmethod
     def format_subtract_days_to_actual_date(days: int=0) -> str:
@@ -163,25 +170,3 @@ class TimeUtils:
             new_date = date_actual - days_subtract
             format_date = new_date.strftime("%d %B %Y") 
             return format_date
-
-    @staticmethod
-    def compare_two_dates(first_date: datetime, second_date:datetime) -> bool:
-        '''
-
-        Args:
-            first_date
-            second_date
-        Return:
-            True -> the first date is greater than the second
-            False -> the second date is greater than the first
-        '''
-        date_first = datetime.strptime(first_date, "%d %B %Y").date()
-        date_second = datetime.strptime(second_date, "%d %B %Y").date()
-
-        if((date_second == datetime.now().date()) or (date_first == datetime.now().date())):
-            return True
-        else:
-            if(date_first > date_second):
-                return True
-            else: 
-                return False
