@@ -16,6 +16,7 @@ from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from digiliencia.exc.ncsc_exec import NcscExec
 
 class Ncsc(AbstractScraper):
     
@@ -34,9 +35,9 @@ class Ncsc(AbstractScraper):
         while True:
             try:
                 # Try to find the "Load more items" button     
-                button_load = self.driver.find_element(By.XPATH, '//div[@data-testid="organisation-results-container"]/div[3]')
+                button_load = self.driver.find_element(By.XPATH, '//button[@data-testid="load-more-button"]')
                 button_load.click()  # Click the button
-                time.sleep(self.load.webdriverwait_timeout) # Wait a few seconds for new articles to load
+                time.sleep(self.load.webdriverwait_timeout - 0.5) # Wait a few seconds for new articles to load
             except NoSuchElementException:
                 # If the button is not found, we assume that there are no more items to load.
                 logger.debug("there are not articles to load.") 
@@ -55,6 +56,14 @@ class Ncsc(AbstractScraper):
         Args:
             days(int) default = 0, days back to scrape 
         ''' 
+        url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
+    
+        self.driver.get(url_website_all_topics)   
+        logger.info(f"Title {self.driver.title}")
+        
+        # Function to disable the cookie popup
+        self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
+
         until_date = TimeUtils.format_subtract_days_to_actual_date(days) # Calculate date to scrap
         time.sleep(self.load.webdriverwait_timeout)
         num_topics = self.driver.find_elements(By.XPATH, '(//div[@data-testid="all-topics-panel-row"]/div)')
@@ -123,9 +132,9 @@ class Ncsc(AbstractScraper):
             else:
                 date = self.articles[len(self.articles)-1]["date"]
 
-            if(TimeUtils.compare_two_dates(date, until_date)):
-                title = self.driver.find_element(By.XPATH, '//div[@class="pcf-title"]').text
-                summary = self.driver.find_elements(By.XPATH, '//div[@class="summary-content-container"]')[0].text
+            if(TimeUtils.days_between_es_dates(date, until_date) > 0):
+                title = self.driver.find_element(By.ID, 'title').text
+                summary = self.driver.find_element(By.CLASS_NAME, 'pcf-summary').text
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''.join(i.text for i in contents)
 
@@ -213,20 +222,28 @@ class Ncsc(AbstractScraper):
                 glosary (dict)
         """
         try:    
-            url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
-      
-            self.driver.get(url_website_all_topics)   
+            url = "https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc"
+            self.driver.get(url)   
             logger.info(f"Title {self.driver.title}")
             
             # Function to disable the cookie popup
             self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
 
-            self._scrap_all_topics_articles(from_days_ago)
-        
-            return {self.articles, self.topics}
+            until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago) # Calculate date to scrap
 
-        except Exception as e:
+            #self._show_all_articles()
+
+            total_articles = self.driver.find_elements(By.CLASS_NAME, 'search-results')
+            for i in range(1, len(total_articles)+1): # +1 to pick up the last item
+                logger.info(f"Num de artículo: {i}")
+                # Aquí extramos la informacion de todos los articulos de la pagina
+                self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
+                time.sleep(self.load.webdriverwait_timeout)
+                self.articles.append(self._get_article_to_date(until_date))
+                time.sleep(self.load.webdriverwait_timeout)
+                self.driver.back()
+          
+        except NcscExec as e:
             logger.error(f"ERROR: {e}")
             
-        finally: # It always runs whether an error occurs or not. 
-            self.driver.quit() # Close navegator
+        self.driver.quit() # Close navegator

@@ -16,6 +16,6 @@ if __name__ == "__main__":
     set_up_logging()
     EnvLoader()
     #DBConnection().connect()
-    WEForumScraper().scrap(from_days_ago=1)
-    IncibeScraper().scrap(from_days_ago=1)
+    #WEForumScraper().scrap(from_days_ago=1)
+    #IncibeScraper().scrap(from_days_ago=1)
     Ncsc().scrap(from_days_ago=1)
