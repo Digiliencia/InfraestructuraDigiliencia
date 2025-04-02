@@ -28,7 +28,7 @@ class Ncsc(AbstractScraper):
         self.scrapUtils = ScrapUtils()
         self.load = EnvLoader()
         self.driver = ScrapUtils.get_driver()
-        self.articles = []
+        self.articles: list[ScrapedNewsModel] = []
         self.topics = []
 
     def _show_all_articles(self):
@@ -46,7 +46,7 @@ class Ncsc(AbstractScraper):
                 logger.debug("there are not articles to load.")
                 break
 
-    def _get_article_to_date(self, until_date: str = '') -> dict[str, str]:
+    def _get_article_from_date(self, until_date: str = '') -> ScrapedNewsModel | None:
         '''
         Return an articles of a topic until date param
 
@@ -54,19 +54,13 @@ class Ncsc(AbstractScraper):
             until_date (str), default without param
         
         Return:
-            An article of a topic
-            An article is divide:
-                date
-                title
-                summary
-                author
-                content
-                url
+            An object of ScrapedNewsModel, conteniendo la informacion del articulo TODO
+            si es anterior a la fecha dada, en caso contrario None TODO
         '''               
         try:
             if self.scrapUtils.if_element_exists(
                 self.driver,
-                By.XPATH,
+                By.XPATH, # type: ignore
                 '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
             ):
                 date = self.driver.find_element(
@@ -74,7 +68,7 @@ class Ncsc(AbstractScraper):
                     '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
                 ).text
             else:
-                date = self.articles[len(self.articles) - 1]["date"]
+                date = self.articles[-1].date
 
             if(TimeUtils.days_between_es_dates(until_date, date) > 0):
                 title = self.driver.find_element(By.ID, 'title').text
@@ -85,7 +79,7 @@ class Ncsc(AbstractScraper):
 
                 if self.scrapUtils.if_element_exists(
                     self.driver,
-                    By.XPATH,
+                    By.XPATH, # type: ignore
                     '//div[@class="details"]/p[@class="details__name"]',
                 ):
                     author = self.driver.find_element(
@@ -96,9 +90,18 @@ class Ncsc(AbstractScraper):
                         "Guidance"  # Case there is a Guidance, there is not an author
                     )
 
-                return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
+                #return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
+                return ScrapedNewsModel(
+                    header=title,
+                    date=date,
+                    source='NCSC',
+                    content=content,
+                    url=url,
+                    authors=[author],
+                    topics=None
+                )
             else:
-                return {"flag": "false"}
+                return None
     
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
@@ -169,11 +172,11 @@ class Ncsc(AbstractScraper):
 
             total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
             for i in range(1, len(total_articles)+1): # +1 to pick up the last item
-                logger.info(f"Num de article: {i}")
+                # TODO logger.info(f"Num de article: {i}") 
                 # Aquí extramos la informacion de todos los articulos de la pagina
                 self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
-                article = self._get_article_to_date(until_date)
+                article: ScrapedNewsModel = self._get_article_from_date(until_date)
                 if(article.get("flag") == "false"):
                     break
                 else:
