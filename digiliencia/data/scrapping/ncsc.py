@@ -43,79 +43,12 @@ class Ncsc(AbstractScraper):
                 logger.debug("there are not articles to load.") 
                 break
 
-    def _get_num_all_articles(self) -> int:
-        '''  Return number all articles of a topic. '''
-        show_art = self.driver.find_element(By.XPATH, '//div[@data-testid="search__results__showing"]').text.split()
-        logger.debug(f"Get number of all articles: {int(show_art[5])}")
-        return int(show_art[5])
-
-    def _scrap_all_topics_articles(self, days:int=0): # Refactor in a future variable 'next_article' by a flag in 2 loops 
-        '''
-        Scrap all articles and topics of website: https://www.ncsc.gov.uk/
-
-        Args:
-            days(int) default = 0, days back to scrape 
-        ''' 
-        url_website_all_topics = "https://www.ncsc.gov.uk/section/advice-guidance/all-topics"
-    
-        self.driver.get(url_website_all_topics)   
-        logger.info(f"Title {self.driver.title}")
-        
-        # Function to disable the cookie popup
-        self.scrapUtils.click_element(self.driver, 'button.pcf-button:nth-child(2)', 1)
-
-        until_date = TimeUtils.format_subtract_days_to_actual_date(days) # Calculate date to scrap
-        time.sleep(self.load.webdriverwait_timeout)
-        num_topics = self.driver.find_elements(By.XPATH, '(//div[@data-testid="all-topics-panel-row"]/div)')
-        logger.debug(f"Num of topics: {len(num_topics)}")
-
-        next_article = True
-        for i in range(1, len(num_topics)+1): # +1 is for taking the last topic
-            time.sleep(self.load.webdriverwait_timeout)
-            self.driver.find_element(By.XPATH, f'//div[@data-testid="all-topics-panel-row"]/div[{i}]').click()
-            
-            # Extract Topic
-            logger.debug(f"Num topic: {str(i)}")
-            self.topics.append(self._get_topic())
- 
-            time.sleep(self.load.webdriverwait_timeout)
-            num_articles_page = self._get_num_all_articles()
-            time.sleep(self.load.webdriverwait_timeout)
-            self._show_all_articles()
-            
-            logger.debug("Num artciles each topic: " + str(num_articles_page))
-
-            for j in range(0, num_articles_page):  
-                logger.debug("Num article: " + str(j))
-
-                page = WebDriverWait(self.driver, self.load.webdriverwait_timeout).until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, f'//div[@class="pcf-search-result"]/a[@id="searchResult_{j}" and @class="reactLink"]')
-                    )  # Adjust the XPATH according to the link
-                )
-                page.click()
-
-                time.sleep(self.load.webdriverwait_timeout)
-                next_article = self._get_article_to_date(until_date) 
-                if(next_article == False):
-                    break
-                else:
-                    self.articles.append(next_article)
-                    time.sleep(self.load.webdriverwait_timeout)
-                    self.driver.back() # Back to last page
-            self.driver.back()
-                
-            if(next_article == False):
-                break
-        
-        logger.debug(f"Total articles: {len(self.articles)}")
-
     def _get_article_to_date(self, until_date: str = '') -> dict[str, str]:
         '''
         Return an articles of a topic until date param
 
         Args:
-            until_date (str)    
+            until_date (str), default without param
         
         Return:
             An article of a topic
@@ -125,6 +58,7 @@ class Ncsc(AbstractScraper):
                 summary
                 author
                 content
+                url
         '''               
         try:
             if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]')):
@@ -132,45 +66,22 @@ class Ncsc(AbstractScraper):
             else:
                 date = self.articles[len(self.articles)-1]["date"]
 
-            if(TimeUtils.days_between_es_dates(date, until_date) > 0):
+            if(TimeUtils.days_between_es_dates(until_date, date) > 0):
                 title = self.driver.find_element(By.ID, 'title').text
                 summary = self.driver.find_element(By.CLASS_NAME, 'pcf-summary').text
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''.join(i.text for i in contents)
+                url = self.driver.current_url
 
                 if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@class="details"]/p[@class="details__name"]')):
                     author = self.driver.find_element(By.XPATH, '//div[@class="details"]/p[@class="details__name"]').text
                 else:
                     author = "Guidance" # Case there is a Guidance, there is not an author
 
-                return {"title": title, "content": content, "summary": summary, "date": date, "author": author}
+                return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
             else:
                 return False
     
-        except NoSuchElementException as e:
-            logger.error(f"ERROR NoSuchElementException {e}")
-
-    def _get_topic(self) -> dict[str, str]:
-        '''
-        Return a topic of NCSC
-
-        Return:
-            A topic of NCSC
-            A topic is divide:
-                title
-                description
-        '''
-        try:
-            title_topic = self.driver.find_element(By.ID, 'title').text
-            if(self.scrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, '.pcf-summary.main-summary p')):
-                description_topic = self.driver.find_element(By.CSS_SELECTOR, '.pcf-summary.main-summary p').text
-            else:
-                if(self.scrapUtils.if_element_exists(self.driver, By.XPATH, '//div[@data-testid="summary"]')):
-                    description_topic = self.driver.find_element(By.XPATH, '//div[@data-testid="summary"]').text
-                else:
-                    description_topic = ""
-
-            return {"title_topic": title_topic, "description": description_topic}
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
@@ -207,7 +118,7 @@ class Ncsc(AbstractScraper):
 
     def scrap(self, from_days_ago: int = 0) -> dict[str, str]: 
         """
-        Inicialite scrapping of website: https://www.ncsc.gov.uk/
+        Inicialite scrapping of website: https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc
 
         Args:
             from_days_ago(int) default = 0, days back to scrape 
@@ -216,10 +127,7 @@ class Ncsc(AbstractScraper):
             >>> strat_scrapping(7)  # Run date in 20/03/2025, scrape all articles to 13/03/2025
             
         Return:
-            3 dict
-                all articles (dict)
-                all topics (dict)
-                glosary (dict)
+            None
         """
         try:    
             url = "https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc"
@@ -231,15 +139,19 @@ class Ncsc(AbstractScraper):
 
             until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago) # Calculate date to scrap
 
-            #self._show_all_articles()
+            self._show_all_articles()
 
-            total_articles = self.driver.find_elements(By.CLASS_NAME, 'search-results')
+            total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
             for i in range(1, len(total_articles)+1): # +1 to pick up the last item
-                logger.info(f"Num de artículo: {i}")
+                logger.info(f"Num de article: {i}")
                 # Aquí extramos la informacion de todos los articulos de la pagina
                 self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
-                self.articles.append(self._get_article_to_date(until_date))
+                article = self._get_article_to_date(until_date)
+                if(article == False):
+                    break
+                else:
+                    self.articles.append(article)
                 time.sleep(self.load.webdriverwait_timeout)
                 self.driver.back()
           
@@ -247,3 +159,4 @@ class Ncsc(AbstractScraper):
             logger.error(f"ERROR: {e}")
             
         self.driver.quit() # Close navegator
+        return None
