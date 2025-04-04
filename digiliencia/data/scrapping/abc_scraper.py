@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Sequence
 
 from digiliencia.data.models.news_model import ScrapedNewsModel
 
@@ -11,7 +12,7 @@ class AbstractScraper(ABC):
     """
 
     @abstractmethod
-    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int) -> Sequence[ScrapedNewsModel]:
         """
         Scraps the class content from from_days_ago days ago.
 
