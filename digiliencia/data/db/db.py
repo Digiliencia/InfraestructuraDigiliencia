@@ -1,7 +1,8 @@
-from neo4j import GraphDatabase, Driver
+from neo4j import GraphDatabase, Driver, Session
 from threading import Lock
 
 from digiliencia.configs.db_config import DatabaseConfig
+from digiliencia.data.db.access_mode_enum import AccessMode
 from digiliencia.exc.database_connection_exc import DatabaseConnectionError
 
 
@@ -39,16 +40,19 @@ class Database:
     def __init__(self) -> None:
         pass
 
-    def get_connection(self) -> Driver:
+    def get_connection(self, access_mode: AccessMode = AccessMode.WRITE) -> Session:
         """
         Returns a connection to the database.
+
+        Args:
+            access_mode (AccessMode): The access mode for the session.
 
         Raises:
             DatabaseConnectionError: If the connection to the database fails.
         """
         try:
             self._driver.verify_connectivity()
-            return self._driver
+            return self._driver.session(default_access_mode=access_mode.value)
         except Exception as e:
             raise DatabaseConnectionError(
                 f"Failed to connect to the database: {e}"
