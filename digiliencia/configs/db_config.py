@@ -19,7 +19,7 @@ class DatabaseConfig:
             raise InvalidDatabaseConfigError("Invalid database configuration.")
         
     @property
-    def server(self) -> str:
+    def uri(self) -> str:
         return self._uri
     
     @property
