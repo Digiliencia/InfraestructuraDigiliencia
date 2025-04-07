@@ -17,8 +17,8 @@ class Database:
     """
 
     _instance = None
-    _driver: Driver
-    _lock = Lock()
+    _driver: Driver = None # type: ignore
+    _lock: Lock = Lock()
 
     def __new__(cls) -> "Database":
         with cls._lock:

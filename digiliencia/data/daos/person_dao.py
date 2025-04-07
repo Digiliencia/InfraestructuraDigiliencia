@@ -1,6 +1,8 @@
 from typing import Any, Optional, List
 
 from loguru import logger
+from neo4j.exceptions import ConstraintError
+from neo4j.graph import Node
 
 from digiliencia.data.daos.abc_dao import AbstractDAO
 from digiliencia.exc.dao_create_exc import DAOCreateError
@@ -29,9 +31,9 @@ class PersonDAO(AbstractDAO):
         """
         return PersonModel(
             id=raw_data.id,
-            full_name=raw_data.full_name,
-            email=raw_data.email,
-            decription=raw_data.description,
+            full_name=raw_data.get('full_name'),
+            email=raw_data.get('email'),
+            decription=raw_data.get('description'),
         )
 
     def create( 
@@ -70,13 +72,14 @@ class PersonDAO(AbstractDAO):
                     logger.error("Failed to create person")
                     raise DAOCreateError("Failed to create person")
                 
-                person_node = record["p"]
+                person_node: Node = record["p"]
+                print(type(person_node))
                 logger.debug(f"Created person: {person_node}")
                 return self._build_model(person_node)
             
-        except Exception as e:
-            logger.error(f"Error creating person: {e}")
-            raise DAOCreateError("Failed to create person") from e
+        except ConstraintError as e:
+            logger.error(f"Constraint error creating person: {e}")
+            raise DAOCreateError("Failed to create person due to constraint") from e
         
         # TODO: Test this method and add the rest of them.
         
