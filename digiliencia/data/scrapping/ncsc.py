@@ -7,7 +7,7 @@ Scrapping of website: https://www.ncsc.gov.uk/
 """
 
 import time
-
+from datetime import datetime
 from loguru import logger
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -56,6 +56,8 @@ class Ncsc(AbstractScraper):
             si es anterior a la fecha dada, en caso contrario None TODO
         '''               
         try:
+            date = datetime.now().strftime("%d %B %Y")
+
             if self.scrapUtils.if_element_exists(
                 self.driver,
                 By.XPATH, # type: ignore
@@ -66,11 +68,10 @@ class Ncsc(AbstractScraper):
                     '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
                 ).text
             else:
-                date = self.articles[-1].date
+                date = self.articles[-1].date.strftime("%d %B %Y")
 
             if(TimeUtils.days_between_es_dates(until_date, date) > 0):
                 title = self.driver.find_element(By.ID, 'title').text
-                summary = self.driver.find_element(By.CLASS_NAME, 'pcf-summary').text
                 contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
                 content = ''.join(i.text for i in contents)
                 url = self.driver.current_url
@@ -88,10 +89,11 @@ class Ncsc(AbstractScraper):
                         "Guidance"  # Case there is a Guidance, there is not an author
                     )
 
-                #return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
+                date_dt = datetime.strptime(date, "%d %B %Y")
+
                 return ScrapedNewsModel(
                     header=title,
-                    date=date,
+                    date=date_dt,
                     source='NCSC',
                     content=content,
                     url=url,

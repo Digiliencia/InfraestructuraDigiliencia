@@ -17,5 +17,5 @@ if __name__ == "__main__":
     EnvLoader()
     # DBConnection().connect()
     #WEForumScraper().scrap_news(from_days_ago=1)
-    IncibeScraper().scrap_news(from_days_ago=1)
-    Ncsc().scrap_news(from_days_ago=1)
+    #IncibeScraper().scrap_news(from_days_ago=1)
+    Ncsc().scrap_news(from_days_ago=5)
