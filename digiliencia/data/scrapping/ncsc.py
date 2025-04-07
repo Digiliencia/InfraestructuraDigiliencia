@@ -30,10 +30,11 @@ class Ncsc(AbstractScraper):
         self.topics = []
 
     def _show_all_articles(self):
-        """Shows the browser all articles in a topic. Click the "Show 10 more" button repeatedly until it disappears."""
+        """Shows the browser all articles. Click the "Show 10 more" button repeatedly until it disappears."""
         logger.debug("Show all articles of topic")
         # Loop to load all articles
-        while True:
+        button_visible  = True
+        while button_visible :
             try:
                 # Try to find the "Load more items" button     
                 button_load = self.driver.find_element(By.XPATH, '//button[@data-testid="load-more-button"]')
@@ -42,7 +43,7 @@ class Ncsc(AbstractScraper):
             except NoSuchElementException:
                 # If the button is not found, we assume that there are no more items to load.
                 logger.debug("there are not articles to load.")
-                break
+                button_visible  = False
 
     def _get_article_from_date(self, until_date: str = '') -> ScrapedNewsModel | None:
         '''
@@ -52,8 +53,8 @@ class Ncsc(AbstractScraper):
             until_date (str), default without param
         
         Return:
-            An object of ScrapedNewsModel, conteniendo la informacion del articulo TODO
-            si es anterior a la fecha dada, en caso contrario None TODO
+            An object of ScrapedNewsModel, containing the article information 
+            if it is before the given date, otherwise None 
         '''               
         try:
             date = datetime.now().strftime("%d %B %Y")
@@ -104,7 +105,7 @@ class Ncsc(AbstractScraper):
                 return None
     
         except NoSuchElementException as e:
-            logger.error(f"ERROR NoSuchElementException {e}")
+            logger.warning(f"ERROR Article NoSuchElementException {e}")
 
     def scrap_glosary(self):
         '''
@@ -113,8 +114,8 @@ class Ncsc(AbstractScraper):
 
         Return:
             A list with all definitions, each defitions have a:
-                Concept,
-                Description,
+                Concept (str),
+                Description (str),
         '''
         concepts = []
         descriptions = []
@@ -124,19 +125,18 @@ class Ncsc(AbstractScraper):
             self.driver, "button.pcf-button:nth-child(2)", 1
         )  # Function to disable the cookie popup
 
-        logger.info(f"Scrap of glosarry title: {self.driver.title}")
+        logger.info(f"Scrap subpage title: {self.driver.title}")
 
         definitions = self.driver.find_elements(
             By.CSS_SELECTOR, ".pcf-accordionItem.whiteBg"
         )
-        logger.info(f"Num total of definitions: {len(definitions)}")
+        logger.debug(f"Found {len(definitions)} definitions to process")
         for i in definitions:
             i.click()
             time.sleep(self.load.webdriverwait_timeout)
             concept = i.find_element(
                 By.CSS_SELECTOR, "div.pcf-accordionItem.whiteBg h3"
             ).text
-            logger.debug(f"Definition: {concept}")
             concepts.append(concept)
             description = i.find_element(By.CSS_SELECTOR, "div.pcf-BodyText p").text
             descriptions.append(description)
@@ -159,7 +159,6 @@ class Ncsc(AbstractScraper):
         try:    
             url = "https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc"
             self.driver.get(url)   
-            logger.info(f"Title {self.driver.title}")
 
             # Function to disable the cookie popup
             self.scrapUtils.click_element(
@@ -171,8 +170,8 @@ class Ncsc(AbstractScraper):
             self._show_all_articles()
 
             total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
+            logger.debug(f"Found {len(total_articles)} articles to process")
             for i in range(1, len(total_articles)+1): # +1 to pick up the last item
-                # TODO logger.info(f"Num de article: {i}") 
                 # Aquí extramos la informacion de todos los articulos de la pagina
                 self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
