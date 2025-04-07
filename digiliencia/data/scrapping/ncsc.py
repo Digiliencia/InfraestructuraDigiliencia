@@ -27,7 +27,6 @@ class Ncsc(AbstractScraper):
         self.load = EnvLoader()
         self.driver = ScrapUtils.get_driver()
         self.articles: list[ScrapedNewsModel] = []
-        self.topics = []
 
     def _show_all_articles(self):
         """Shows the browser all articles. Click the "Show 10 more" button repeatedly until it disappears."""
