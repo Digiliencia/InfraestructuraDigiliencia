@@ -12,8 +12,6 @@ from loguru import logger
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
@@ -48,7 +46,7 @@ class Ncsc(AbstractScraper):
 
     def _get_article_from_date(self, until_date: str = '') -> ScrapedNewsModel | None:
         '''
-        Return an articles of a topic until date param
+        Give an object ScrapedNewsModel is an articles of a topic until date param
 
         Args:
             until_date (str), default without param
@@ -176,8 +174,8 @@ class Ncsc(AbstractScraper):
                 # Aquí extramos la informacion de todos los articulos de la pagina
                 self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
-                article: ScrapedNewsModel = self._get_article_from_date(until_date)
-                if(article.get("flag") == "false"):
+                article: ScrapedNewsModel | None = self._get_article_from_date(until_date)
+                if(article == None):
                     break
                 else:
                     self.articles.append(article)
@@ -188,4 +186,4 @@ class Ncsc(AbstractScraper):
             logger.error(f"ERROR: {e}")
             
         self.driver.quit() # Close navegator
-        
+        return self.articles
