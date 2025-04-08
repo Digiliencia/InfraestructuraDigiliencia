@@ -8,7 +8,9 @@ from digiliencia.data.daos.abc_dao import AbstractDAO
 from digiliencia.data.db.access_mode_enum import AccessMode
 from digiliencia.data.models.person_model import PersonModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
+from digiliencia.exc.dao_delete_exc import DAODeleteError
 from digiliencia.exc.dao_read_exc import DAOReadError
+from digiliencia.exc.dao_update_exc import DAOUpdateError
 
 
 class PersonDAO(AbstractDAO):
@@ -28,7 +30,7 @@ class PersonDAO(AbstractDAO):
             PersonModel: A person model instance.
         """
         return PersonModel(
-            id=raw_data.id,
+            id=raw_data.get("id"),
             full_name=raw_data.get("full_name"),
             email=raw_data.get("email"),
             description=raw_data.get("description"),
@@ -124,15 +126,30 @@ class PersonDAO(AbstractDAO):
         Raises:
             DAOReadError: If reading fails.
         """
-        pass
+        try:
+            query = """
+                MATCH (p:Person)
+                RETURN p
+            """
+            with self.db.get_connection(AccessMode.READ) as session:
+                result = session.run(query)
+                persons = [self._build_model(record["p"]) for record in result]
+                logger.debug(f"Read {len(persons)} persons")
+                return persons
 
-    def update(self, id: str, **kwargs) -> PersonModel:
+        except Exception as e:
+            logger.error(f"Error reading all persons: {e}")
+            raise DAOReadError("Failed to read all persons") from e
+
+    def update(self, id: str, **kwargs) -> PersonModel:  # type: ignore
         """
         Updates a person in the database.
 
         Args:
             id (str): The ID of the person to update.
-            **kwargs: The fields to update.
+            full_name (str): The new full name of the person.
+            email (str): The new email address of the person.
+            description (str): The new description of the person.
 
         Returns:
             PersonModel: The updated person model.
@@ -140,7 +157,35 @@ class PersonDAO(AbstractDAO):
         Raises:
             DAOUpdateError: If updating fails.
         """
-        pass
+        try:
+            update_items = []
+            for key, value in kwargs.items():
+                if value is not None:
+                    update_items.append(f"p.{key} = ${key}")
+
+            if not update_items:
+                logger.warning("No valid fields to update")
+                return self.read_by_id(id)
+
+            query = f"""
+                MATCH (p:Person {{id: $id}})
+                SET {", ".join(update_items)}
+                RETURN p
+            """
+            with self.db.get_connection(AccessMode.WRITE) as session:
+                result = session.run(query, {"id": id, **kwargs})
+                record = result.single()
+                if record is None:
+                    logger.warning(f"No person found with id: {id}")
+                    raise DAOUpdateError(f"No person found with id: {id}")
+
+                person_node: Node = record["p"]
+                logger.debug(f"Updated person: {person_node}")
+                return self._build_model(person_node)
+
+        except Exception as e:
+            logger.error(f"Error updating person with id {id}: {e}")
+            raise DAOUpdateError(f"Failed to update person with id: {id}") from e
 
     def delete(self, id: str) -> None:
         """
@@ -152,4 +197,18 @@ class PersonDAO(AbstractDAO):
         Raises:
             DAODeleteError: If deletion fails.
         """
-        pass
+        try:
+            query = """
+                MATCH (p:Person {id: $id})
+                DELETE p
+            """
+            with self.db.get_connection(AccessMode.WRITE) as session:
+                result = session.run(query, {"id": id})
+                if result.consume().counters.nodes_deleted == 0:
+                    logger.warning(f"No person found with id: {id}")
+                    raise DAODeleteError(f"No person found with id: {id}")
+                logger.debug(f"Deleted person with id: {id}")
+
+        except Exception as e:
+            logger.error(f"Error deleting person with id {id}: {e}")
+            raise DAODeleteError(f"Failed to delete person with id: {id}") from e

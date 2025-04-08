@@ -7,7 +7,7 @@ from digiliencia.data.models.interface_model import IModel
 class PersonModel(IModel):
     """Represents a person in the database."""
 
-    id: int
+    id: str
     full_name: str
     email: str
     description: str

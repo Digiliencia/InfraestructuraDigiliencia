@@ -40,7 +40,7 @@ class AbstractDAO(ABC):
         pass
 
     @abstractmethod
-    def read_by_id(self, id: int) -> IModel:
+    def read_by_id(self, id: str) -> IModel:
         """
         Reads a model instance by its ID.
 
@@ -67,7 +67,7 @@ class AbstractDAO(ABC):
         pass
 
     @abstractmethod
-    def update(self, id: int, *args: Any, **kwargs: Any) -> None:
+    def update(self, id: str, *args: Any, **kwargs: Any) -> None:
         """
         Updates a record in the database.
 
@@ -79,7 +79,7 @@ class AbstractDAO(ABC):
         pass
 
     @abstractmethod
-    def delete(self, id: int) -> None:
+    def delete(self, id: str) -> None:
         """
         Deletes a record from the database.
 
