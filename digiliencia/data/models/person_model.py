@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from digiliencia.data.models.interface_model import IModel
 
 
@@ -9,4 +10,4 @@ class PersonModel(IModel):
     id: int
     full_name: str
     email: str
-    decription: str
+    description: str
