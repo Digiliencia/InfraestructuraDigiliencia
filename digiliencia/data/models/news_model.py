@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 from digiliencia.data.models.interface_model import IModel
-from digiliencia.data.models.organization_model import NewsAgencyModel
+from digiliencia.data.models.organization.organization_model import NewsAgencyModel
 from digiliencia.data.models.topic_model import TopicModel
 from digiliencia.data.models.person_model import PersonModel
 
