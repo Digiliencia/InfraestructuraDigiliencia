@@ -7,6 +7,6 @@ from digiliencia.data.models.interface_model import IModel
 class OrganizationModel(IModel, ABC):
     """Represents an organization in the database."""
 
-    id: int
+    id: str
     name: str
     description: str

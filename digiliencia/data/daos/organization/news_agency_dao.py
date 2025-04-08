@@ -12,6 +12,8 @@ from digiliencia.exc.dao_read_exc import DAOReadError
 
 class NewsAgencyDAO(OrganizationDAO[NewsAgencyModel]):
     """Data Access Object (DAO) for News Agencies."""
+    
+    _organization_type = "NewsAgency"
 
     def _build_model(self, raw_data: Any) -> NewsAgencyModel:
         """

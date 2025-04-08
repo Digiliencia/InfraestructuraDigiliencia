@@ -20,18 +20,18 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
     Cannot be instantiated directly - must use a concrete subclass.
     """
 
-    # Atributo de clase a ser sobrescrito por las subclases
-    _organization_type = None
+    # Class attribute to be overridden by subclasses
+    _organization_type: str
 
     def __init__(self) -> None:
         super().__init__()
-        # Aseguramos que no se pueda instanciar directamente
+        # Ensure that it cannot be instantiated directly
         if self.__class__ == OrganizationDAO:
             raise TypeError(
                 "OrganizationDAO is an abstract class and cannot be instantiated directly"
             )
 
-        # Validar que la subclase ha establecido _organization_type
+        # Validate that the subclass has set _organization_type
         if not self._organization_type:
             raise ValueError(
                 f"Subclass {self.__class__.__name__} must set _organization_type"
@@ -84,13 +84,13 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
             DAOReadError: If reading fails.
         """
         try:
-            query = """
-                MATCH (o:Organization {id: $id})
-                WHERE o:$type
+            # Construir la consulta con la etiqueta directamente en la cadena
+            query = f"""
+                MATCH (o:Organization:{self._organization_type} {{id: $id}})
                 RETURN o
             """
             with self.db.get_connection(AccessMode.READ) as session:
-                result = session.run(query, {"id": id, "type": self._organization_type})
+                result = session.run(query, {"id": id}) # type: ignore
                 record = result.single()
                 if record is None:
                     logger.warning(f"No {self._organization_type} found with id: {id}")
@@ -147,15 +147,12 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
                 return self.read_by_id(id)
 
             query = f"""
-                MATCH (o:Organization {{id: $id}})
-                WHERE o:$type
+                MATCH (o:Organization:{self._organization_type} {{id: $id}})
                 SET {", ".join(update_items)}
                 RETURN o
             """
             with self.db.get_connection(AccessMode.WRITE) as session:
-                result = session.run(
-                    query, {"id": id, "type": self._organization_type, **kwargs}
-                )
+                result = session.run(query, {"id": id, **kwargs}) # type: ignore
                 record = result.single()
                 if record is None:
                     logger.warning(f"No {self._organization_type} found with id: {id}")
@@ -184,13 +181,12 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
             DAODeleteError: If deletion fails.
         """
         try:
-            query = """
-                MATCH (o:Organization {id: $id})
-                WHERE o:$type
+            query = f"""
+                MATCH (o:Organization:{self._organization_type} {{id: $id}})
                 DELETE o
             """
             with self.db.get_connection(AccessMode.WRITE) as session:
-                result = session.run(query, {"id": id, "type": self._organization_type})
+                result = session.run(query, {"id": id}) # type: ignore
                 summary = result.consume()
                 if summary.counters.nodes_deleted == 0:
                     logger.warning(f"No {self._organization_type} found with id: {id}")
