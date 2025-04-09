@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, Sequence
 
 from loguru import logger
 from neo4j.exceptions import ConstraintError
@@ -116,7 +116,7 @@ class TopicDAO(AbstractDAO):
             logger.error(f"Error reading topic by id {id}: {e}")
             raise DAOReadError(f"Failed to read topic with id: {id}") from e
 
-    def read_all(self) -> List[TopicModel]:
+    def read_all(self) -> Sequence[TopicModel]:
         """
         Reads all topics from the database.
 

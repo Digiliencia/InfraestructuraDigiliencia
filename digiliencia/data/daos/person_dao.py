@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Sequence, Optional
 
 from loguru import logger
 from neo4j.exceptions import ConstraintError
@@ -116,12 +116,12 @@ class PersonDAO(AbstractDAO):
             logger.error(f"Error reading person by id {id}: {e}")
             raise DAOReadError(f"Failed to read person with id: {id}") from e
 
-    def read_all(self) -> List[PersonModel]:
+    def read_all(self) -> Sequence[PersonModel]:
         """
         Reads all persons from the database.
 
         Returns:
-            List[PersonModel]: A list of all person models.
+            Sequence[PersonModel]: A sequence of all person models.
 
         Raises:
             DAOReadError: If reading fails.
