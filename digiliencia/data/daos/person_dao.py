@@ -39,16 +39,16 @@ class PersonDAO(AbstractDAO):
     def create(  # type: ignore
         self,
         full_name: str,
-        email: Optional[str],
-        description: Optional[str],
+        email: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> PersonModel:
         """
         Creates a new person in the database.
 
         Args:
             full_name (str): The full name of the person.
-            email (str): The email address of the person.
-            description (str): A description of the person.
+            email (Optional[str]): The email address of the person.
+            description (Optional[str]): A description of the person.
         """
         try:
             query = """
@@ -75,7 +75,6 @@ class PersonDAO(AbstractDAO):
                     raise DAOCreateError("Failed to create person")
 
                 person_node: Node = record["p"]
-                print(type(person_node))
                 logger.debug(f"Created person: {person_node}")
                 return self._build_model(person_node)
 

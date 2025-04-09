@@ -172,20 +172,21 @@ class NewsDAO(AbstractDAO):
                     id: randomUUID(),
                     header: $header,
                     date: $date,
-                    source_id: $source_id,
                     content: $content,
                     url: $url
                 })
                 WITH n
-                MATCH (s:Source {id: $source_id})
-                MERGE (n)-[:PUBLISHED_BY]->(s)
+                MATCH (na:NewsAgency {id: $source_id})
+                MERGE (n)-[:PUBLISHED_BY]->(na)
                 WITH n, $author_ids AS author_ids
                 UNWIND author_ids AS author_id
-                MATCH (a:Author {id: author_id})
-                MERGE (n)-[:WRITEN_BY]->(a)
+                MATCH (a:Person)
+                WHERE a.id = author_id
+                MERGE (n)-[:WRITTEN_BY]->(a)
                 WITH n, $topic_ids AS topic_ids
                 UNWIND topic_ids AS topic_id
-                MATCH (t:Topic {id: topic_id})
+                MATCH (t:Topic)
+                WHERE t.id = topic_id
                 MERGE (n)-[:BELONGS_TO]->(t)
                 RETURN n
             """
@@ -508,13 +509,13 @@ class NewsDAO(AbstractDAO):
                     author_query = """
                         MATCH (n:News {id: $id})
                         // Delete all existing author relationships
-                        OPTIONAL MATCH (n)-[r:WRITEN_BY]->(a:Author)
+                        OPTIONAL MATCH (n)-[r:WRITTEN_BY]->(a:Author)
                         DELETE r
                         // Create new relationships
                         WITH n, $author_ids AS author_ids
                         UNWIND author_ids AS author_id
                         MATCH (a:Author {id: author_id})
-                        MERGE (n)-[:WRITEN_BY]->(a)
+                        MERGE (n)-[:WRITTEN_BY]->(a)
                         RETURN n
                     """
                     session.run(author_query, {"id": id, "author_ids": author_ids})
@@ -557,7 +558,7 @@ class NewsDAO(AbstractDAO):
         try:
             query = """
                 MATCH (n:News {id: $id})
-                DELETE n
+                DETACH DELETE n
             """
             with self.db.get_connection(AccessMode.WRITE) as session:
                 result = session.run(query, {"id": id})
