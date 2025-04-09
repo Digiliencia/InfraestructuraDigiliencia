@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 from digiliencia.data.models.interface_model import IModel
-from digiliencia.data.models.organization.organization_model import NewsAgencyModel
+from digiliencia.data.models.organization.news_agency_model import NewsAgencyModel
 from digiliencia.data.models.topic_model import TopicModel
 from digiliencia.data.models.person_model import PersonModel
 
@@ -11,7 +11,7 @@ from digiliencia.data.models.person_model import PersonModel
 class RawNewsModel(IModel):
     """Represents a news in the database."""
 
-    id: int
+    id: str
     header: str
     date: datetime
     source_id: str
@@ -25,7 +25,7 @@ class RawNewsModel(IModel):
 class NewsModel(IModel):
     """Represents a product in the database with models instead of IDs for its references."""
 
-    id: int
+    id: str
     header: str
     date: datetime
     source: NewsAgencyModel
