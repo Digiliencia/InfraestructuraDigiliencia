@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Sequence, Optional
+from typing import Any, Optional, Sequence
 
 from loguru import logger
 from neo4j.exceptions import ConstraintError
@@ -78,28 +78,28 @@ class NewsDAO(AbstractDAO):
                 
                 RETURN s.id as source_id, authors, topics
             """
-            
+
             author_names = news.authors or []
             topic_names = news.topics or []
-            
+
             with self.db.get_connection(AccessMode.READ) as session:
                 lookup_result = session.run(
-                    lookup_query, 
+                    lookup_query,
                     {
                         "source_name": news.source,
                         "author_names": author_names,
-                        "topic_names": topic_names
-                    }
+                        "topic_names": topic_names,
+                    },
                 )
                 lookup_record = lookup_result.single()
-                
+
                 if lookup_record is None or lookup_record["source_id"] is None:
                     logger.warning(f"No source found with name: {news.source}")
                     raise DAOCreateError(f"No source found with name: {news.source}")
                     # TODO: Consider creating a new source if not found
-                
+
                 source_id = lookup_record["source_id"]
-                
+
                 # Process author IDs
                 author_ids = []
                 author_map = {a["name"]: a["id"] for a in lookup_record["authors"]}
@@ -109,7 +109,7 @@ class NewsDAO(AbstractDAO):
                     else:
                         logger.warning(f"Author not found: {author_name}, skipping")
                         # TODO: Consider creating a new author if not found
-                
+
                 # Process topic IDs
                 topic_ids = []
                 topic_map = {t["name"]: t["id"] for t in lookup_record["topics"]}
@@ -119,7 +119,7 @@ class NewsDAO(AbstractDAO):
                     else:
                         logger.warning(f"Topic not found: {topic_name}, skipping")
                         # TODO: Consider creating a new topic if not found?
-            
+
             # Call the existing create method with IDs
             return self.create(
                 header=news.header,
@@ -128,7 +128,7 @@ class NewsDAO(AbstractDAO):
                 content=news.content,
                 url=news.url,
                 author_ids=author_ids,
-                topic_ids=topic_ids
+                topic_ids=topic_ids,
             )
 
         except Exception as e:
@@ -312,7 +312,7 @@ class NewsDAO(AbstractDAO):
         topic_id: str,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> Sequence[RawNewsModel]:
         """
         Reads news items related to a specific topic with optional date range filtering.
@@ -332,24 +332,24 @@ class NewsDAO(AbstractDAO):
         try:
             query_params = {"topic_id": topic_id, "limit": limit}
             conditions = ["(n)-[:BELONGS_TO]->(t:Topic {id: $topic_id})"]
-            
+
             if start_date:
                 query_params["start_date"] = start_date.isoformat()
                 conditions.append("n.date >= $start_date")
-            
+
             if end_date:
                 query_params["end_date"] = end_date.isoformat()
                 conditions.append("n.date <= $end_date")
-            
+
             query = f"""
                 MATCH (n:News), (t:Topic)
                 WHERE {" AND ".join(conditions)}
                 RETURN n
                 LIMIT $limit
             """
-            
+
             with self.db.get_connection(AccessMode.READ) as session:
-                result = session.run(query, query_params) # type: ignore
+                result = session.run(query, query_params)  # type: ignore
                 news_items = [self._build_model(record["n"]) for record in result]
                 logger.debug(f"Read {len(news_items)} news items with topic {topic_id}")
                 return news_items
@@ -357,6 +357,62 @@ class NewsDAO(AbstractDAO):
         except Exception as e:
             logger.error(f"Error reading news by topic {topic_id}: {e}")
             raise DAOReadError(f"Failed to read news with topic: {topic_id}") from e
+
+    def read_by_organization(
+        self,
+        news_agency_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: int = 100,
+    ) -> Sequence[RawNewsModel]:
+        """
+        Reads news items published by a specific news agency with optional date range filtering.
+
+        Args:
+            news_agency_id (str): The ID of the news agency.
+            start_date (Optional[datetime]): Filter news published on or after this date.
+            end_date (Optional[datetime]): Filter news published on or before this date.
+            limit (int): Maximum number of news items to return (default 100).
+
+        Returns:
+            List[RawNewsModel]: A list of news published by the specified news agency.
+
+        Raises:
+            DAOReadError: If reading fails.
+        """
+        try:
+            query_params = {"news_agency_id": news_agency_id, "limit": limit}
+            conditions = ["(n)-[:PUBLISHED_BY]->(na:NewsAgency {id: $news_agency_id})"]
+
+            if start_date:
+                query_params["start_date"] = start_date.isoformat()
+                conditions.append("n.date >= $start_date")
+
+            if end_date:
+                query_params["end_date"] = end_date.isoformat()
+                conditions.append("n.date <= $end_date")
+
+            query = f"""
+                MATCH (n:News), (na:NewsAgency)
+                WHERE {" AND ".join(conditions)}
+                RETURN n
+                ORDER BY n.date DESC
+                LIMIT $limit
+            """
+
+            with self.db.get_connection(AccessMode.READ) as session:
+                result = session.run(query, query_params) # type: ignore
+                news_items = [self._build_model(record["n"]) for record in result]
+                logger.debug(
+                    f"Read {len(news_items)} news items from news agency {news_agency_id}"
+                )
+                return news_items
+
+        except Exception as e:
+            logger.error(f"Error reading news by news agency {news_agency_id}: {e}")
+            raise DAOReadError(
+                f"Failed to read news from news agency: {news_agency_id}"
+            ) from e
 
     def read_by_date_range(
         self, start_date: datetime, end_date: datetime
@@ -422,7 +478,7 @@ class NewsDAO(AbstractDAO):
             # Extract author_ids and topic_ids for relationship management
             author_ids = kwargs.pop("author_ids", None)
             topic_ids = kwargs.pop("topic_ids", None)
-            
+
             # Handle date conversion if present
             if "date" in kwargs and isinstance(kwargs["date"], datetime):
                 kwargs["date"] = kwargs["date"].isoformat()
@@ -463,7 +519,7 @@ class NewsDAO(AbstractDAO):
                     """
                     session.run(author_query, {"id": id, "author_ids": author_ids})
                     logger.debug(f"Updated author relationships for news {id}")
-                
+
                 # Update topic relationships if specified
                 if topic_ids is not None:
                     topic_query = """
