@@ -6,6 +6,6 @@ from digiliencia.data.models.interface_model import IModel
 class TopicModel(IModel):
     """Represents a topic in the database."""
 
-    id: int
+    id: str
     name: str
     definition: str
