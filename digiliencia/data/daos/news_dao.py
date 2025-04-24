@@ -189,7 +189,7 @@ class NewsDAO(AbstractDAO):
             news_data["author_ids"] = author_ids
             news_data["topic_ids"] = topic_ids
 
-            logger.debug(f"Created news: {news_data}")
+            logger.debug(f"Created news: {news_data['header']}")
             return self._build_model(news_data)
 
         except ConstraintError as e:
