@@ -198,7 +198,7 @@ class WEForumScraper(AbstractScraper):
                 ).text
                 link_element = article.find_element(
                     By.CLASS_NAME,
-                    "UIActionButton__StyledButton-sc-ce337a4a-2",
+                    "UIActionButton__StyledButton-sc-d03545d8-2",
                 )
                 link = (
                     link_element.get_attribute("href")
@@ -344,7 +344,7 @@ class WEForumScraper(AbstractScraper):
             By.ID, "date_posted"
         ).text  # Mirar el formato de la fecha
         authors = self.driver.find_element(
-            By.XPATH, '//ol[@class="journal"]/li/text()[1]'
+            By.ID, 'source'
         ).text
 
         return ScrapedNewsModel(
@@ -1022,7 +1022,7 @@ class WEForumScraper(AbstractScraper):
             self._login()
 
         ScrapUtils.click_element(
-            self.driver, ".CallToAction__CloseButton-sc-7e1451ff-7.dqHIyC"
+            self.driver, ".CallToAction__CloseButton-sc-9356e940-7.fOhVSD"
         )
         time.sleep(self.load_time)
 
