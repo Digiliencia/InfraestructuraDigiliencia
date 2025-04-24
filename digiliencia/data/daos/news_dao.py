@@ -6,6 +6,8 @@ from neo4j.exceptions import ConstraintError
 from neo4j.graph import Node
 
 from digiliencia.data.daos.abc_dao import AbstractDAO
+from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
+from digiliencia.data.daos.person_dao import PersonDAO
 from digiliencia.data.db.access_mode_enum import AccessMode
 from digiliencia.data.models.news_model import RawNewsModel, ScrapedNewsModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
@@ -92,27 +94,35 @@ class NewsDAO(AbstractDAO):
                     },
                 )
                 lookup_record = lookup_result.single()
-
                 if lookup_record is None or lookup_record["source_id"] is None:
                     logger.warning(f"No source found with name: {news.source}")
-                    raise DAOCreateError(f"No source found with name: {news.source}")
-                    # TODO: Consider creating a new source if not found
-
-                source_id = lookup_record["source_id"]
+                    news_agency_dao = NewsAgencyDAO()
+                    createdAgency = news_agency_dao.create(
+                        name=news.source, description=""
+                    )
+                    source_id = createdAgency.id
+                else:
+                    source_id = lookup_record["source_id"]
 
                 # Process author IDs
                 author_ids = []
-                author_map = {a["name"]: a["id"] for a in lookup_record["authors"]}
+                author_map = {}
+                if lookup_record is not None and lookup_record["authors"] is not None:
+                    author_map = {a["name"]: a["id"] for a in lookup_record["authors"]}  # type: ignore
                 for author_name in author_names:
                     if author_name in author_map:
                         author_ids.append(author_map[author_name])
                     else:
-                        logger.warning(f"Author not found: {author_name}, skipping")
-                        # TODO: Consider creating a new author if not found
+                        logger.warning(f"Author not found: {author_name}.")
+                        person_dao = PersonDAO()
+                        createdAuthor = person_dao.create(full_name=author_name)
+                        author_ids.append(createdAuthor.id)
 
                 # Process topic IDs
                 topic_ids = []
-                topic_map = {t["name"]: t["id"] for t in lookup_record["topics"]}
+                topic_map = {}
+                if lookup_record is not None and lookup_record["topics"] is not None:
+                    topic_map = {t["name"]: t["id"] for t in lookup_record["topics"]}  # type: ignore
                 for topic_name in topic_names:
                     if topic_name in topic_map:
                         topic_ids.append(topic_map[topic_name])
@@ -167,7 +177,8 @@ class NewsDAO(AbstractDAO):
             author_ids = author_ids or []
             topic_ids = topic_ids or []
 
-            query = """
+            # Primero, crear el nodo de noticia y guardarlo
+            create_query = """
                 CREATE (n:News {
                     id: randomUUID(),
                     header: $header,
@@ -175,42 +186,80 @@ class NewsDAO(AbstractDAO):
                     content: $content,
                     url: $url
                 })
-                WITH n
-                MATCH (na:NewsAgency {id: $source_id})
-                MERGE (n)-[:PUBLISHED_BY]->(na)
-                WITH n, $author_ids AS author_ids
-                UNWIND author_ids AS author_id
-                MATCH (a:Person)
-                WHERE a.id = author_id
-                MERGE (n)-[:WRITTEN_BY]->(a)
-                WITH n, $topic_ids AS topic_ids
-                UNWIND topic_ids AS topic_id
-                MATCH (t:Topic)
-                WHERE t.id = topic_id
-                MERGE (n)-[:BELONGS_TO]->(t)
                 RETURN n
             """
+
             with self.db.get_connection(AccessMode.WRITE) as session:
+                # Crear el nodo de la noticia
                 result = session.run(
-                    query,
+                    create_query,
                     {
                         "header": header,
                         "date": date.isoformat(),
-                        "source_id": source_id,
                         "content": content,
                         "url": url,
-                        "author_ids": author_ids,
-                        "topic_ids": topic_ids,
                     },
                 )
+
                 record = result.single()
                 if record is None:
-                    logger.error("Failed to create news")
-                    raise DAOCreateError("Failed to create news")
+                    logger.error("Failed to create news node")
+                    raise DAOCreateError("Failed to create news node")
 
                 news_node: Node = record["n"]
-                logger.debug(f"Created news: {news_node}")
-                return self._build_model(news_node)
+                news_id = news_node.get("id")
+
+                # Ahora crear las relaciones en consultas separadas
+                try:
+                    # Relación con la fuente (NewsAgency)
+                    source_query = """
+                        MATCH (n:News {id: $news_id})
+                        MATCH (na:NewsAgency {id: $source_id})
+                        MERGE (n)-[:PUBLISHED_BY]->(na)
+                        RETURN n
+                    """
+                    session.run(
+                        source_query, {"news_id": news_id, "source_id": source_id}
+                    )
+
+                    # Relaciones con autores
+                    if author_ids:
+                        author_query = """
+                            MATCH (n:News {id: $news_id})
+                            UNWIND $author_ids AS author_id
+                            MATCH (a:Person {id: author_id})
+                            MERGE (n)-[:WRITTEN_BY]->(a)
+                        """
+                        session.run(
+                            author_query, {"news_id": news_id, "author_ids": author_ids}
+                        )
+
+                    # Relaciones con temas
+                    if topic_ids:
+                        topic_query = """
+                            MATCH (n:News {id: $news_id})
+                            UNWIND $topic_ids AS topic_id
+                            MATCH (t:Topic {id: topic_id})
+                            MERGE (n)-[:BELONGS_TO]->(t)
+                        """
+                        session.run(
+                            topic_query, {"news_id": news_id, "topic_ids": topic_ids}
+                        )
+
+                except Exception as relation_error:
+                    logger.warning(
+                        f"Error creating relationships for news {news_id}: {relation_error}"
+                    )
+                    # Continuar aunque haya errores en las relaciones
+
+                # Crear un diccionario con todos los datos para construir el modelo
+                news_data = dict(news_node)  # Convertir el nodo a diccionario
+                news_data["source_id"] = source_id
+                news_data["author_ids"] = author_ids
+                news_data["topic_ids"] = topic_ids
+
+                logger.debug(f"Created news: {news_data}")
+                return self._build_model(news_data)
 
         except ConstraintError as e:
             logger.error(f"Constraint error creating news: {e}")
@@ -402,7 +451,7 @@ class NewsDAO(AbstractDAO):
             """
 
             with self.db.get_connection(AccessMode.READ) as session:
-                result = session.run(query, query_params) # type: ignore
+                result = session.run(query, query_params)  # type: ignore
                 news_items = [self._build_model(record["n"]) for record in result]
                 logger.debug(
                     f"Read {len(news_items)} news items from news agency {news_agency_id}"

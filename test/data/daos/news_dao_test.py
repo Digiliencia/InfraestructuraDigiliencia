@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, Mock, patch
 from neo4j.exceptions import ConstraintError
 
 from digiliencia.data.daos.news_dao import NewsDAO
+from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
+from digiliencia.data.daos.person_dao import PersonDAO
+from digiliencia.data.daos.topic_dao import TopicDAO
 from digiliencia.data.models.news_model import RawNewsModel, ScrapedNewsModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
 from digiliencia.exc.dao_delete_exc import DAODeleteError
 from digiliencia.exc.dao_read_exc import DAOReadError
 from digiliencia.exc.dao_update_exc import DAOUpdateError
-from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
-from digiliencia.data.daos.person_dao import PersonDAO
-from digiliencia.data.daos.topic_dao import TopicDAO
 
 
 class TestNewsDAO(unittest.TestCase):
@@ -651,7 +651,7 @@ class TestNewsDAO(unittest.TestCase):
             name="Read Test Source", description="Test Organization"
         )
 
-        author = author_dao.create(full_name="Read Test Author") # type: ignore
+        author = author_dao.create(full_name="Read Test Author")  # type: ignore
 
         topic = topic_dao.create(
             name="Read Test Topic", definition="Test Topic Definition"
@@ -685,8 +685,96 @@ class TestNewsDAO(unittest.TestCase):
         # Execute read_by_id method and verify it raises an error
         with self.assertRaises(DAOReadError):
             self.news_dao.read_by_id(created_news.id)
-            
+
+    def test_create_from_scrap_with_new_entities_real_db(self):
+        """
+        Integration test for create_from_scrap that creates author and organization in real DB.
+
+        This test uses the real database connection to test the full flow, including:
+        - Creating a new news agency (organization) when not found
+        - Creating a new author when not found
+        - Using an existing topic if found
+        - Finally cleaning up all created entities
+        """
+        # Generate unique names to avoid collisions with existing data
+        test_prefix = f"test_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        test_source = f"{test_prefix}_TestSource"
+        test_author = f"{test_prefix}_TestAuthor"
+
+        # Create scraped news model with non-existent author and source
+        scraped_news = ScrapedNewsModel(
+            header=f"{test_prefix} Test Headline",
+            date=datetime.now(),
+            source=test_source,
+            content="Test content for integration test",
+            url=f"https://example.com/{test_prefix}",
+            authors=[test_author],
+            topics=[],  # No topics - we'll skip topic creation
+        )
+
+        created_news = None
+        created_author_id = None
+        created_source_id = None
+
+        news_dao = NewsDAO()
+        agency_dao = NewsAgencyDAO()
+        person_dao = PersonDAO()
+
+        try:
+            # Create the news - this should create both author and news agency
+            created_news = news_dao.create_from_scrap(scraped_news)
+
+            # Verify the news was created
+            self.assertIsNotNone(created_news)
+            self.assertEqual(created_news.header, scraped_news.header)
+            self.assertEqual(created_news.content, scraped_news.content)
+            self.assertEqual(created_news.url, scraped_news.url)
+
+            # Verify source was created and linked
+            self.assertIsNotNone(created_news.source_id)
+            created_source_id = created_news.source_id
+
+            # Find the source and verify it matches
+            source = agency_dao.read_by_id(created_source_id)
+            self.assertEqual(source.name, test_source)
+
+            # Verify author was created and linked
+            self.assertEqual(len(created_news.author_ids), 1)
+            created_author_id = created_news.author_ids[0]
+
+            # Find the author and verify it matches
+            author = person_dao.read_by_id(created_author_id)
+            self.assertEqual(author.full_name, test_author)
+
+            # Verify no topics were linked
+            self.assertEqual(len(created_news.topic_ids), 0)
+
+        finally:
+            # Clean up all created entities
+            try:
+                if created_news:
+                    news_dao.delete(created_news.id)
+                    print(f"Cleaned up test news: {created_news.id}")
+            except Exception as e:
+                print(f"Error cleaning up test news: {e}")
+
+            try:
+                if created_author_id:
+                    person_dao.delete(created_author_id)
+                    print(f"Cleaned up test author: {created_author_id}")
+            except Exception as e:
+                print(f"Error cleaning up test author: {e}")
+
+            try:
+                if created_source_id:
+                    agency_dao.delete(created_source_id)
+                    print(f"Cleaned up test source: {created_source_id}")
+            except Exception as e:
+                print(f"Error cleaning up test source: {e}")
+
+
     # TODO: add more integration tests
+
 
 if __name__ == "__main__":
     unittest.main()
