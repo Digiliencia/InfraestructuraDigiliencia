@@ -177,89 +177,20 @@ class NewsDAO(AbstractDAO):
             author_ids = author_ids or []
             topic_ids = topic_ids or []
 
-            # Primero, crear el nodo de noticia y guardarlo
-            create_query = """
-                CREATE (n:News {
-                    id: randomUUID(),
-                    header: $header,
-                    date: $date,
-                    content: $content,
-                    url: $url
-                })
-                RETURN n
-            """
+            # Crear el nodo de noticia
+            news_data = self._create_news_node(header, date, content, url)
+            news_id = news_data["id"]
 
-            with self.db.get_connection(AccessMode.WRITE) as session:
-                # Crear el nodo de la noticia
-                result = session.run(
-                    create_query,
-                    {
-                        "header": header,
-                        "date": date.isoformat(),
-                        "content": content,
-                        "url": url,
-                    },
-                )
+            # Crear todas las relaciones necesarias
+            self._create_news_relationships(news_id, source_id, author_ids, topic_ids)
 
-                record = result.single()
-                if record is None:
-                    logger.error("Failed to create news node")
-                    raise DAOCreateError("Failed to create news node")
+            # Enriquecer los datos para el modelo
+            news_data["source_id"] = source_id
+            news_data["author_ids"] = author_ids
+            news_data["topic_ids"] = topic_ids
 
-                news_node: Node = record["n"]
-                news_id = news_node.get("id")
-
-                # Ahora crear las relaciones en consultas separadas
-                try:
-                    # Relación con la fuente (NewsAgency)
-                    source_query = """
-                        MATCH (n:News {id: $news_id})
-                        MATCH (na:NewsAgency {id: $source_id})
-                        MERGE (n)-[:PUBLISHED_BY]->(na)
-                        RETURN n
-                    """
-                    session.run(
-                        source_query, {"news_id": news_id, "source_id": source_id}
-                    )
-
-                    # Relaciones con autores
-                    if author_ids:
-                        author_query = """
-                            MATCH (n:News {id: $news_id})
-                            UNWIND $author_ids AS author_id
-                            MATCH (a:Person {id: author_id})
-                            MERGE (n)-[:WRITTEN_BY]->(a)
-                        """
-                        session.run(
-                            author_query, {"news_id": news_id, "author_ids": author_ids}
-                        )
-
-                    # Relaciones con temas
-                    if topic_ids:
-                        topic_query = """
-                            MATCH (n:News {id: $news_id})
-                            UNWIND $topic_ids AS topic_id
-                            MATCH (t:Topic {id: topic_id})
-                            MERGE (n)-[:BELONGS_TO]->(t)
-                        """
-                        session.run(
-                            topic_query, {"news_id": news_id, "topic_ids": topic_ids}
-                        )
-
-                except Exception as relation_error:
-                    logger.warning(
-                        f"Error creating relationships for news {news_id}: {relation_error}"
-                    )
-                    # Continuar aunque haya errores en las relaciones
-
-                # Crear un diccionario con todos los datos para construir el modelo
-                news_data = dict(news_node)  # Convertir el nodo a diccionario
-                news_data["source_id"] = source_id
-                news_data["author_ids"] = author_ids
-                news_data["topic_ids"] = topic_ids
-
-                logger.debug(f"Created news: {news_data}")
-                return self._build_model(news_data)
+            logger.debug(f"Created news: {news_data}")
+            return self._build_model(news_data)
 
         except ConstraintError as e:
             logger.error(f"Constraint error creating news: {e}")
@@ -267,6 +198,101 @@ class NewsDAO(AbstractDAO):
         except Exception as e:
             logger.error(f"Error creating news: {e}")
             raise DAOCreateError(f"Failed to create news: {str(e)}") from e
+
+    def _create_news_node(
+        self, header: str, date: datetime, content: str, url: str
+    ) -> dict:
+        """Crea un nodo de noticia en la base de datos y devuelve sus datos."""
+        create_query = """
+            CREATE (n:News {
+                id: randomUUID(),
+                header: $header,
+                date: $date,
+                content: $content,
+                url: $url
+            })
+            RETURN n
+        """
+
+        with self.db.get_connection(AccessMode.WRITE) as session:
+            result = session.run(
+                create_query,
+                {
+                    "header": header,
+                    "date": date.isoformat(),
+                    "content": content,
+                    "url": url,
+                },
+            )
+
+            record = result.single()
+            if record is None:
+                logger.error("Failed to create news node")
+                raise DAOCreateError("Failed to create news node")
+
+            return dict(record["n"])
+
+    def _create_news_relationships(
+        self,
+        news_id: str,
+        source_id: str,
+        author_ids: Sequence[str],
+        topic_ids: Sequence[str],
+    ) -> None:
+        """Crea todas las relaciones para una noticia."""
+        with self.db.get_connection(AccessMode.WRITE) as session:
+            try:
+                # Relación con la fuente (NewsAgency)
+                self._create_source_relationship(session, news_id, source_id)
+
+                # Relaciones con autores
+                if author_ids:
+                    self._create_author_relationships(session, news_id, author_ids)
+
+                # Relaciones con temas
+                if topic_ids:
+                    self._create_topic_relationships(session, news_id, topic_ids)
+
+            except Exception as relation_error:
+                logger.warning(
+                    f"Error creating relationships for news {news_id}: {relation_error}"
+                )
+                # Continuar aunque haya errores en las relaciones
+
+    def _create_source_relationship(
+        self, session, news_id: str, source_id: str
+    ) -> None:
+        """Crea la relación entre una noticia y su fuente."""
+        source_query = """
+            MATCH (n:News {id: $news_id})
+            MATCH (na:NewsAgency {id: $source_id})
+            MERGE (n)-[:PUBLISHED_BY]->(na)
+        """
+        session.run(source_query, {"news_id": news_id, "source_id": source_id})
+
+    def _create_author_relationships(
+        self, session, news_id: str, author_ids: Sequence[str]
+    ) -> None:
+        """Crea las relaciones entre una noticia y sus autores."""
+        author_query = """
+            MATCH (n:News {id: $news_id})
+            UNWIND $author_ids AS author_id
+            MATCH (a:Person {id: author_id})
+            MERGE (n)-[:WRITTEN_BY]->(a)
+        """
+        session.run(author_query, {"news_id": news_id, "author_ids": author_ids})
+
+    def _create_topic_relationships(
+        self, session, news_id: str, topic_ids: Sequence[str]
+    ) -> None:
+        """Crea las relaciones entre una noticia y sus temas."""
+        topic_query = """
+            MATCH (n:News {id: $news_id})
+            UNWIND $topic_ids AS topic_id
+            MATCH (t:Topic {id: topic_id})
+            MERGE (n)-[:BELONGS_TO]->(t)
+        """
+        session.run(topic_query, {"news_id": news_id, "topic_ids": topic_ids})
 
     def read_by_id(self, id: str) -> RawNewsModel:
         """
@@ -366,43 +392,19 @@ class NewsDAO(AbstractDAO):
     ) -> Sequence[RawNewsModel]:
         """
         Reads news items related to a specific topic with optional date range filtering.
-
-        Args:
-            topic_id (str): The ID of the topic.
-            start_date (Optional[datetime]): Filter news published on or after this date.
-            end_date (Optional[datetime]): Filter news published on or before this date.
-            limit (int): Maximum number of news items to return (default 100).
-
-        Returns:
-            List[RawNewsModel]: A list of news related to the specified topic.
-
-        Raises:
-            DAOReadError: If reading fails.
         """
         try:
-            query_params = {"topic_id": topic_id, "limit": limit}
-            conditions = ["(n)-[:BELONGS_TO]->(t:Topic {id: $topic_id})"]
-
-            if start_date:
-                query_params["start_date"] = start_date.isoformat()
-                conditions.append("n.date >= $start_date")
-
-            if end_date:
-                query_params["end_date"] = end_date.isoformat()
-                conditions.append("n.date <= $end_date")
-
-            query = f"""
-                MATCH (n:News), (t:Topic)
-                WHERE {" AND ".join(conditions)}
+            base_query = """
+                MATCH (n:News)-[:BELONGS_TO]->(t:Topic {id: $topic_id})
                 RETURN n
                 LIMIT $limit
             """
 
-            with self.db.get_connection(AccessMode.READ) as session:
-                result = session.run(query, query_params)  # type: ignore
-                news_items = [self._build_model(record["n"]) for record in result]
-                logger.debug(f"Read {len(news_items)} news items with topic {topic_id}")
-                return news_items
+            query, params = self._build_date_filter_query(
+                base_query, {"topic_id": topic_id, "limit": limit}, start_date, end_date
+            )
+
+            return self._execute_read_query(query, params, f"topic {topic_id}")
 
         except Exception as e:
             logger.error(f"Error reading news by topic {topic_id}: {e}")
@@ -431,24 +433,17 @@ class NewsDAO(AbstractDAO):
             DAOReadError: If reading fails.
         """
         try:
-            query_params = {"news_agency_id": news_agency_id, "limit": limit}
-            conditions = ["(n)-[:PUBLISHED_BY]->(na:NewsAgency {id: $news_agency_id})"]
-
-            if start_date:
-                query_params["start_date"] = start_date.isoformat()
-                conditions.append("n.date >= $start_date")
-
-            if end_date:
-                query_params["end_date"] = end_date.isoformat()
-                conditions.append("n.date <= $end_date")
-
-            query = f"""
+            query = """
                 MATCH (n:News), (na:NewsAgency)
-                WHERE {" AND ".join(conditions)}
+                WHERE (n)-[:PUBLISHED_BY]->(na:NewsAgency {id: $news_agency_id})
                 RETURN n
                 ORDER BY n.date DESC
                 LIMIT $limit
             """
+            query_params = {"news_agency_id": news_agency_id, "limit": limit}
+            query, query_params = self._build_date_filter_query(
+                query, query_params, start_date, end_date
+            )
 
             with self.db.get_connection(AccessMode.READ) as session:
                 result = session.run(query, query_params)  # type: ignore
@@ -619,3 +614,56 @@ class NewsDAO(AbstractDAO):
         except Exception as e:
             logger.error(f"Error deleting news with id {id}: {e}")
             raise DAODeleteError(f"Failed to delete news with id: {id}") from e
+
+    def _build_date_filter_query(
+        self,
+        base_query: str,
+        params: dict,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> tuple:
+        """
+        Construye una consulta con filtros de fecha y sus parámetros.
+
+        Returns:
+            tuple: (query_string, parameters_dict)
+        """
+        conditions = []
+        query_params = params.copy()
+
+        if start_date:
+            query_params["start_date"] = start_date.isoformat()
+            conditions.append("n.date >= $start_date")
+
+        if end_date:
+            query_params["end_date"] = end_date.isoformat()
+            conditions.append("n.date <= $end_date")
+
+        if conditions:
+            if "WHERE" in base_query:
+                # Ya existe una cláusula WHERE, añadir con AND
+                query = base_query.replace(
+                    "WHERE", f"WHERE {' AND '.join(conditions)} AND"
+                )
+            else:
+                # No hay cláusula WHERE, añadirla
+                query = base_query.replace(
+                    "RETURN", f"WHERE {' AND '.join(conditions)}\nRETURN"
+                )
+        else:
+            query = base_query
+
+        return query, query_params
+
+    def _execute_read_query(
+        self, query: str, params: dict, context: str = ""
+    ) -> Sequence[RawNewsModel]:
+        """Ejecuta una consulta de lectura y devuelve los resultados como modelos."""
+        with self.db.get_connection(AccessMode.READ) as session:
+            result = session.run(query, params)
+            news_items = [self._build_model(record["n"]) for record in result]
+            logger.debug(
+                f"Read {len(news_items)} news items"
+                + (f" with {context}" if context else "")
+            )
+            return news_items

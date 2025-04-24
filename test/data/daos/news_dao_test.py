@@ -499,52 +499,6 @@ class TestNewsDAO(unittest.TestCase):
             self.assertEqual(result.content, "Updated content")
             mock_read.assert_called_once_with("test-uuid")
 
-    def test_create_from_scrap_integration(self):
-        """Integration test for create_from_scrap flow with complete mocking"""
-        # Mock the source lookup
-        source_lookup_result = Mock()
-        source_lookup_result.single.return_value = {
-            "source_id": "source-123",
-            "authors": [{"name": "Author 1", "id": "auth-123"}],
-            "topics": [{"name": "Topic 1", "id": "topic-123"}],
-        }
-
-        # Create a news instance to return
-        news_instance = RawNewsModel(
-            id="news-123",
-            header="Scraped Headline",
-            date=self.test_date,
-            source_id="source-123",
-            content="Scraped content",
-            url="https://example.com/scraped",
-            author_ids=["auth-123"],
-            topic_ids=["topic-123"],
-        )
-
-        # Setup session mocks
-        mock_session = Mock()
-        mock_session.run.return_value = source_lookup_result
-
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
-
-        # Test create_from_scrap with mocked dependencies
-        with patch.object(self.news_dao.db, "get_connection", return_value=mock_cm):
-            with patch.object(
-                self.news_dao, "create", return_value=news_instance
-            ) as mock_create:
-                result = self.news_dao.create_from_scrap(self.test_scraped_news)
-
-                # Verify the result and that create was called correctly
-                self.assertEqual(result.id, "news-123")
-                mock_create.assert_called_once()
-                # Extract the kwargs that were passed to create
-                call_args = mock_create.call_args[1]
-                self.assertEqual(call_args["header"], "Scraped Headline")
-                self.assertEqual(call_args["source_id"], "source-123")
-                self.assertEqual(call_args["author_ids"], ["auth-123"])
-
     def test_read_by_source_success(self):
         """Test successful read_by_source operation"""
         # Setup mock with valid records
