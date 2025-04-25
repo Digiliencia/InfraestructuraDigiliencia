@@ -18,10 +18,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.WEForum_exc import WEForumError
-from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.configs.env import Env
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 
@@ -31,12 +31,12 @@ class WEForumScraper(AbstractScraper):
 
     def __init__(self):
         logger.debug("Initializing WEForumScrapper")
-        EnvLoader()  # Call EnvLoader to force reading the .env file
+        _env=Env()  # Call EnvLoader to force reading the .env file
         self.driver = ScrapUtils.get_driver()
 
-        self.weforum_email = EnvLoader.weforum_email
-        self.weforum_passwd = EnvLoader.weforum_passwd
-        self.timeout = EnvLoader.webdriverwait_timeout
+        self.weforum_email = _env.weforum_email
+        self.weforum_passwd = _env.weforum_passwd
+        self.timeout = _env.webdriverwait_timeout
         self.cybersecturity_topic_url = (
             "https://intelligence.weforum.org/topics/a1Gb00000015LbsEAE"
         )
@@ -343,9 +343,7 @@ class WEForumScraper(AbstractScraper):
         date = self.driver.find_element(
             By.ID, "date_posted"
         ).text  # Mirar el formato de la fecha
-        authors = self.driver.find_element(
-            By.ID, 'source'
-        ).text
+        authors = self.driver.find_element(By.ID, "source").text
 
         return ScrapedNewsModel(
             header=title,
@@ -458,7 +456,9 @@ class WEForumScraper(AbstractScraper):
             "/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]",
         )
 
-        content = content_container.text  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
+        content = (
+            content_container.text
+        )  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
         return ScrapedNewsModel(
             header=header,
             date=date,

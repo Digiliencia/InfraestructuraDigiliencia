@@ -14,3 +14,6 @@ REQUIRE o.name IS UNIQUE;
 CREATE CONSTRAINT unique_news_header_date
 FOR (n:News)
 REQUIRE (n.header, n.date) IS UNIQUE;
+
+// Create constraints for uniqueness of person name
+CREATE CONSTRAINT unique_person_name FOR (p:Person) REQUIRE p.name IS UNIQUE;
