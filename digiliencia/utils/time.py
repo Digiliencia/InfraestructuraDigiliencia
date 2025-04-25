@@ -3,7 +3,7 @@
 Created on Mon Jan 20 16:30:40 2025
 
 @author: Álvaro Prieto Álvarez
-Class to load environment variables from a .env file
+Class to contain time utility functions.
 """
 
 from datetime import datetime, timedelta

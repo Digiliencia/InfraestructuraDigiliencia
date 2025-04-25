@@ -14,19 +14,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.utils.env_loader import EnvLoader
-from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.utils.time import TimeUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.ncsc_exec import NcscExec
+from digiliencia.configs.env import Env
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
+
 
 class Ncsc(AbstractScraper):
     def __init__(self):
         logger.debug("Initializing Scrapping of NCSC")
         self.scrapUtils = ScrapUtils()
-        self.load = EnvLoader()
+        self.load = Env()
         self.driver = ScrapUtils.get_driver()
         self.articles: list[ScrapedNewsModel] = []
         self.topics = []
@@ -37,30 +37,34 @@ class Ncsc(AbstractScraper):
         # Loop to load all articles
         while True:
             try:
-                # Try to find the "Load more items" button     
-                button_load = self.driver.find_element(By.XPATH, '//button[@data-testid="load-more-button"]')
+                # Try to find the "Load more items" button
+                button_load = self.driver.find_element(
+                    By.XPATH, '//button[@data-testid="load-more-button"]'
+                )
                 button_load.click()  # Click the button
-                time.sleep(self.load.webdriverwait_timeout - 0.5) # Wait a few seconds for new articles to load
+                time.sleep(
+                    self.load.webdriverwait_timeout - 0.5
+                )  # Wait a few seconds for new articles to load
             except NoSuchElementException:
                 # If the button is not found, we assume that there are no more items to load.
                 logger.debug("there are not articles to load.")
                 break
 
-    def _get_article_from_date(self, until_date: str = '') -> ScrapedNewsModel | None:
-        '''
+    def _get_article_from_date(self, until_date: str = "") -> ScrapedNewsModel | None:
+        """
         Return an articles of a topic until date param
 
         Args:
             until_date (str), default without param
-        
+
         Return:
             An object of ScrapedNewsModel, conteniendo la informacion del articulo TODO
             si es anterior a la fecha dada, en caso contrario None TODO
-        '''               
+        """
         try:
             if self.scrapUtils.if_element_exists(
                 self.driver,
-                By.XPATH, # type: ignore
+                By.XPATH,  # type: ignore
                 '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
             ):
                 date = self.driver.find_element(
@@ -70,16 +74,18 @@ class Ncsc(AbstractScraper):
             else:
                 date = self.articles[-1].date
 
-            if(TimeUtils.days_between_es_dates(until_date, date) > 0):
-                title = self.driver.find_element(By.ID, 'title').text
-                summary = self.driver.find_element(By.CLASS_NAME, 'pcf-summary').text
-                contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
-                content = ''.join(i.text for i in contents)
+            if TimeUtils.days_between_es_dates(until_date, date) > 0:
+                title = self.driver.find_element(By.ID, "title").text
+                summary = self.driver.find_element(By.CLASS_NAME, "pcf-summary").text
+                contents = self.driver.find_elements(
+                    By.XPATH, '//div[@data-testid="pcf-BodyText"]'
+                )
+                content = "".join(i.text for i in contents)
                 url = self.driver.current_url
 
                 if self.scrapUtils.if_element_exists(
                     self.driver,
-                    By.XPATH, # type: ignore
+                    By.XPATH,  # type: ignore
                     '//div[@class="details"]/p[@class="details__name"]',
                 ):
                     author = self.driver.find_element(
@@ -90,24 +96,24 @@ class Ncsc(AbstractScraper):
                         "Guidance"  # Case there is a Guidance, there is not an author
                     )
 
-                #return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
+                # return {"title": title, "content": content, "summary": summary, "date": date, "author": author, "url": url}
                 return ScrapedNewsModel(
                     header=title,
                     date=date,
-                    source='NCSC',
+                    source="NCSC",
                     content=content,
                     url=url,
                     authors=[author],
-                    topics=None
+                    topics=None,
                 )
             else:
                 return None
-    
+
         except NoSuchElementException as e:
             logger.error(f"ERROR NoSuchElementException {e}")
 
     def scrap_glosary(self):
-        '''
+        """
         Scrap subpage glosary, link: https://www.ncsc.gov.uk/section/advice-guidance/glossary
         The definitions is divided by sections
 
@@ -115,7 +121,7 @@ class Ncsc(AbstractScraper):
             A list with all definitions, each defitions have a:
                 Concept,
                 Description,
-        '''
+        """
         concepts = []
         descriptions = []
 
@@ -156,9 +162,9 @@ class Ncsc(AbstractScraper):
         Return:
             None
         """
-        try:    
+        try:
             url = "https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc"
-            self.driver.get(url)   
+            self.driver.get(url)
             logger.info(f"Title {self.driver.title}")
 
             # Function to disable the cookie popup
@@ -166,26 +172,31 @@ class Ncsc(AbstractScraper):
                 self.driver, "button.pcf-button:nth-child(2)", 1
             )
 
-            until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago) # Calculate date to scrap
+            until_date = TimeUtils.format_subtract_days_to_actual_date(
+                from_days_ago
+            )  # Calculate date to scrap
 
             self._show_all_articles()
 
-            total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
-            for i in range(1, len(total_articles)+1): # +1 to pick up the last item
-                # TODO logger.info(f"Num de article: {i}") 
+            total_articles = self.driver.find_elements(
+                By.CSS_SELECTOR, ".search-results div.pcf-search-result"
+            )
+            for i in range(1, len(total_articles) + 1):  # +1 to pick up the last item
+                # TODO logger.info(f"Num de article: {i}")
                 # Aquí extramos la informacion de todos los articulos de la pagina
-                self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
+                self.driver.find_element(
+                    By.XPATH, f'(//div[@class="search-results"]/div)[{i}]'
+                ).click()  # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
                 article: ScrapedNewsModel = self._get_article_from_date(until_date)
-                if(article.get("flag") == "false"):
+                if article.get("flag") == "false":
                     break
                 else:
                     self.articles.append(article)
                 time.sleep(self.load.webdriverwait_timeout)
                 self.driver.back()
-          
+
         except NcscExec as e:
             logger.error(f"ERROR: {e}")
-            
-        self.driver.quit() # Close navegator
-        
+
+        self.driver.quit()  # Close navegator
