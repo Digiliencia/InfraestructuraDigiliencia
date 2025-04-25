@@ -14,7 +14,7 @@ def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     Env()
     news_dao = NewsDAO()
-    scrapers= [WEForumScraper, IncibeScraper, Ncsc]
+    scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNewsModel] = scraper().scrap_news(from_days_ago)

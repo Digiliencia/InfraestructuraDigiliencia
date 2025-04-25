@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
 
 from neo4j.exceptions import ConstraintError
 
-from digiliencia.data.daos.person_dao import PersonDAO
+from digiliencia.data.daos.person.person_dao import PersonDAO
 from digiliencia.data.models.person_model import PersonModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
 from digiliencia.exc.dao_read_exc import DAOReadError

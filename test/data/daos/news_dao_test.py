@@ -6,7 +6,7 @@ from neo4j.exceptions import ConstraintError
 
 from digiliencia.data.daos.news_dao import NewsDAO
 from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
-from digiliencia.data.daos.person_dao import PersonDAO
+from digiliencia.data.daos.person.person_dao import PersonDAO
 from digiliencia.data.daos.topic_dao import TopicDAO
 from digiliencia.data.models.news_model import RawNewsModel, ScrapedNewsModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
