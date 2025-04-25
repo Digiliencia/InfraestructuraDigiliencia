@@ -7,7 +7,7 @@ from neo4j.graph import Node
 
 from digiliencia.data.daos.abc_dao import AbstractDAO
 from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
-from digiliencia.data.daos.person_dao import PersonDAO
+from digiliencia.data.daos.person.author_dao import AuthorDAO
 from digiliencia.data.db.access_mode_enum import AccessMode
 from digiliencia.data.models.news_model import RawNewsModel, ScrapedNewsModel
 from digiliencia.exc.dao_create_exc import DAOCreateError
@@ -114,7 +114,7 @@ class NewsDAO(AbstractDAO):
                         author_ids.append(author_map[author_name])
                     else:
                         logger.warning(f"Author not found: {author_name}.")
-                        person_dao = PersonDAO()
+                        person_dao = AuthorDAO()
                         createdAuthor = person_dao.create(full_name=author_name)
                         author_ids.append(createdAuthor.id)
 
