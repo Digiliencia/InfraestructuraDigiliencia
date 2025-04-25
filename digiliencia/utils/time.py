@@ -71,6 +71,10 @@ class TimeUtils:
                     return datetime.now() - timedelta(days=days_ago)
                 except ValueError:
                     raise ValueError(f"Invalid relative date format: {date_str}")
+                
+            # Handle "Now"
+            if date_str.lower() == "now":
+                return datetime.now()
 
             # Handle formatted dates like "Oct 1, 2023"
             if platform.system() == "Windows":
