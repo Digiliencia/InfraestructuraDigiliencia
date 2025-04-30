@@ -1,4 +1,4 @@
-from typing import Any, Sequence, Optional
+from typing import Any, Optional, Sequence
 
 from loguru import logger
 from neo4j.exceptions import ConstraintError
@@ -31,14 +31,14 @@ class PersonDAO(AbstractDAO):
         """
         return PersonModel(
             id=raw_data.get("id"),
-            full_name=raw_data.get("full_name"),
+            name=raw_data.get("name"),
             email=raw_data.get("email"),
             description=raw_data.get("description"),
         )
 
     def create(  # type: ignore
         self,
-        full_name: str,
+        name: str,
         email: Optional[str] = None,
         description: Optional[str] = None,
     ) -> PersonModel:
@@ -46,7 +46,7 @@ class PersonDAO(AbstractDAO):
         Creates a new person in the database.
 
         Args:
-            full_name (str): The full name of the person.
+            name (str): The full name of the person.
             email (Optional[str]): The email address of the person.
             description (Optional[str]): A description of the person.
         """
@@ -54,7 +54,7 @@ class PersonDAO(AbstractDAO):
             query = """
                 CREATE (p:Person {
                     id: randomUUID(),
-                    full_name: $full_name,
+                    name: $name,
                     email: $email,
                     description: $description
                 })
@@ -64,7 +64,7 @@ class PersonDAO(AbstractDAO):
                 result = session.run(
                     query,
                     {
-                        "full_name": full_name,
+                        "name": name,
                         "email": email,
                         "description": description,
                     },
@@ -146,7 +146,7 @@ class PersonDAO(AbstractDAO):
 
         Args:
             id (str): The ID of the person to update.
-            full_name (str): The new full name of the person.
+            name (str): The new full name of the person.
             email (str): The new email address of the person.
             description (str): The new description of the person.
 

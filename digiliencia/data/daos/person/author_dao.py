@@ -31,7 +31,7 @@ class AuthorDAO(AbstractDAO):
         """
         return RawAuthorModel(
             id=raw_data.get("id"),
-            full_name=raw_data.get("full_name"),
+            name=raw_data.get("name"),
             email=raw_data.get("email"),
             description=raw_data.get("description"),
             news_ids=raw_data.get("news", []),
@@ -39,7 +39,7 @@ class AuthorDAO(AbstractDAO):
 
     def create(  # type: ignore
         self,
-        full_name: str,
+        name: str,
         email: Optional[str] = None,
         description: Optional[str] = None,
     ) -> RawAuthorModel:
@@ -47,7 +47,7 @@ class AuthorDAO(AbstractDAO):
         Creates a new author in the database.
 
         Args:
-            full_name (str): The full name of the author.
+            name (str): The full name of the author.
             email (Optional[str]): The email address of the author.
             description (Optional[str]): A description of the author.
 
@@ -61,7 +61,7 @@ class AuthorDAO(AbstractDAO):
             query = """
                 CREATE (p:Person:Author {
                     id: randomUUID(),
-                    full_name: $full_name,
+                    name: $name,
                     email: $email,
                     description: $description
                 })
@@ -71,7 +71,7 @@ class AuthorDAO(AbstractDAO):
                 result = session.run(
                     query,
                     {
-                        "full_name": full_name,
+                        "name": name,
                         "email": email,
                         "description": description,
                     },
@@ -178,7 +178,7 @@ class AuthorDAO(AbstractDAO):
 
         Args:
             id (str): The ID of the author to update.
-            full_name (str): The new full name of the author.
+            name (str): The new full name of the author.
             email (str): The new email address of the author.
             description (str): The new description of the author.
 

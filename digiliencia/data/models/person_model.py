@@ -8,6 +8,6 @@ class PersonModel(IModel):
     """Represents a person in the database."""
 
     id: str
-    full_name: str
+    name: str
     email: str
     description: str

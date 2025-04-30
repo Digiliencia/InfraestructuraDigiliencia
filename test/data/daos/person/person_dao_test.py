@@ -30,7 +30,7 @@ class TestPersonDAO(unittest.TestCase):
         # Test exception is raised
         with self.assertRaises(DAOCreateError):
             self.person_dao.create(
-                full_name="John Doe",
+                name="John Doe",
                 email="john@example.com",
                 description="Test description",
             )
@@ -53,7 +53,7 @@ class TestPersonDAO(unittest.TestCase):
         # Test exception is raised
         with self.assertRaises(DAOCreateError):
             self.person_dao.create(
-                full_name="John Doe",
+                name="John Doe",
                 email="john@example.com",
                 description="Test description",
             )
@@ -79,7 +79,7 @@ class TestPersonDAO(unittest.TestCase):
     def test_integration_create_read_and_list(self):
         # Create new person
         created_person = self.person_dao.create(
-            full_name="Integration Test Person",
+            name="Integration Test Person",
             email="integration@test.com",
             description="Integration test description",
         )
@@ -91,7 +91,7 @@ class TestPersonDAO(unittest.TestCase):
 
         # Verify the read person matches created person
         self.assertEqual(created_person.id, read_person.id)
-        self.assertEqual(created_person.full_name, read_person.full_name)
+        self.assertEqual(created_person.name, read_person.name)
         self.assertEqual(created_person.email, read_person.email)
         self.assertEqual(created_person.description, read_person.description)
 
@@ -101,11 +101,11 @@ class TestPersonDAO(unittest.TestCase):
 
         # Update person
         updated_person = self.person_dao.update(
-            created_person.id, full_name="Updated Integration Test Person"
+            created_person.id, name="Updated Integration Test Person"
         )
 
         # Verify update was successful
-        self.assertEqual(updated_person.full_name, "Updated Integration Test Person")
+        self.assertEqual(updated_person.name, "Updated Integration Test Person")
         self.assertEqual(updated_person.id, created_person.id)
         self.assertEqual(updated_person.email, created_person.email)
         self.assertEqual(updated_person.description, created_person.description)
@@ -113,7 +113,7 @@ class TestPersonDAO(unittest.TestCase):
         # Read again to confirm persistence
         read_updated = self.person_dao.read_by_id(created_person.id)
         self.assertIsInstance(read_updated, PersonModel)
-        self.assertEqual(read_updated.full_name, "Updated Integration Test Person")
+        self.assertEqual(read_updated.name, "Updated Integration Test Person")
 
         # Clean up the created person
         self.person_dao.delete(created_person.id)

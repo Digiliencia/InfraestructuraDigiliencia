@@ -605,7 +605,7 @@ class TestNewsDAO(unittest.TestCase):
             name="Read Test Source", description="Test Organization"
         )
 
-        author = author_dao.create(full_name="Read Test Author")  # type: ignore
+        author = author_dao.create(name="Read Test Author")  # type: ignore
 
         topic = topic_dao.create(
             name="Read Test Topic", definition="Test Topic Definition"
@@ -698,7 +698,7 @@ class TestNewsDAO(unittest.TestCase):
 
             # Find the author and verify it matches
             author = person_dao.read_by_id(created_author_id)
-            self.assertEqual(author.full_name, test_author)
+            self.assertEqual(author.name, test_author)
 
             # Verify no topics were linked
             self.assertEqual(len(created_news.topic_ids), 0)
@@ -725,7 +725,6 @@ class TestNewsDAO(unittest.TestCase):
                     print(f"Cleaned up test source: {created_source_id}")
             except Exception as e:
                 print(f"Error cleaning up test source: {e}")
-
 
     # TODO: add more integration tests
 

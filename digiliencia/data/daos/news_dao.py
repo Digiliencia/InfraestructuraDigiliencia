@@ -115,7 +115,7 @@ class NewsDAO(AbstractDAO):
                     else:
                         logger.warning(f"Author not found: {author_name}.")
                         person_dao = AuthorDAO()
-                        createdAuthor = person_dao.create(full_name=author_name)
+                        createdAuthor = person_dao.create(name=author_name)
                         author_ids.append(createdAuthor.id)
 
                 # Process topic IDs
