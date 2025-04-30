@@ -18,10 +18,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNewsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.WEForum_exc import WEForumError
-from digiliencia.configs.env import Env
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 
@@ -31,7 +31,7 @@ class WEForumScraper(AbstractScraper):
 
     def __init__(self):
         logger.debug("Initializing WEForumScrapper")
-        _env=Env()  # Call EnvLoader to force reading the .env file
+        _env = Env()  # Call EnvLoader to force reading the .env file
         self.driver = ScrapUtils.get_driver()
 
         self.weforum_email = _env.weforum_email
@@ -44,6 +44,7 @@ class WEForumScraper(AbstractScraper):
         self.stories_url = "https://www.weforum.org/stories"
         self.login_page = "https://login.weforum.org/"
         self.load_time = 2
+        self.MAX_SCROLL_RELOADS = 5
 
     def _login(self):
         """Log in to the World Economic Forum website using the credentials provided in the .env file
@@ -103,124 +104,141 @@ class WEForumScraper(AbstractScraper):
         time.sleep(self.load_time)
 
     def _get_websites_to_scrap(self, max_age_date: int = 7) -> list[dict[str, str]]:
-        """Get the links to the articles to scrape.
-
-        Args:
-            max_age_dates (int): List of dates to filter the articles
-
-        Raises:
-            ValueError: If max_age_date is less than 1 or if the article type is not recognized
-
-
-        Returns:
-            list: List of ditct with the type (video, publication, ...), publisher, title and url of each article
         """
-        logger.debug("Getting the websites to scrap")
+        Obtiene los sitios web a escrapear que sean más recientes que max_age_date días.
+        
+        Args:
+            max_age_date: Número máximo de días de antigüedad para los artículos
+            
+        Returns:
+            Lista de diccionarios con información de los artículos válidos
+        
+        Raises:
+            ValueError: Si max_age_date es menor que 1
+        """
+        logger.info(f"Getting articles from {max_age_date} days ago")
+        
         if max_age_date < 1:
-            logger.error("max_age_date must be greater than 0")
-            raise ValueError("max_age_date must be greater than 0")
+            logger.error("max_age_date debe ser mayor que 0")
+            raise ValueError("max_age_date debe ser mayor que 0")
 
         age_words = TimeUtils.format_days_ago(max_age_date)
-
+        processed_articles = []
+        processed_urls = set()  # Para evitar artículos duplicados
+        
+        # Configuración inicial
         aside_div = self.driver.find_element(
-            By.CLASS_NAME,
-            "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0",
+            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0"
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
-        latest_label = self.driver.find_element(
-            By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']"
-        )
-        latest_label.click()  # Click on the label as the button is not clickable
+
+        # Cambiar a artículos recientes
+        self.driver.find_element(By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']").click()
         time.sleep(self.load_time)
 
         latest_articles_div = self.driver.find_element(
             By.CSS_SELECTOR, "div[data-test-id='latest-knowledge-feed']"
-        )  # Div containing articles, placed just under the articles search bar
-        articles = latest_articles_div.find_elements(
-            By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
         )
-        found_old_article: bool = False
-        checked_articles: int = 0
-        # Check if there is an article older than the max_age_date
+
+        found_old_article = False
+        no_new_articles_count = 0
+        last_articles_count = 0
+        
+        logger.debug("Starting articles scanning")
+        
         while not found_old_article:
-            while checked_articles < len(articles) and not found_old_article:
-                age = (
-                    articles[checked_articles]
-                    .find_element(
-                        By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
-                    )
-                    .text
-                )
-                if (
-                    "hour" not in age
-                    and TimeUtils.days_between_dates(age, age_words) > 0
-                ):
-                    # An article written before the max_age_date was found
-                    found_old_article = True
+            # Obtener todos los artículos actualmente visibles
+            current_articles = latest_articles_div.find_elements(
+                By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
+            )
+            
+            # Solo procesar los nuevos artículos (los que aún no hemos visto)
+            new_articles_count = len(current_articles) - last_articles_count
+            
+            if new_articles_count > 0:
+                logger.debug(f"Processing {new_articles_count} new articles")
+                no_new_articles_count = 0  # Reiniciar contador de intentos
+                
+                # Procesar solo los nuevos artículos
+                for article in current_articles[last_articles_count:]:
+                    try:
+                        # Verificar la edad del artículo
+                        age_element = article.find_element(
+                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
+                        )
+                        age = age_element.text
+                        
+                        # Verificar si es demasiado antiguo
+                        if "hour" not in age and TimeUtils.days_between_dates(age, age_words) > 0:
+                            title = article.find_element(
+                                By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
+                            ).text
+                            logger.info(f"Too old article found: '{title}' from {age}")
+                            found_old_article = True
+                            break
+                        
+                        # Procesar el artículo al vuelo
+                        type_element = article.find_element(
+                            By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
+                        )
+                        article_type = type_element.text.lower()
 
-                    # Remove the rest of articles
-                    articles = articles[:checked_articles]
-                checked_articles += 1
-
-            # If no old enough article was found, scroll down to load more articles
+                        if article_type == "publication":
+                            publisher = article.find_element(
+                                By.CLASS_NAME, "SourceLabel__StyledText-sc-b4751e57-2"
+                            ).text
+                            title = article.find_element(
+                                By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
+                            ).text
+                            link_element = article.find_element(
+                                By.CLASS_NAME, "UIActionButton__StyledButton-sc-d03545d8-2"
+                            )
+                            title_attr = link_element.get_attribute("title")
+                            href = link_element.get_attribute("href")
+                            
+                            if title_attr == "Open" and href and href not in processed_urls:
+                                processed_urls.add(href)  # Evitar duplicados
+                                processed_articles.append({
+                                    "type": article_type,
+                                    "publisher": publisher,
+                                    "title": title,
+                                    "url": href,
+                                })
+                        elif article_type == "video":
+                            logger.debug("Ignoring article type 'video'")
+                            continue
+                        else:
+                            logger.warning(f"Unknown article type: {article_type}")
+                    except Exception as e:
+                        logger.warning(f"Error processing article: {str(e)}")
+                
+                # Actualizar el contador de artículos vistos
+                last_articles_count = len(current_articles)
+            else:
+                no_new_articles_count += 1
+                logger.debug(f"No new articles found. Retrying ({no_new_articles_count}/{self.MAX_SCROLL_RELOADS})")
+                
+                # Reiniciar el scroll si no se encuentran nuevos artículos después de varios intentos
+                if no_new_articles_count >= self.MAX_SCROLL_RELOADS:
+                    logger.warning("Max retries reached. Stopping articles discovery.")
+                    break
+                
+                # Scroll hacia arriba para refrescar y luego hacia abajo para cargar nuevos
+                if no_new_articles_count % 2 == 0:
+                    self.driver.execute_script("arguments[0].scrollTo(0, 0);", aside_div)
+                
+            
+            # Scroll hacia abajo para cargar más artículos si es necesario
             if not found_old_article:
                 self.driver.execute_script(
                     "arguments[0].scrollTo(0, arguments[0].scrollHeight);", aside_div
                 )
-                time.sleep(random.uniform(self.load_time, self.load_time + 2))
-                new_articles = latest_articles_div.find_elements(
-                    By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
-                )
-                if len(new_articles) == len(articles):
-                    # No more articles to load
-                    break
-                articles = new_articles
-
-        # Process each article:
-        logger.debug(f"Found {len(articles)} articles to process")
-        processed_articles: list = []
-        for article in articles:
-            type = article.find_element(
-                By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
-            ).text.lower()
-
-            if type == "video":
-                # Ignore videos by now
-                pass
-            elif type == "publication":
-                # Get the publisher, title and link
-                publisher = article.find_element(
-                    By.CLASS_NAME, "SourceLabel__StyledText-sc-b4751e57-2"
-                ).text
-                title = article.find_element(
-                    By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
-                ).text
-                link_element = article.find_element(
-                    By.CLASS_NAME,
-                    "UIActionButton__StyledButton-sc-d03545d8-2",
-                )
-                link = (
-                    link_element.get_attribute("href")
-                    if link_element.get_attribute("title") == "Open"
-                    else None
-                )
-                if link:
-                    processed_articles.append(
-                        {
-                            "type": type,
-                            "publisher": publisher,
-                            "title": title,
-                            "url": link,
-                        }
-                    )
-                else:
-                    logger.warning("Link not found: " + title)
-                    raise WEForumError("Link not found: " + title)
-            else:
-                logger.warning("Unknown article type: " + type)
-                raise WEForumError("Unknown article type: " + type)
-
+                # Tiempo de espera aleatorio para simular comportamiento humano
+                wait_time = random.uniform(self.load_time, self.load_time + 1)
+                time.sleep(wait_time)
+        
+        logger.info(f"Articles discovery ended. Found {len(processed_articles)} articles.")
         return processed_articles
 
     def _close(self):
