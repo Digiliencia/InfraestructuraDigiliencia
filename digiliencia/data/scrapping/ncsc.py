@@ -59,9 +59,10 @@ class Ncsc(AbstractScraper):
         )
 
         button_visible  = True
-        for i in range(1, len(total_dates)+1):
+        for i in range(0, len(total_dates)):
             if button_visible:
-                if(TimeUtils.days_between_es_dates(until_date, total_dates[i].text) > 0):
+                date_ft = datetime.strptime(total_dates[i].text, '%d %b %Y').strftime('%d %B %Y') # lo aplico 2 veces primero cambio el formato y luego el tipo de la variable
+                if(TimeUtils.days_between_es_dates(until_date, date_ft) > 0):
                     # Try to find the "Load more items" button     
                     button_load = self.driver.find_element(By.XPATH, '//button[@data-testid="load-more-button"]')
                     button_load.click()  # Click the button
