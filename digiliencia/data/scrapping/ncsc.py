@@ -28,23 +28,6 @@ class Ncsc(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.articles: list[ScrapedNewsModel] = []
 
-    #@deprecated
-    def _show_all_articles(self):
-        """Shows the browser all articles. Click the "Show 10 more" button repeatedly until it disappears."""
-        logger.debug("Show all articles of topic")
-        # Loop to load all articles
-        button_visible  = True
-        while button_visible :
-            try:
-                # Try to find the "Load more items" button     
-                button_load = self.driver.find_element(By.XPATH, '//button[@data-testid="load-more-button"]')
-                button_load.click()  # Click the button
-                time.sleep(self.load.webdriverwait_timeout - 0.5) # Wait a few seconds for new articles to load
-            except NoSuchElementException:
-                # If the button is not found, we assume that there are no more items to load.
-                logger.debug("there are not articles to load.")
-                button_visible  = False
-
     def _show_all_articles_until_date(self, until_date:str = ''):
         '''
         Shows the browser all articles until a date give by param. 
@@ -82,23 +65,6 @@ class Ncsc(AbstractScraper):
             if it is before the given date, otherwise None 
         '''               
         try:
-            '''
-            date = datetime.now().strftime("%d %B %Y")
-
-            if self.scrapUtils.if_element_exists(
-                self.driver,
-                By.XPATH, # type: ignore
-                '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
-            ):
-                date = self.driver.find_element(
-                    By.XPATH,
-                    '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
-                ).text
-            else:
-                date = self.articles[-1].date.strftime("%d %B %Y")
-            
-            if(TimeUtils.days_between_es_dates(until_date, date) > 0):
-            '''
             title = self.driver.find_element(By.ID, 'title').text
             contents = self.driver.find_elements(By.XPATH, '//div[@data-testid="pcf-BodyText"]')
             content = ''.join(i.text for i in contents)
@@ -140,10 +106,6 @@ class Ncsc(AbstractScraper):
                 authors=[author],
                 topics=None
             )
-            '''
-            else:
-                return None
-            '''
         except NoSuchElementException as e:
             logger.warning(f"ERROR Article NoSuchElementException {e}")
 
