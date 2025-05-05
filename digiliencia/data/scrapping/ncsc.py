@@ -28,7 +28,7 @@ class Ncsc(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.articles: list[ScrapedNewsModel] = []
 
-    def _show_all_articles_until_date(self, until_date:str = ''):
+    def _show_articles_until_date(self, until_date:str = ''):
         '''
         Shows the browser all articles until a date give by param. 
 
@@ -169,7 +169,7 @@ class Ncsc(AbstractScraper):
 
             until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago) # Calculate date to scrap
 
-            self._show_all_articles_until_date(until_date)
+            self._show_articles_until_date(until_date)
 
             total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
             logger.debug(f"Found {len(total_articles)} articles to process")
