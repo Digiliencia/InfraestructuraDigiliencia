@@ -139,7 +139,7 @@ class TimeUtils:
             >>> TimeUtils.days_between_dates('1/10/2023', '10/10/2023')
             9
         """
-        date_formats = ["%d/%m/%Y", "%d %B %Y"]
+        date_formats = ["%d/%m/%Y", "%d %B %Y", "%d %b %Y"]
         for date_format in date_formats:
                 try:
                     date1 = datetime.strptime(date_str1, date_format)
