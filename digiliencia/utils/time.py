@@ -3,7 +3,7 @@
 Created on Mon Jan 20 16:30:40 2025
 
 @author: Álvaro Prieto Álvarez
-Class to load environment variables from a .env file
+Class to contain time utility functions.
 """
 
 from datetime import datetime, timedelta
@@ -71,6 +71,10 @@ class TimeUtils:
                     return datetime.now() - timedelta(days=days_ago)
                 except ValueError:
                     raise ValueError(f"Invalid relative date format: {date_str}")
+                
+            # Handle "Now"
+            if date_str.lower() == "now":
+                return datetime.now()
 
             # Handle formatted dates like "Oct 1, 2023"
             if platform.system() == "Windows":

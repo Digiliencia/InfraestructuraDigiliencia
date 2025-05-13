@@ -6,13 +6,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from digiliencia.utils.env_loader import EnvLoader
+from digiliencia.configs.env import Env
 
 
 class ScrapUtils:
 
     def __init__(self):
-        self.timeout = EnvLoader.webdriverwait_timeout
+        self.timeout = Env().webdriverwait_timeout
 
     @staticmethod
     def get_driver() -> WebDriver:
@@ -43,7 +43,7 @@ class ScrapUtils:
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
         driver = WebDriver(options=options)
-        driver.implicitly_wait(EnvLoader.implicit_wait)
+        driver.implicitly_wait(Env().implicit_wait)
         return driver
 
     @staticmethod

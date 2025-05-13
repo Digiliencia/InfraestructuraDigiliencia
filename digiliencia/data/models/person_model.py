@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from digiliencia.data.models.interface_model import IModel
 
 
@@ -6,7 +7,7 @@ from digiliencia.data.models.interface_model import IModel
 class PersonModel(IModel):
     """Represents a person in the database."""
 
-    id: int
-    full_name: str
+    id: str
+    name: str
     email: str
-    decription: str
+    description: str

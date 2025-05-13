@@ -16,15 +16,18 @@ from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.utils.time import TimeUtils
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.ncsc_exec import NcscExec
+from digiliencia.configs.env import Env
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
+
 
 class Ncsc(AbstractScraper):
     def __init__(self):
         logger.debug("Initializing Scrapping of NCSC")
         self.scrapUtils = ScrapUtils()
-        self.load = EnvLoader()
+        self.load = Env()
         self.driver = ScrapUtils.get_driver()
         self.articles: list[ScrapedNewsModel] = []
 
@@ -59,7 +62,7 @@ class Ncsc(AbstractScraper):
 
         Args:
             until_date (str), default without param
-        
+
         Return:
             An object of ScrapedNewsModel, containing the article information 
             if it is before the given date, otherwise None 
@@ -86,7 +89,7 @@ class Ncsc(AbstractScraper):
             date = datetime.now().strftime("%d %B %Y")
             if self.scrapUtils.if_element_exists(
                 self.driver,
-                By.XPATH, # type: ignore
+                By.XPATH,  # type: ignore
                 '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
             ):
                 date = self.driver.find_element(
@@ -94,6 +97,7 @@ class Ncsc(AbstractScraper):
                     '//div[@data-testid="pcf-documentinformation"]/ul/li[1]/div/ul/li[@data-testid="sublist-item"]',
                 ).text
             else:
+
                 date = self.articles[-1].date.strftime("%d %B %Y")
             date_dt = datetime.strptime(date, "%d %B %Y")
 
@@ -106,6 +110,7 @@ class Ncsc(AbstractScraper):
                 authors=[author],
                 topics=None
             )
+
         except NoSuchElementException as e:
             logger.warning(f"ERROR Article NoSuchElementException {e}")
 
@@ -116,6 +121,7 @@ class Ncsc(AbstractScraper):
 
         Return:
             A list with all definitions, each defitions have a:
+
                 Concept (str),
                 Description (str),
         '''
@@ -158,24 +164,31 @@ class Ncsc(AbstractScraper):
         Return:
             None
         """
-        try:    
+        try:
             url = "https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc"
+
             self.driver.get(url)   
+
 
             # Function to disable the cookie popup
             self.scrapUtils.click_element(
                 self.driver, "button.pcf-button:nth-child(2)", 1
             )
 
-            until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago) # Calculate date to scrap
+            until_date = TimeUtils.format_subtract_days_to_actual_date(
+                from_days_ago
+            )  # Calculate date to scrap
 
             self._show_articles_until_date(until_date)
+
 
             total_articles = self.driver.find_elements(By.CSS_SELECTOR, '.search-results div.pcf-search-result')
             logger.debug(f"Found {len(total_articles)} articles to process")
             for i in range(1, len(total_articles)+1): # +1 to pick up the last item
                 # Aquí extramos la informacion de todos los articulos de la pagina
-                self.driver.find_element(By.XPATH, f'(//div[@class="search-results"]/div)[{i}]').click() # Selecionamos cada articulo aquí
+                self.driver.find_element(
+                    By.XPATH, f'(//div[@class="search-results"]/div)[{i}]'
+                ).click()  # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
                 article: ScrapedNewsModel | None = self._get_article_from_date(until_date)
                 if(article == None):
@@ -184,7 +197,7 @@ class Ncsc(AbstractScraper):
                     self.articles.append(article)
                 time.sleep(self.load.webdriverwait_timeout)
                 self.driver.back()
-          
+
         except NcscExec as e:
             logger.error(f"ERROR: {e}")
             

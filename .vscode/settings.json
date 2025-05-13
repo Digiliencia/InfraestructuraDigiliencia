@@ -1,0 +1,19 @@
+{
+  // Esta configuración debe moverse al archivo de configuración de usuario
+  // "telemetry.telemetryLevel": "off",
+  "ruff.organizeImports": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.unusedImports": "explicit",
+    "source.addMissingImports": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "files.autoSave": "afterDelay",
+  "python.testing.unittestArgs": ["-v", "-s", "./test", "-p", "*_test.py"],
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["test"]
+}

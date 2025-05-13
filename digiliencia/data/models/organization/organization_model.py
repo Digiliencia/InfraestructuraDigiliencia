@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from abc import ABC
 from digiliencia.data.models.interface_model import IModel
 
 
 @dataclass(frozen=True)
-class TopicModel(IModel):
-    """Represents a topic in the database."""
+class OrganizationModel(IModel, ABC):
+    """Represents an organization in the database."""
 
     id: str
     name: str
-    definition: str
+    description: str
