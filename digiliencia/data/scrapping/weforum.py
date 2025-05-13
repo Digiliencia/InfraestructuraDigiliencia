@@ -1089,3 +1089,27 @@ class WEForumScraper(AbstractScraper):
         self._close()
         logger.info("WEForum scraping finished")
         return scraped_publications
+'''
+WEB SITES NOT SCRAP
+
+African Center for Economic Transformation
+RAND Corporation
+Institut des Relations Internationales et Stratégiques
+Social Europe
+Harvard Business Review
+Oliver Wyman
+IESE
+GovLab - Living Library
+Cornell University
+Institut Montaigne
+DIW Berlin
+Frontiers
+Asian Development Bank
+Wharton School of the University of Pennsylvania
+International Telecommunication Union
+War on the Rocks
+Istituto Affari Internazionali
+Geneva Centre for Security Sector Governance (DCAF)
+Eco-Business
+TRENDS Research & Advisory
+'''
