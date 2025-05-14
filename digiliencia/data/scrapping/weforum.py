@@ -1016,7 +1016,7 @@ class WEForumScraper(AbstractScraper):
         time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
         date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
 
-        content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
+        content_container = self.driver.find_element(By.CLASS_NAME, "eb-article-grid")
         content = content_container.text
 
         return ScrapedNewsModel(
@@ -1028,6 +1028,113 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
+
+    ''''''
+
+    def _scrap_eco_bussiness(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        """
+        Access the given URL and scrapes Eco-bussiness.
+
+        Args:
+            url (str): Eco-bussiness URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Eco-bussiness URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        """
+        logger.debug(f"Eco-bussiness: {url}")
+        if "https://www.eco-business.com" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Eco-bussiness scrapper"
+            )
+        
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.ID, "ebStoryHeadline").text
+
+        author_line = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__author").text
+        author_line = author_line.replace("By", "")
+        authors = author_line.rsplit(",", 1)
+        author = authors[0].strip()
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__publish-date").text
+        date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+
+        content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
+        content = content_container.text
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Eco-bussiness",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
+
+    def _scrap_social_europe(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        """
+        Access the given URL and scrapes Social Europe.
+
+        Args:
+            url (str): The Social Europe article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        """
+        logger.debug(f"Scraping Social Europe article: {url}")
+        if "https://www.socialeurope.eu/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for The Atlantic article scrapper"
+            )
+
+        ScrapUtils.disable_js(self.driver) # Disable JS
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
+
+        authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
+        authors_line = authors_line.replace(",", " ").replace("and", " ")
+        authors = [
+            authors_line.strip()
+        ]
+        author = "".join(authors)
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
+        date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+        
+        content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
+        content = content_container.text
+
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Institute Of International Affairs",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+    ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
         logger.info("Scraping WEForum")
@@ -1092,24 +1199,24 @@ class WEForumScraper(AbstractScraper):
 '''
 WEB SITES NOT SCRAP
 
-African Center for Economic Transformation
-RAND Corporation
-Institut des Relations Internationales et Stratégiques
-Social Europe
-Harvard Business Review
-Oliver Wyman
-IESE
-GovLab - Living Library
-Cornell University
-Institut Montaigne
-DIW Berlin
-Frontiers
-Asian Development Bank
-Wharton School of the University of Pennsylvania
-International Telecommunication Union
-War on the Rocks
-Istituto Affari Internazionali
-Geneva Centre for Security Sector Governance (DCAF)
-Eco-Business
-TRENDS Research & Advisory
+Eco-Business CHECK
+Social Europe TODO
+RAND Corporation YA HECHA, NO SE PORQUE SALIO
+African Center for Economic Transformation TODO
+Institut des Relations Internationales et Stratégiques TODO
+Harvard Business Review TODO
+Oliver Wyman TODO
+IESE TODO
+GovLab - Living Library TODO
+Cornell University TODO
+Institut Montaigne TODO
+DIW Berlin TODO
+Frontiers TODO
+Asian Development Bank TODO
+Wharton School of the University of Pennsylvania TODO
+International Telecommunication Union TODO
+War on the Rocks TODO
+Istituto Affari Internazionali TODO
+Geneva Centre for Security Sector Governance (DCAF) TODO
+TRENDS Research & Advisory TODO
 '''
