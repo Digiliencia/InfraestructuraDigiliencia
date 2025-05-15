@@ -1065,7 +1065,7 @@ class WEForumScraper(AbstractScraper):
         author = authors[0].strip()
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__publish-date").text
-        date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
 
         content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
         content = content_container.text
@@ -1118,7 +1118,7 @@ class WEForumScraper(AbstractScraper):
         author = "".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
-        date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
+        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
         
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
@@ -1134,6 +1134,54 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
+    
+
+    def _scrap_african_center_economic_transformation(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        """
+        Access the given URL and scrapes African Center Economic Transformation.
+
+        Args:
+            url (str): The African Center Economic Transformation article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        """
+        logger.debug(f"Scraping African Center Economic Transformation article: {url}")
+        if "https://www.socialeurope.eu/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for African Center Economic Transformation article scrapper"
+            )
+        
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_text_inner h1").text
+        author = self.driver.find_element(By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner").text
+        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Institute Of International Affairs",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1200,7 +1248,7 @@ class WEForumScraper(AbstractScraper):
 WEB SITES NOT SCRAP
 
 Eco-Business CHECK
-Social Europe TODO
+Social Europe CHECK
 RAND Corporation YA HECHA, NO SE PORQUE SALIO
 African Center for Economic Transformation TODO
 Institut des Relations Internationales et Stratégiques TODO
