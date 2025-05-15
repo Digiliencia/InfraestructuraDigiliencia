@@ -1217,6 +1217,9 @@ class WEForumScraper(AbstractScraper):
             "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
             "Science Daily": self._scrap_sciencedaily,
             "Rand Corporation": self._scrap_rand_corporation,
+            "Eco-Business": self._scrap_eco_bussiness,
+            "Social Europe": self._scrap_social_europe,
+            "African Center for Economic Transformation": self._scrap_african_center_economic_transformation
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1250,7 +1253,7 @@ WEB SITES NOT SCRAP
 Eco-Business CHECK
 Social Europe CHECK
 RAND Corporation YA HECHA, NO SE PORQUE SALIO
-African Center for Economic Transformation TODO
+African Center for Economic Transformation CHECK
 Institut des Relations Internationales et Stratégiques TODO
 Harvard Business Review TODO
 Oliver Wyman TODO
