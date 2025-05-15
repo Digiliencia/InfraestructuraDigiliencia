@@ -1040,7 +1040,7 @@ class WEForumScraper(AbstractScraper):
     def _scrap_eco_bussiness(
         self, url: str
     ) -> ScrapedNewsModel:
-        """
+        '''
         Access the given URL and scrapes Eco-bussiness.
 
         Args:
@@ -1052,7 +1052,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        """
+        '''
         logger.debug(f"Eco-bussiness: {url}")
         if "https://www.eco-business.com" not in url:
             raise WEForumError(
@@ -1090,7 +1090,7 @@ class WEForumScraper(AbstractScraper):
     def _scrap_social_europe(
         self, url: str
     ) -> ScrapedNewsModel:
-        """
+        '''
         Access the given URL and scrapes Social Europe.
 
         Args:
@@ -1102,7 +1102,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        """
+        '''
         logger.debug(f"Scraping Social Europe article: {url}")
         if "https://www.socialeurope.eu/" not in url:
             raise WEForumError(
@@ -1147,7 +1147,7 @@ class WEForumScraper(AbstractScraper):
     def _scrap_african_center_economic_transformation(
         self, url: str
     ) -> ScrapedNewsModel:
-        """
+        '''
         Access the given URL and scrapes African Center Economic Transformation.
 
         Args:
@@ -1159,7 +1159,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        """
+        '''
         logger.debug(f"Scraping African Center Economic Transformation article: {url}")
         if "https://acetforafrica.org/" not in url:
             raise WEForumError(
@@ -1191,6 +1191,47 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_oliver_wyman(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Oliver Wyman.
+
+        Args:
+            url (str): Oliver Wyman article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Oliver Wyman article: {url}")
+        if "https://acetforafrica.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Oliver Wyman article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.text-primary.text-primary--subheading").text
+        author_elem = self.driver.find_element(By.CSS_SELECTOR, "div.authors.text-secondary.text-secondary--description__small").text
+        author = ''.join(author_elem.replace("By", ""))
+        date = datetime.now() # article´s website without date
+        contents_container = self.driver.find_element(By.CSS_SELECTOR, "div.text-secondary")
+        content = contents_container.text
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Institute Of International Affairs",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1228,7 +1269,8 @@ class WEForumScraper(AbstractScraper):
             "Rand Corporation": self._scrap_rand_corporation,
             "Eco-Business": self._scrap_eco_bussiness,
             "Social Europe": self._scrap_social_europe,
-            "African Center for Economic Transformation": self._scrap_african_center_economic_transformation
+            "African Center for Economic Transformation": self._scrap_african_center_economic_transformation,
+            "Oliver Wyman": self._scrap_oliver_wyman
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1261,11 +1303,10 @@ WEB SITES NOT SCRAP
 
 Eco-Business CHECK
 Social Europe CHECK
-RAND Corporation YA HECHA, NO SE PORQUE SALIO
 African Center for Economic Transformation CHECK
+Oliver Wyman TODO
 Institut des Relations Internationales et Stratégiques TODO
 Harvard Business Review TODO
-Oliver Wyman TODO
 IESE TODO
 GovLab - Living Library TODO
 Cornell University TODO
