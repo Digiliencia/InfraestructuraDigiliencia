@@ -1015,9 +1015,15 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
         date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
-
+        '''
         content_container = self.driver.find_element(By.CLASS_NAME, "eb-article-grid")
         content = content_container.text
+        '''
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.body-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1065,7 +1071,7 @@ class WEForumScraper(AbstractScraper):
         author = authors[0].strip()
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__publish-date").text
-        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        date = datetime.strptime(time_elem, "%b %d %Y")  # type: ignore
 
         content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
         content = content_container.text
@@ -1118,7 +1124,9 @@ class WEForumScraper(AbstractScraper):
         author = "".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
-        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        date_without_suffix = TimeUtils.format_suffix_date(time_elem)
+
+        date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore
         
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
@@ -1153,7 +1161,7 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         """
         logger.debug(f"Scraping African Center Economic Transformation article: {url}")
-        if "https://www.socialeurope.eu/" not in url:
+        if "https://acetforafrica.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for African Center Economic Transformation article scrapper"
             )
@@ -1165,7 +1173,8 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_text_inner h1").text
         author = self.driver.find_element(By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span").text
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner").text
-        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        date_ft = time_elem.replace(",", "")
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p")
         content = [
             contents.text for contents in content_container
