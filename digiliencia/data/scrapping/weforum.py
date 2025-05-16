@@ -1444,6 +1444,55 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_fronteirs(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Frontiers.
+
+        Args:
+            url (str): Frontiers article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Frontiers article: {url}")
+        if "https://www.frontiersin.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Frontiers article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.JournalAbstract__titleWrapper h1").text
+
+        time_elem = self.driver.find_element(By.XPATH, '//p[@class="ArticleLayoutHeader__info__journalDate"]/span[2]').text
+        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+
+        authors_group = self.driver.find_elements(By.CLASS_NAME, "authors")
+        author = [
+            authors.text for authors in authors_group
+        ]
+        author = ''.join(author)
+
+        content_container = self.driver.find_element(By.CLASS_NAME, "JournalFullText")
+        content = content_container.text
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="GovLab - Living Library",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1486,7 +1535,8 @@ class WEForumScraper(AbstractScraper):
             "IESE": self._scrap_iese,
             "Harvard Business Review": self._scrap_harvard_business_review,
             "Cornell University": self._scrap_coronell_university,
-            "GovLab - Living Library": self._scrap_govlab_living_library
+            "GovLab - Living Library": self._scrap_govlab_living_library,
+            "Frontiers": self._scrap_fronteirs
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1525,10 +1575,10 @@ IESE CHECK
 Harvard Business Review CHECK
 Cornell University CHECK
 GovLab - Living Library CHECK
+Frontiers TODO
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
 DIW Berlin TODO
-Frontiers TODO
 Asian Development Bank TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
