@@ -1232,6 +1232,62 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
+
+    def _scrap_iese(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes IESE.
+
+        Args:
+            url (str): IESE article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping IESE article: {url}")
+        if "https://www.iese.edu/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for IESE article scrapper"
+            )
+
+        # TODO check popup
+        ScrapUtils.disable_js(self.driver) # Disable JS
+        
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "title").text
+
+        time_elem = self.driver.find_element(By.CLASS_NAM, "small-txt").text
+        date_ft = time_elem.replace(",", "")
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
+        authors_elem = self.driver.find_element(By.XPATH, '//div[@class="content description-subHeader"]/p[1]').text
+        author = authors.replace("By", "")
+
+        content_container = self.driver.find_elemnets(By.XPATH, '//div[@class="content description-subHeader"]/p')
+        content = [
+            contents.text for contents in content_container
+        ]
+
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Australian Institute Of International Affairs",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1304,10 +1360,10 @@ WEB SITES NOT SCRAP
 Eco-Business CHECK
 Social Europe CHECK
 African Center for Economic Transformation CHECK
-Oliver Wyman TODO
+Oliver Wyman CHECK
+IESE TODO
 Institut des Relations Internationales et Stratégiques TODO
 Harvard Business Review TODO
-IESE TODO
 GovLab - Living Library TODO
 Cornell University TODO
 Institut Montaigne TODO
