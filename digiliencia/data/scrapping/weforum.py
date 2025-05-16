@@ -1391,6 +1391,55 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_govlab_living_library(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes GovLab - Living Library.
+
+        Args:
+            url (str): GovLab - Living Library article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping GovLab - Living Library article: {url}")
+        if "https://thelivinglib.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for GovLab - Living Library article scrapper"
+            )
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.entry-date.published").text
+        date_ft = time_elem.replace(",", "")
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "span.author.vcard").text
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.entry-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="GovLab - Living Library",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1432,7 +1481,8 @@ class WEForumScraper(AbstractScraper):
             "Oliver Wyman": self._scrap_oliver_wyman,
             "IESE": self._scrap_iese,
             "Harvard Business Review": self._scrap_harvard_business_review,
-            "Cornell University": self._scrap_coronell_university
+            "Cornell University": self._scrap_coronell_university,
+            "GovLab - Living Library": self._scrap_govlab_living_library
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1469,9 +1519,9 @@ African Center for Economic Transformation CHECK
 Oliver Wyman CHECK
 IESE CHECK
 Harvard Business Review CHECK
-Cornell University TODO
+Cornell University CHECK
+GovLab - Living Library CHECK
 Institut des Relations Internationales et Stratégiques TODO
-GovLab - Living Library TODO
 Institut Montaigne TODO
 DIW Berlin TODO
 Frontiers TODO
