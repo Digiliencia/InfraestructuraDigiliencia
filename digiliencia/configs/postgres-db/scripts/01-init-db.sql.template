@@ -1,0 +1,45 @@
+-- scripts/01-init-db.sql.template
+-- This template will be processed by 01-init-db.sh
+
+-- Use DO blocks for conditional execution to make the script more robust
+DO
+$$
+BEGIN
+   -- Crea el usuario propietario de la base de datos si no existe
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '${DB_OWNER_USER}') THEN
+      CREATE USER ${DB_OWNER_USER} WITH PASSWORD '${DB_OWNER_PASSWORD}';
+      RAISE NOTICE 'Database owner user "${DB_OWNER_USER}" created.';
+   ELSE
+      RAISE NOTICE 'Database owner user "${DB_OWNER_USER}" already exists.';
+   END IF;
+
+   -- Crea el usuario de la aplicación si no existe
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '${APP_USER}') THEN
+      CREATE USER ${APP_USER} WITH PASSWORD '${APP_USER_PASSWORD}';
+      RAISE NOTICE 'Application user "${APP_USER}" created.';
+   ELSE
+      RAISE NOTICE 'Application user "${APP_USER}" already exists.';
+   END IF;
+
+   -- Crea la base de datos si no existe, asignándole el propietario
+   IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '${APP_DB_NAME}') THEN
+      CREATE DATABASE ${APP_DB_NAME} OWNER ${DB_OWNER_USER};
+      RAISE NOTICE 'Database "${APP_DB_NAME}" created.';
+   ELSE
+      RAISE NOTICE 'Database "${APP_DB_NAME}" already exists.';
+   END IF;
+
+END
+$$;
+
+-- Otorga permisos básicos de conexión a los usuarios
+-- Estas sentencias se ejecutarán como el superusuario (postgres)
+-- que es quien ejecuta los scripts en /docker-entrypoint-initdb.d/
+GRANT CONNECT ON DATABASE ${APP_DB_NAME} TO ${DB_OWNER_USER};
+GRANT CONNECT ON DATABASE ${APP_DB_NAME} TO ${APP_USER};
+
+-- Otorga permisos de uso al esquema 'public'
+GRANT USAGE ON SCHEMA public TO ${DB_OWNER_USER};
+GRANT USAGE ON SCHEMA public TO ${APP_USER};
+
+-- Los permisos más detallados sobre tablas y secuencias se manejarán en 03-grant-permissions.sql

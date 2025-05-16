@@ -1,0 +1,21 @@
+-- scripts/03-grant-permissions.sql.template
+-- This template will be processed by 03-grant-permissions.sh
+
+-- Grant permissions on existing tables to the application user
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.users TO ${APP_USER};
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.products TO ${APP_USER};
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.orders TO ${APP_USER};
+
+-- Grant permissions on sequences (used by SERIAL)
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_USER};
+
+-- Configure default privileges for tables and sequences created *in the future*
+-- by the database owner. This ensures the application user gets permissions
+-- automatically when new objects are created by the owner.
+ALTER DEFAULT PRIVILEGES FOR USER ${DB_OWNER_USER} IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_USER};
+
+ALTER DEFAULT PRIVILEGES FOR USER ${DB_OWNER_USER} IN SCHEMA public
+GRANT USAGE, SELECT ON SEQUENCES TO ${APP_USER};
+
+-- If you have other schemas, repeat ALTER DEFAULT PRIVILEGES for those schemas.
