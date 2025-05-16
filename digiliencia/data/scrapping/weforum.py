@@ -1281,7 +1281,61 @@ class WEForumScraper(AbstractScraper):
         return ScrapedNewsModel(
             header=title,
             date=date,
-            source="Australian Institute Of International Affairs",
+            source="IESE",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
+    def _scrap_harvard_business_review(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Harvard Business Review.
+
+        Args:
+            url (str): Harvard Business Review article URL
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Harvard Business Review article: {url}")
+        if "https://hbr.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Harvard Business Review article scrapper"
+            )
+
+        # TODO check popup
+        ScrapUtils.disable_js(self.driver) # Disable JS
+
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.Title_standard__x_GEq.Title_standard__x_GEq").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl").text
+        date_ft = time_elem.replace(",", "")
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.Standard_content__mghDk p")
+        content = [
+            contents.text for contents in content_container
+        ]
+
+        topic = self.driver.find_element(By.CSS_SELECTOR, "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y").text
+
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Harvard Business Review",
             content=content,
             url=url,
             authors=[author],
@@ -1326,7 +1380,9 @@ class WEForumScraper(AbstractScraper):
             "Eco-Business": self._scrap_eco_bussiness,
             "Social Europe": self._scrap_social_europe,
             "African Center for Economic Transformation": self._scrap_african_center_economic_transformation,
-            "Oliver Wyman": self._scrap_oliver_wyman
+            "Oliver Wyman": self._scrap_oliver_wyman,
+            "IESE": self._scrap_iese,
+            "Harvard Business Review": self._scrap_harvard_business_review
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1361,9 +1417,9 @@ Eco-Business CHECK
 Social Europe CHECK
 African Center for Economic Transformation CHECK
 Oliver Wyman CHECK
-IESE TODO
-Institut des Relations Internationales et Stratégiques TODO
+IESE CHECK
 Harvard Business Review TODO
+Institut des Relations Internationales et Stratégiques TODO
 GovLab - Living Library TODO
 Cornell University TODO
 Institut Montaigne TODO
