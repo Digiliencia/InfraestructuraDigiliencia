@@ -13,7 +13,6 @@ from typing import Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
-from rich.progress import Progress
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -560,7 +559,10 @@ class WEForumScraper(AbstractScraper):
 
         # Access the URL
         self.driver.get(url)
-        time.sleep(self.load_time)
+        time.sleep(self.load_time+1)
+
+        # Disable JS
+        ScrapUtils.disable_js(self.driver)
 
         # Get the title
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='elementor-heading-title elementor-size-default']").text
@@ -598,6 +600,9 @@ class WEForumScraper(AbstractScraper):
                 content += f"![{img_alt}]({img_link})\n"
 
         content = content
+
+        ScrapUtils.enable_js(self.driver)  # Enable JS again
+
         return ScrapedNewsModel(
             header=title,
             date=date,
@@ -1015,10 +1020,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
         date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
-        '''
-        content_container = self.driver.find_element(By.CLASS_NAME, "eb-article-grid")
-        content = content_container.text
-        '''
+
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.body-content p")
         content = [
             contents.text for contents in content_container
@@ -1070,11 +1072,14 @@ class WEForumScraper(AbstractScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__publish-date").text
-        date = datetime.strptime(time_elem, "%b %d %Y")  # type: ignore
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text
+        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
-        content_container = self.driver.find_element(By.CLASS_NAME, "body-content")
-        content = content_container.text
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "section.eb-article__body-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1191,6 +1196,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO mirar si se scrapea noticias y sponsor
     def _scrap_oliver_wyman(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1218,15 +1224,17 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "div.text-primary.text-primary--subheading").text
         author_elem = self.driver.find_element(By.CSS_SELECTOR, "div.authors.text-secondary.text-secondary--description__small").text
-        author = ''.join(author_elem.replace("By", ""))
+        author = ''.join(author_elem.replace("By ", ""))
+
         date = datetime.now() # article´s website without date
+
         contents_container = self.driver.find_element(By.CSS_SELECTOR, "div.text-secondary")
         content = contents_container.text
 
         return ScrapedNewsModel(
             header=title,
             date=date,
-            source="Australian Institute Of International Affairs",
+            source="Oliver Wyman",
             content=content,
             url=url,
             authors=[author],
@@ -1509,7 +1517,8 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div.JournalAbstract__titleWrapper h1").text
 
         time_elem = self.driver.find_element(By.XPATH, '//p[@class="ArticleLayoutHeader__info__journalDate"]/span[2]').text
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+        date_ft = time_elem.replace(", ", "")
+        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
         authors_group = self.driver.find_elements(By.CLASS_NAME, "authors")
         author = [
@@ -1578,25 +1587,25 @@ class WEForumScraper(AbstractScraper):
 
         scraped_publications: list[ScrapedNewsModel] = []
 
-        with Progress() as progress:
-            task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
+        #with Progress() as progress:
+        #    task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
 
-            for article in articles:
-                if article["type"] == "publication":
-                    scrapper_function: Optional[Callable] = publicaion_scrappers.get(
-                        article["publisher"]
+        for article in articles:
+            if article["type"] == "publication":
+                scrapper_function: Optional[Callable] = publicaion_scrappers.get(
+                    article["publisher"]
+                )
+                if scrapper_function:
+                    try:
+                        publication_data = scrapper_function(article["url"])
+                        scraped_publications.append(publication_data)
+                    except Exception as e:
+                        logger.error(f"Error scraping {article['url']}:\n {e}")
+                else:
+                    logger.warning(
+                        f"No scrapper function found for publisher: {article['publisher']}"
                     )
-                    if scrapper_function:
-                        try:
-                            publication_data = scrapper_function(article["url"])
-                            scraped_publications.append(publication_data)
-                        except Exception as e:
-                            logger.error(f"Error scraping {article['url']}:\n {e}")
-                    else:
-                        logger.warning(
-                            f"No scrapper function found for publisher: {article['publisher']}"
-                        )
-                progress.advance(task)
+        #        progress.advance(task)
 
         self._close()
         logger.info("WEForum scraping finished")
@@ -1605,13 +1614,13 @@ class WEForumScraper(AbstractScraper):
 WEB SITES NOT SCRAP
 
 Eco-Business CHECK
-Social Europe CHECK
+Social Europe CHECK OKEY
 African Center for Economic Transformation CHECK
 Oliver Wyman CHECK
-IESE CHECK
+IESE CHECK  OKEY
 Harvard Business Review CHECK
-Cornell University CHECK
-GovLab - Living Library CHECK
+Cornell University CHECK    OKEY
+GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
