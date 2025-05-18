@@ -1159,7 +1159,7 @@ class WEForumScraper(AbstractScraper):
             url (str): The African Center Economic Transformation article URL
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid African Center Economic Transformation URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1207,7 +1207,7 @@ class WEForumScraper(AbstractScraper):
             url (str): Oliver Wyman article URL
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid Oliver Wyman URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1251,7 +1251,7 @@ class WEForumScraper(AbstractScraper):
             url (str): IESE article URL
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid IESE URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1308,7 +1308,7 @@ class WEForumScraper(AbstractScraper):
             url (str): Harvard Business Review article URL
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid Harvard Business Review URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1399,7 +1399,7 @@ class WEForumScraper(AbstractScraper):
             url (str): Cornell University article URL.
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid Cornell University URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1449,7 +1449,7 @@ class WEForumScraper(AbstractScraper):
             url (str): GovLab - Living Library article URL.
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid GovLab - Living Library URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1499,7 +1499,7 @@ class WEForumScraper(AbstractScraper):
             url (str): Frontiers article URL.
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid Frontiers URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1549,7 +1549,7 @@ class WEForumScraper(AbstractScraper):
             url (str): Asian Development Bank article URL.
 
         Raises:
-            WEForumError: If the URL is not a valid Social Europe URL
+            WEForumError: If the URL is not a valid Asian Development URL
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
@@ -1586,6 +1586,54 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
+    
+    def _scrap_diw_berlin(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes DIW Berlin.
+
+        Args:
+            url (str): DIW Berlin article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid DIW Berlin URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping DIW Berlin article: {url}")
+        if "https://development.asia/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for DIW Berlin article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "header_text").text
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "a[class='info_link']").text
+
+        date = datetime.now() # There is not date
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[class='row justify-content-md-center'] p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="DIW Berlin",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1630,7 +1678,8 @@ class WEForumScraper(AbstractScraper):
             "Cornell University": self._scrap_coronell_university,
             "GovLab - Living Library": self._scrap_govlab_living_library,
             "Frontiers": self._scrap_fronteirs,
-            "Asian Development Bank TODO": self._scrap_asian_developement_bank
+            "Asian Development Bank TODO": self._scrap_asian_developement_bank,
+            "DIW Berlin": self._scrap_diw_berlin
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1671,10 +1720,10 @@ Cornell University CHECK    OKEY
 GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
 
-Asian Development Bank TODO
+Asian Development Bank CHECK
+DIW Berlin TODO
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
-DIW Berlin TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 War on the Rocks TODO
