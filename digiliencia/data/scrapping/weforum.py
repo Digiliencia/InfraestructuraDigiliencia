@@ -563,10 +563,10 @@ class WEForumScraper(AbstractScraper):
         time.sleep(self.load_time)
 
         # Get the title
-        title = self.driver.find_element(By.TAG_NAME, "h1").text
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='elementor-heading-title elementor-size-default']").text
 
         # Get the date
-        date_element = self.driver.find_element(By.TAG_NAME, "time")
+        date_element = self.driver.find_element(By.CSS_SELECTOR, "span time")
         date = datetime.strptime(date_element.text, "%B %d, %Y")
 
         # Get the author
@@ -1289,6 +1289,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO Refactor function 
     def _scrap_harvard_business_review(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1318,19 +1319,55 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.Title_standard__x_GEq.Title_standard__x_GEq").text
+        if "https://hbr.org/podcast/" in url:
+            title = self.driver.find_element(By.CSS_SELECTOR, "h1.podcast-post__banner-title.podcast__h2").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl").text
-        date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+            time_elem = self.driver.find_element(By.CSS_SELECTOR, "span[class='podcast-details__date publication-date text-gray']").text
+            date_ft = time_elem.replace(",", "")
+            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.Standard_content__mghDk p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+            content_container = self.driver.find_elements(By.CSS_SELECTOR, "section[id='details-section'] p")
+            content = [
+                contents.text for contents in content_container
+            ]
+            content = ''.join(content)
 
-        topic = self.driver.find_element(By.CSS_SELECTOR, "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y").text
+            author = 'HBR'
+
+            topic = self.driver.find_element(By.CSS_SELECTOR, "a[class='topic--large']").text
+
+        elif "https://hbr.org/sponsored/" in url:
+            title = self.driver.find_element(By.CSS_SELECTOR, "h1[class=sponsored-article-hed]").text
+
+            time_elem = self.driver.find_element(By.CLASS_NAME, "publication-date").text
+            date_ft = time_elem.replace(",", "")
+            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
+            content_container = self.driver.find_elements(By.CSS_SELECTOR, "content p")
+            content = [
+                contents.text for contents in content_container
+            ]
+            content = ''.join(content)
+
+            author = ''
+
+            topic = '' # There is not topic
+        else:
+            title = self.driver.find_element(By.CSS_SELECTOR, "div.Title_standard__x_GEq.Title_standard__x_GEq").text
+
+            time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl").text
+            date_ft = time_elem.replace(",", "")
+            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
+            content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.Standard_content__mghDk p")
+            content = [
+                contents.text for contents in content_container
+            ]
+            content = ''.join(content)
+
+            author = ''
+
+            topic = self.driver.find_element(By.CSS_SELECTOR, "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y").text
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
@@ -1472,7 +1509,7 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div.JournalAbstract__titleWrapper h1").text
 
         time_elem = self.driver.find_element(By.XPATH, '//p[@class="ArticleLayoutHeader__info__journalDate"]/span[2]').text
-        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         authors_group = self.driver.find_elements(By.CLASS_NAME, "authors")
         author = [
@@ -1575,7 +1612,7 @@ IESE CHECK
 Harvard Business Review CHECK
 Cornell University CHECK
 GovLab - Living Library CHECK
-Frontiers TODO
+Frontiers CHECK
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
 DIW Berlin TODO
