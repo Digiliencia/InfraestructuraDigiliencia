@@ -1634,6 +1634,57 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_war_on_rocks(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes War on the Rocks.
+
+        Args:
+            url (str): War on the Rocks article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid War on the Rocks URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping War on the Rocks article: {url}")
+        if "https://warontherocks.com/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for DIW Berlin article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.TAG_NAME, "h1").text
+
+        authors_elem = self.driver.find_elements(By.CSS_SELECTOR, "a[class='author url fn']")
+        author = [
+            authors.text for authors in authors_elem
+        ]
+        author = ''.join(author)
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div[class='small-12 large-4 columns wotr_meta wotr_datetime']").text
+        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore 
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[class='small-12 small-centered columns wotr_content'] p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="War on the Rocks",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1679,7 +1730,8 @@ class WEForumScraper(AbstractScraper):
             "GovLab - Living Library": self._scrap_govlab_living_library,
             "Frontiers": self._scrap_fronteirs,
             "Asian Development Bank TODO": self._scrap_asian_developement_bank,
-            "DIW Berlin": self._scrap_diw_berlin
+            "DIW Berlin": self._scrap_diw_berlin,
+            "War on the Rocks": self._scrap_war_on_rocks
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1721,12 +1773,12 @@ GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
 
 Asian Development Bank CHECK
-DIW Berlin TODO
+DIW Berlin CHECK
+War on the Rocks TODO
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
-War on the Rocks TODO
 Istituto Affari Internazionali TODO
 Geneva Centre for Security Sector Governance (DCAF) TODO
 TRENDS Research & Advisory TODO
