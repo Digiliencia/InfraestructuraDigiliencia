@@ -1539,6 +1539,53 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_asian_developement_bank(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Asian Development Bank.
+
+        Args:
+            url (str): Asian Development Bank article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Social Europe URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Asian Development Bank article: {url}")
+        if "https://development.asia/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Asian Development Bank article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "title").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time[class='datetime']").text
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.field__item p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        author = 'Asian Development Bank' # There is not author
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Asian Development Bank",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1582,7 +1629,8 @@ class WEForumScraper(AbstractScraper):
             "Harvard Business Review": self._scrap_harvard_business_review,
             "Cornell University": self._scrap_coronell_university,
             "GovLab - Living Library": self._scrap_govlab_living_library,
-            "Frontiers": self._scrap_fronteirs
+            "Frontiers": self._scrap_fronteirs,
+            "Asian Development Bank TODO": self._scrap_asian_developement_bank
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1622,10 +1670,11 @@ Harvard Business Review CHECK
 Cornell University CHECK    OKEY
 GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
+
+Asian Development Bank TODO
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
 DIW Berlin TODO
-Asian Development Bank TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 War on the Rocks TODO
