@@ -1734,6 +1734,54 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_institut_relations_internationales(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Institut des Relations Internationales et Stratégiques.
+
+        Args:
+            url (str): Institut des Relations Internationales et Stratégiques article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Institut des Relations Internationales et Stratégiques URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Institut des Relations Internationales et Stratégiques article: {url}")
+        if "https://www.iris-france.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Institut des Relations Internationales et Stratégiques article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+        
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
+        date = datetime.strptime(time_elem, "%d %m %Y")  # type: ignore
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.cms-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Institut des Relations Internationales et Stratégiques",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1781,7 +1829,8 @@ class WEForumScraper(AbstractScraper):
             "Asian Development Bank": self._scrap_asian_developement_bank,
             "DIW Berlin": self._scrap_diw_berlin,
             "War on the Rocks": self._scrap_war_on_rocks,
-            "Institut Montaigne": self._scrap_institut_montaigne
+            "Institut Montaigne": self._scrap_institut_montaigne,
+            "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1826,7 +1875,7 @@ Asian Development Bank CHECK
 DIW Berlin CHECK
 War on the Rocks CHECK
 Institut des Relations Internationales et Stratégiques TODO
-Institut Montaigne TODO
+Institut Montaigne CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 Istituto Affari Internazionali TODO
