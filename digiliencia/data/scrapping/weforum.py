@@ -1263,7 +1263,6 @@ class WEForumScraper(AbstractScraper):
                 "Attempted to scrape invalid page for IESE article scrapper"
             )
 
-        # TODO check popup
         ScrapUtils.disable_js(self.driver) # Disable JS
         
         # Access the URL
@@ -2078,6 +2077,54 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_trends_reach_advisory(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes TRENDS Research & Advisory.
+
+        Args:
+            url (str): TRENDS Research & Advisory article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid TRENDS Research & Advisory URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping TRENDS Research & Advisory article: {url}")
+        if "https://www.frontiersin.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for TRENDS Research & Advisory article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div[class='inner-text'] span").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.sp-content-full p")
+        content = [
+            contents.text for contents in contents_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="TRENDS Research & Advisory",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -2132,7 +2179,8 @@ class WEForumScraper(AbstractScraper):
             "Next City": self._scrap_next_city,
             "FinDev Gateway": self._scrap_findev_gateway,
             "UNIDIR": self._scrap_unidir,
-            "Frontiers in Digital Health": self._scrap_frontiers_digital_health
+            "Frontiers in Digital Health": self._scrap_frontiers_digital_health,
+            "TRENDS Research & Advisory": self._scrap_trends_reach_advisory
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2184,10 +2232,10 @@ Nature CHECK
 Next City CHECK
 FinDev Gateway CHECK
 UNIDIR CHECK
+Frontiers in Digital Health CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 TRENDS Research & Advisory TODO
 Southern Voice TODO
 London School of Economics and Political Science TODO
-Frontiers in Digital Health TODO
 '''
