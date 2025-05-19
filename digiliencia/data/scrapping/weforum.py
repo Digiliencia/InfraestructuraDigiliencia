@@ -1653,7 +1653,7 @@ class WEForumScraper(AbstractScraper):
         logger.debug(f"Scraping War on the Rocks article: {url}")
         if "https://warontherocks.com/" not in url:
             raise WEForumError(
-                "Attempted to scrape invalid page for DIW Berlin article scrapper"
+                "Attempted to scrape invalid page for War on the Rocks article scrapper"
             )
         # Access the URL
         self.driver.get(url)
@@ -1685,6 +1685,55 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
+    
+    def _scrap_institut_montaigne(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Institut Montaigne.
+
+        Args:
+            url (str): Institut Montaigne article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Institut Montaigne URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Institut Montaigne article: {url}")
+        if "https://www.institutmontaigne.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Institut Montaigne article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+        
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text
+        date = datetime.strptime(time_elem, "%d/%m/%Y")  # type: ignore
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "div.auteur__nom").text
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Institut Montaigne",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1729,9 +1778,10 @@ class WEForumScraper(AbstractScraper):
             "Cornell University": self._scrap_coronell_university,
             "GovLab - Living Library": self._scrap_govlab_living_library,
             "Frontiers": self._scrap_fronteirs,
-            "Asian Development Bank TODO": self._scrap_asian_developement_bank,
+            "Asian Development Bank": self._scrap_asian_developement_bank,
             "DIW Berlin": self._scrap_diw_berlin,
-            "War on the Rocks": self._scrap_war_on_rocks
+            "War on the Rocks": self._scrap_war_on_rocks,
+            "Institut Montaigne": self._scrap_institut_montaigne
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1784,4 +1834,9 @@ Geneva Centre for Security Sector Governance (DCAF) TODO
 TRENDS Research & Advisory TODO
 VoxEU TODO
 Nature TODO
+Southern Voice TODO
+Next City TODO
+FinDev Gateway TODO
+London School of Economics and Political Science TODO
+Frontiers in Digital Health TODO
 '''
