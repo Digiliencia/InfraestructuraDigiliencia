@@ -2025,6 +2025,59 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_frontiers_digital_health(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Frontiers in Digital Health.
+
+        Args:
+            url (str): Frontiers in Digital Health article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Frontiers in Digital Health URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Frontiers in Digital Health article: {url}")
+        if "https://www.frontiersin.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Frontiers in Digital Health article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "JournalAbstract__titleWrapper").text
+
+        time_elem = self.driver.find_element(By.XPATH, "//p[@class='ArticleLayoutHeader__info__journalDate']/span[2]").text
+        date_ft = time_elem.replace(",", "")
+        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
+
+        author_line = self.driver.find_elements(By.CSS_SELECTOR, "span.author-wrapper a")
+        author = [
+            authors.text for authors in author_line
+        ]
+        author = ''.join(author)
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.JournalFullText p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Frontiers in Digital Health",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -2078,7 +2131,8 @@ class WEForumScraper(AbstractScraper):
             "Nature": self._scrap_nature,
             "Next City": self._scrap_next_city,
             "FinDev Gateway": self._scrap_findev_gateway,
-            "UNIDIR": self._scrap_unidir
+            "UNIDIR": self._scrap_unidir,
+            "Frontiers in Digital Health": self._scrap_frontiers_digital_health
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
