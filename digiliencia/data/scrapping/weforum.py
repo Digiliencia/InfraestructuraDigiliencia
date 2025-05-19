@@ -90,7 +90,7 @@ class WEForumScraper(AbstractScraper):
         time.sleep(1)
         submit_btn.click()
 
-        # Wait for about 10 seconds
+        # Wait for about 13 seconds
         time.sleep(13)
 
         # Close the login tab
@@ -1072,7 +1072,7 @@ class WEForumScraper(AbstractScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text # TODO ERROR: time data '' does not match format '%B %d, %Y'
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "section.eb-article__body-content p")
@@ -1179,7 +1179,7 @@ class WEForumScraper(AbstractScraper):
         author = self.driver.find_element(By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span").text
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner").text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p")
         content = [
             contents.text for contents in content_container
@@ -1349,7 +1349,7 @@ class WEForumScraper(AbstractScraper):
 
             time_elem = self.driver.find_element(By.CLASS_NAME, "publication-date").text
             date_ft = time_elem.replace(",", "")
-            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+            date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
             content_container = self.driver.find_elements(By.CSS_SELECTOR, "content p")
             content = [
@@ -1539,6 +1539,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO ERROR: Attempted to scrape invalid page for Asian Development Bank article scrapper
     def _scrap_asian_developement_bank(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1713,7 +1714,7 @@ class WEForumScraper(AbstractScraper):
         
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text # TODO ERROR: time data '' does not match format '%d/%m/%Y'
         date = datetime.strptime(time_elem, "%d/%m/%Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auteur__nom").text
@@ -1761,8 +1762,9 @@ class WEForumScraper(AbstractScraper):
         
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
 
+        # TODO poner la hora en la localidad francesa
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
-        date = datetime.strptime(time_elem, "%d %m %Y")  # type: ignore
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore 
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
 
@@ -1826,6 +1828,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO clases distintas en varias paginas https://www.nature.com/articles/s41586-025-08832-3?error=cookies_not_supported&code=a41127c7-3146-4536-b35e-4d99e0efbb84: 
     def _scrap_nature(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1953,7 +1956,7 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "div.field--name-node-title h1").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.heading div.field--name-field-date-m-y.field--type-datetime.field--label-hidden.field__item time.datetime")
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.heading div.field--name-field-date-m-y.field--type-datetime.field--label-hidden.field__item time.datetime").text
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CLASS_NAME, "author").text
@@ -1974,6 +1977,54 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
     
+    def _scrap_unidir(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes UNIDIR.
+
+        Args:
+            url (str): UNIDIR article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid UNIDIR URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping UNIDIR article: {url}")
+        if "https://unidir.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for UNIDIR article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.post-title__date-val").text
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        author = 'UNIDIR' # There are not author
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.post-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="UNIDIR",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -2026,7 +2077,8 @@ class WEForumScraper(AbstractScraper):
             "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov,
             "Nature": self._scrap_nature,
             "Next City": self._scrap_next_city,
-            "FinDev Gateway": self._scrap_findev_gateway
+            "FinDev Gateway": self._scrap_findev_gateway,
+            "UNIDIR": self._scrap_unidir
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2076,12 +2128,12 @@ Institut Montaigne CHECK
 Geneva Centre for Security Sector Governance (DCAF) CHECK
 Nature CHECK
 Next City CHECK
+FinDev Gateway CHECK
+UNIDIR CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
-Istituto Affari Internazionali TODO
 TRENDS Research & Advisory TODO
 Southern Voice TODO
-FinDev Gateway TODO
 London School of Economics and Political Science TODO
 Frontiers in Digital Health TODO
 '''
