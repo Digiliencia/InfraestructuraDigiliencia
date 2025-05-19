@@ -1874,6 +1874,58 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_next_city(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Next City.
+
+        Args:
+            url (str): Next City article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Next City URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Next City article: {url}")
+        if "https://nextcity.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Next City article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "daily-title").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span[itemprop='datePublished']").text
+        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
+
+        authors_line = self.driver.find_elements(By.CSS_SELECTOR, "span[itemprop='author']")
+        author = [
+            authors.text for authors in authors_line
+        ]
+        author = ''.join(author)
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.entry-content p")
+        content = [
+            contents.text for contents in contents_container
+        ] 
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Next City",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1924,7 +1976,8 @@ class WEForumScraper(AbstractScraper):
             "Institut Montaigne": self._scrap_institut_montaigne,
             "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales,
             "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov,
-            "Nature": self._scrap_nature
+            "Nature": self._scrap_nature,
+            "Next City": self._scrap_next_city
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1971,14 +2024,14 @@ War on the Rocks CHECK
 Institut des Relations Internationales et Stratégiques CHECK
 Institut Montaigne CHECK
 Geneva Centre for Security Sector Governance (DCAF) CHECK
-Nature TODO
+Nature CHECK
+Next City TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 Istituto Affari Internazionali TODO
 TRENDS Research & Advisory TODO
 VoxEU TODO -> Canal de YouTube con enlaces a videos
 Southern Voice TODO
-Next City TODO
 FinDev Gateway TODO
 London School of Economics and Political Science TODO
 Frontiers in Digital Health TODO
