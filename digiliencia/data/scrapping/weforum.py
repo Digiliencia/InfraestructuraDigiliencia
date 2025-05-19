@@ -1798,7 +1798,7 @@ class WEForumScraper(AbstractScraper):
         Returns:
             ScrapedNewsModel: an object with the publication information.
         '''
-        logger.debug(f"Scraping IGeneva Centre for Security Sector Governance (DCAF) article: {url}")
+        logger.debug(f"Scraping Geneva Centre for Security Sector Governance (DCAF) article: {url}")
         if "https://www.dcaf.ch/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Geneva Centre for Security Sector Governance (DCAF) article scrapper"
@@ -1820,6 +1820,54 @@ class WEForumScraper(AbstractScraper):
             header=title,
             date=date,
             source="Geneva Centre for Security Sector Governance (DCAF)",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
+    def _scrap_nature(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Nature.
+
+        Args:
+            url (str): Nature article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Nature URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Nature article: {url}")
+        if "https://www.nature.com/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Nature article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1.c-article-magazine-title").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "li time").text
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        author = self.driver.find_element(By.XPATH, "//li[@class='c-article-author-list__item']/a").text
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.main-content p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Nature",
             content=content,
             url=url,
             authors=[author],
@@ -1875,7 +1923,8 @@ class WEForumScraper(AbstractScraper):
             "War on the Rocks": self._scrap_war_on_rocks,
             "Institut Montaigne": self._scrap_institut_montaigne,
             "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales,
-            "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov
+            "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov,
+            "Nature": self._scrap_nature
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1921,13 +1970,13 @@ DIW Berlin CHECK
 War on the Rocks CHECK
 Institut des Relations Internationales et Stratégiques CHECK
 Institut Montaigne CHECK
+Geneva Centre for Security Sector Governance (DCAF) CHECK
+Nature TODO
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 Istituto Affari Internazionali TODO
-Geneva Centre for Security Sector Governance (DCAF) TODO
 TRENDS Research & Advisory TODO
-VoxEU TODO
-Nature TODO
+VoxEU TODO -> Canal de YouTube con enlaces a videos
 Southern Voice TODO
 Next City TODO
 FinDev Gateway TODO
