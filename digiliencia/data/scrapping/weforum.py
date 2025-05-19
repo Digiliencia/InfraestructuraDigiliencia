@@ -2240,7 +2240,7 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping ReliefWeb article: {url}")
-        if "https://blogs.lse.ac.uk/" not in url:
+        if "https://reliefweb.int/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for ReliefWeb article scrapper"
             )
@@ -2264,6 +2264,55 @@ class WEForumScraper(AbstractScraper):
             header=title,
             date=date,
             source="ReliefWeb",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
+    def _scarap_bank_england(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Bank of England.
+
+        Args:
+            url (str): Bank of England article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Bank of England URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Bank of England article: {url}")
+        if "https://blogs.lse.ac.uk/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Bank of England article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1[itemprop='name']").text
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "published-date").text
+        date_ft = time_elem.replace("Published on ", "")
+        date = datetime.strptime(date_ft, "%B %d, %Y")  # type: ignore
+
+        author = 'Bank of England' # There is not author
+
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[id='output'] p")
+        content = [
+            contents.text for contents in content_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Bank of England",
             content=content,
             url=url,
             authors=[author],
@@ -2328,7 +2377,8 @@ class WEForumScraper(AbstractScraper):
             "TRENDS Research & Advisory": self._scrap_trends_reach_advisory,
             "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
             "Southern Voice": self._scrap_southern_voice,
-            "ReliefWeb": self._scrap_reliefweb
+            "ReliefWeb": self._scrap_reliefweb,
+            "Bank of England": self._scarap_bank_england
         } 
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2384,6 +2434,6 @@ Frontiers in Digital Health CHECK
 TRENDS Research & Advisory CHECK
 London School of Economics and Political Science CHECK
 Southern Voice CHECK
-ReliefWeb TODO
-International Telecommunication Union TODO
+ReliefWeb CHECK
+Bank of England CHECk
 '''
