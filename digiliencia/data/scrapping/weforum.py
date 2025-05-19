@@ -2094,7 +2094,7 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping TRENDS Research & Advisory article: {url}")
-        if "https://www.frontiersin.org/" not in url:
+        if "https://trendsresearch.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for TRENDS Research & Advisory article scrapper"
             )
@@ -2119,6 +2119,56 @@ class WEForumScraper(AbstractScraper):
             header=title,
             date=date,
             source="TRENDS Research & Advisory",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
+    def _scrap_london_school_economics_political_science(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes London School of Economics and Political Science.
+
+        Args:
+            url (str): London School of Economics and Political Science article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid London School of Economics and Political Science URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping London School of Economics and Political Science article: {url}")
+        if "https://blogs.lse.ac.uk/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for London School of Economics and Political Science article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.container.container--small h1").text
+
+        time_elem = self.driver.find_element(By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[2]").text
+        date_ft = TimeUtils.format_suffix_date(time_elem)
+        date_ft = date_ft.replace(",", "")
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
+
+        author = self.driver.find_element(By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[1]").text
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.post-content p")
+        content = [
+            contents.text for contents in contents_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="London School of Economics and Political Science",
             content=content,
             url=url,
             authors=[author],
@@ -2180,7 +2230,8 @@ class WEForumScraper(AbstractScraper):
             "FinDev Gateway": self._scrap_findev_gateway,
             "UNIDIR": self._scrap_unidir,
             "Frontiers in Digital Health": self._scrap_frontiers_digital_health,
-            "TRENDS Research & Advisory": self._scrap_trends_reach_advisory
+            "TRENDS Research & Advisory": self._scrap_trends_reach_advisory,
+            "London School of Economics and Political Science": self._scrap_london_school_economics_political_science
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2233,9 +2284,9 @@ Next City CHECK
 FinDev Gateway CHECK
 UNIDIR CHECK
 Frontiers in Digital Health CHECK
+TRENDS Research & Advisory CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
-TRENDS Research & Advisory TODO
 Southern Voice TODO
 London School of Economics and Political Science TODO
 '''
