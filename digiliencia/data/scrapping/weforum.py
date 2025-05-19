@@ -1926,6 +1926,54 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_findev_gateway(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes FinDev Gateway.
+
+        Args:
+            url (str): FinDev Gateway article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid FinDev Gateway URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping FinDev Gateway article: {url}")
+        if "https://www.findevgateway.org/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for FinDev Gateway article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "div.field--name-node-title h1").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.heading div.field--name-field-date-m-y.field--type-datetime.field--label-hidden.field__item time.datetime")
+        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        author = self.driver.find_element(By.CLASS_NAME, "author").text
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.text-formatted.field.field--name-body p")
+        content = [
+            contents.text for contents in contents_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="FinDev Gateway",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+    
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1977,7 +2025,8 @@ class WEForumScraper(AbstractScraper):
             "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales,
             "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov,
             "Nature": self._scrap_nature,
-            "Next City": self._scrap_next_city
+            "Next City": self._scrap_next_city,
+            "FinDev Gateway": self._scrap_findev_gateway
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2017,6 +2066,7 @@ Harvard Business Review CHECK TODO refactor
 Cornell University CHECK    OKEY
 GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
+VoxEU TODO -> Canal de YouTube con enlaces a videos
 
 Asian Development Bank CHECK
 DIW Berlin CHECK
@@ -2025,12 +2075,11 @@ Institut des Relations Internationales et Stratégiques CHECK
 Institut Montaigne CHECK
 Geneva Centre for Security Sector Governance (DCAF) CHECK
 Nature CHECK
-Next City TODO
+Next City CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 Istituto Affari Internazionali TODO
 TRENDS Research & Advisory TODO
-VoxEU TODO -> Canal de YouTube con enlaces a videos
 Southern Voice TODO
 FinDev Gateway TODO
 London School of Economics and Political Science TODO
