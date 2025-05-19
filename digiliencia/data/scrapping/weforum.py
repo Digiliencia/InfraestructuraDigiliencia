@@ -1782,6 +1782,50 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_geneva_centre_security_sector_gov(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Geneva Centre for Security Sector Governance (DCAF).
+
+        Args:
+            url (str): Geneva Centre for Security Sector Governance (DCAF) article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Geneva Centre for Security Sector Governance (DCAF) URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping IGeneva Centre for Security Sector Governance (DCAF) article: {url}")
+        if "https://www.dcaf.ch/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Geneva Centre for Security Sector Governance (DCAF) article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CLASS_NAME, "title").text
+
+        time_elem = self.driver.find_element(By.CLASS_NAME, "publication-date-display").text
+        date = datetime.strptime(time_elem, "%d %B, %Y")  # type: ignore
+
+        author = self.driver.find_element(By.CSS_SELECTOR, "div[itemprop='author']").text
+
+        content = self.driver.find_element(By.CSS_SELECTOR, "div[itemprop='description']").text
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Geneva Centre for Security Sector Governance (DCAF)",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -1830,7 +1874,8 @@ class WEForumScraper(AbstractScraper):
             "DIW Berlin": self._scrap_diw_berlin,
             "War on the Rocks": self._scrap_war_on_rocks,
             "Institut Montaigne": self._scrap_institut_montaigne,
-            "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales
+            "Institut des Relations Internationales et Stratégiques": self._scrap_institut_relations_internationales,
+            "Geneva Centre for Security Sector Governance (DCAF)": self._scrap_geneva_centre_security_sector_gov
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -1874,7 +1919,7 @@ Frontiers CHECK
 Asian Development Bank CHECK
 DIW Berlin CHECK
 War on the Rocks CHECK
-Institut des Relations Internationales et Stratégiques TODO
+Institut des Relations Internationales et Stratégiques CHECK
 Institut Montaigne CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
