@@ -2223,6 +2223,53 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_reliefweb(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes ReliefWeb.
+
+        Args:
+            url (str): ReliefWeb article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid ReliefWeb URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping ReliefWeb article: {url}")
+        if "https://blogs.lse.ac.uk/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for ReliefWeb article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, ".rw-article__title.rw-article__title").text
+
+        date = datetime.now()
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.rw-report__content p")
+        content = [
+            contents.text for contents in contents_container
+        ]
+        content = ''.join(content)
+
+        author = 'ReliefWeb' # There is not author
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="ReliefWeb",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -2280,7 +2327,8 @@ class WEForumScraper(AbstractScraper):
             "Frontiers in Digital Health": self._scrap_frontiers_digital_health,
             "TRENDS Research & Advisory": self._scrap_trends_reach_advisory,
             "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
-            "Southern Voice": self._scrap_southern_voice
+            "Southern Voice": self._scrap_southern_voice,
+            "ReliefWeb": self._scrap_reliefweb
         } 
 
         scraped_publications: list[ScrapedNewsModel] = []
@@ -2335,7 +2383,7 @@ UNIDIR CHECK
 Frontiers in Digital Health CHECK
 TRENDS Research & Advisory CHECK
 London School of Economics and Political Science CHECK
-Wharton School of the University of Pennsylvania TODO
+Southern Voice CHECK
+ReliefWeb TODO
 International Telecommunication Union TODO
-Southern Voice TODO
 '''
