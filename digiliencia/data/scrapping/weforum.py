@@ -1274,7 +1274,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "small-txt").text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
         authors_elem = self.driver.find_element(By.XPATH, '//div[@class="content description-subHeader"]/p[1]').text
         author = authors_elem.replace("By", "")
@@ -1469,7 +1469,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.entry-date.published").text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "span.author.vcard").text
 
@@ -1604,7 +1604,7 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping DIW Berlin article: {url}")
-        if "https://development.asia/" not in url:
+        if "https://www.diw.de/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for DIW Berlin article scrapper"
             )
@@ -1765,16 +1765,16 @@ WEB SITES NOT SCRAP
 Eco-Business CHECK
 Social Europe CHECK OKEY
 African Center for Economic Transformation CHECK
-Oliver Wyman CHECK
+Oliver Wyman CHECK TODO review
 IESE CHECK  OKEY
-Harvard Business Review CHECK
+Harvard Business Review CHECK TODO refactor
 Cornell University CHECK    OKEY
 GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
 
 Asian Development Bank CHECK
 DIW Berlin CHECK
-War on the Rocks TODO
+War on the Rocks CHECK
 Institut des Relations Internationales et Stratégiques TODO
 Institut Montaigne TODO
 Wharton School of the University of Pennsylvania TODO
@@ -1782,4 +1782,6 @@ International Telecommunication Union TODO
 Istituto Affari Internazionali TODO
 Geneva Centre for Security Sector Governance (DCAF) TODO
 TRENDS Research & Advisory TODO
+VoxEU TODO
+Nature TODO
 '''
