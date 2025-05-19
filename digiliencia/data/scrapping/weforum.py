@@ -2175,6 +2175,54 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    def _scrap_southern_voice(
+        self, url: str
+    ) -> ScrapedNewsModel:
+        '''
+        Access the given URL and scrapes Southern Voice.
+
+        Args:
+            url (str): Southern Voice article URL.
+
+        Raises:
+            WEForumError: If the URL is not a valid Southern Voice URL
+            NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
+
+        Returns:
+            ScrapedNewsModel: an object with the publication information.
+        '''
+        logger.debug(f"Scraping Southern Voice article: {url}")
+        if "https://blogs.lse.ac.uk/" not in url:
+            raise WEForumError(
+                "Attempted to scrape invalid page for Southern Voice article scrapper"
+            )
+        # Access the URL
+        self.driver.get(url)
+        time.sleep(self.load_time)  # Reject cookies if visible
+
+        title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title.fusion-post-title").text
+
+        author = self.driver.find_element(By.CLASS_NAME, "author-name").text
+
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard span").text
+        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
+
+        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.fusion-text p")
+        content = [
+            contents.text for contents in contents_container
+        ]
+        content = ''.join(content)
+
+        return ScrapedNewsModel(
+            header=title,
+            date=date,
+            source="Southern Voice",
+            content=content,
+            url=url,
+            authors=[author],
+            topics=None,
+        )
+
     ''''''
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
@@ -2231,8 +2279,9 @@ class WEForumScraper(AbstractScraper):
             "UNIDIR": self._scrap_unidir,
             "Frontiers in Digital Health": self._scrap_frontiers_digital_health,
             "TRENDS Research & Advisory": self._scrap_trends_reach_advisory,
-            "London School of Economics and Political Science": self._scrap_london_school_economics_political_science
-        }
+            "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
+            "Southern Voice": self._scrap_southern_voice
+        } 
 
         scraped_publications: list[ScrapedNewsModel] = []
 
@@ -2285,8 +2334,8 @@ FinDev Gateway CHECK
 UNIDIR CHECK
 Frontiers in Digital Health CHECK
 TRENDS Research & Advisory CHECK
+London School of Economics and Political Science CHECK
 Wharton School of the University of Pennsylvania TODO
 International Telecommunication Union TODO
 Southern Voice TODO
-London School of Economics and Political Science TODO
 '''
