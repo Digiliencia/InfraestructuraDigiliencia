@@ -9,6 +9,7 @@ Scrapper for the World Economic Forum website. It allows to scrape the articles 
 import random
 import time
 from datetime import datetime
+import locale
 from typing import Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -1763,7 +1764,10 @@ class WEForumScraper(AbstractScraper):
 
         # TODO poner la hora en la localidad francesa
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
+        # Set locale to French (this works on Unix-like systems)
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore 
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
 
