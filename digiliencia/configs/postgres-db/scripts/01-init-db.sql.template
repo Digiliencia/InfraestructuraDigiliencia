@@ -1,7 +1,6 @@
 -- scripts/01-init-db.sql.template
 -- This template will be processed by 01-init-db.sh
 
--- Use DO blocks for conditional execution to make the script more robust
 DO
 $$
 BEGIN
@@ -24,7 +23,7 @@ BEGIN
 END
 $$;
 
--- Crea la base de datos si no existe, asignándole el propietario
+-- Create the database and assign the owner.
 CREATE DATABASE ${APP_DB_NAME} OWNER ${DB_OWNER_USER};
 
 
@@ -35,6 +34,7 @@ CREATE DATABASE ${APP_DB_NAME} OWNER ${DB_OWNER_USER};
 -- que es quien ejecuta los scripts en /docker-entrypoint-initdb.d/
 GRANT CONNECT ON DATABASE ${APP_DB_NAME} TO ${DB_OWNER_USER};
 GRANT CONNECT ON DATABASE ${APP_DB_NAME} TO ${APP_USER};
+GRANT CONNECT ON DATABASE ${APP_DB_NAME} TO ${APP_USER_LOGIN};
 
 -- Otorga permisos de uso al esquema 'public'
 GRANT USAGE ON SCHEMA public TO ${DB_OWNER_USER};
