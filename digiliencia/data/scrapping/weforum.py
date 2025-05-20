@@ -1588,7 +1588,7 @@ class WEForumScraper(AbstractScraper):
         content = ''.join(content)
 
         if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["author"]): # type: ignore
-            author = self.driver.find_element(By.CSS_SELECTOR, elems["author"])
+            author = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         else:
             author = 'Asian Development Bank' # There is not author
 
@@ -1776,7 +1776,6 @@ class WEForumScraper(AbstractScraper):
         
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
 
-        # TODO poner la hora en la localidad francesa
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
         # Set locale to French (this works on Unix-like systems)
         locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
@@ -1845,7 +1844,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO clases distintas en varias paginas https://www.nature.com/articles/s41586-025-08832-3?error=cookies_not_supported&code=a41127c7-3146-4536-b35e-4d99e0efbb84: 
     def _scrap_nature(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1863,22 +1861,35 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping Nature article: {url}")
-        if "https://www.nature.com/" not in url:
+        elems = {}
+        if "https://www.nature.com/" in url:
+            elems["title"] = "h1.c-article-magazine-title"
+            elems["date"] = "li time"
+            elems["author"] = "//li[@class='c-article-author-list__item']/a"
+            elems["content"] = "div.main-content p"
+        elif "https://www.nature.com/articles/" in url:
+            elems["title"] = "h1.c-article-title"
+            elems["date"] = "li.c-article-identifiers__item time"
+            elems["author"] = "//li[@class='c-article-author-list__item']/a"
+            elems["content"] = "div.c-article-body p"
+        else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Nature article scrapper"
             )
+        
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "h1.c-article-magazine-title").text
+        title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "li time").text
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
+        date_ft = time_elem.replace("Published: ", "")
+        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
-        author = self.driver.find_element(By.XPATH, "//li[@class='c-article-author-list__item']/a").text
+        author = self.driver.find_element(By.XPATH, elems["author"]).text
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.main-content p")
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
             contents.text for contents in content_container
         ]
