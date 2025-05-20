@@ -1,1 +1,15 @@
 # MOVER EN UN FUTURO
+
+## .env variables
+
+- **POSTGRES_PASSWORD**: Password for the default 'postgres' superuser.
+- **POSTGRES_USER**=User for the default superuser (default is postgres). Optional to set unless you want a different name.
+- **POSTGRES_DB**: Name of the default database to create (default is postgres).
+
+### Custom
+
+- **APP_DB_NAME**: The name of the database your application will use
+- **DB_OWNER_USER** The user who owns the database
+- **DB_OWNER_PASSWORD**: Password for the database owner
+- **APP_USER**: The user your application will connect as
+- **APP_USER_PASSWORD**: Password for the application user       
