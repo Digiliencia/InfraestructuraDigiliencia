@@ -1539,7 +1539,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO ERROR: Attempted to scrape invalid page for Asian Development Bank article scrapper
     def _scrap_asian_developement_bank(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1556,11 +1555,18 @@ class WEForumScraper(AbstractScraper):
         Returns:
             ScrapedNewsModel: an object with the publication information.
         '''
-
-        # TODO configurarlo tambien para paginas del estilo https://blogs.adb.org/blog/resilience-revolution-ai-bankers-insurance-thinks-ahead   
-
         logger.debug(f"Scraping Asian Development Bank article: {url}")
-        if "https://development.asia/" not in url:
+        elems = {}
+        if "https://development.asia/" in url:
+           elems["title"] = ".title"
+           elems["date"] = "time[class='datetime']"
+           elems["content"] = "div.field__item p"
+        elif "https://blogs.adb.org/blog/" in url:
+           elems["title"] = ".article-title span"
+           elems["date"] = "p.article-timestamp"
+           elems["content"] = "main p"
+           elems["author"] = "p.meta a"
+        else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Asian Development Bank article scrapper"
             )
@@ -1569,18 +1575,22 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CLASS_NAME, "title").text
+        title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time[class='datetime']").text
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
+        date_ft = time_elem.replace("Published: ", "")
+        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.field__item p")
+        content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
             contents.text for contents in content_container
         ]
         content = ''.join(content)
 
-        author = 'Asian Development Bank' # There is not author
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["author"]): # type: ignore
+            author = self.driver.find_element(By.CSS_SELECTOR, elems["author"])
+        else:
+            author = 'Asian Development Bank' # There is not author
 
         return ScrapedNewsModel(
             header=title,
