@@ -1,21 +1,15 @@
 #!/bin/bash
-set -e # Salir inmediatamente si un comando falla
+set -e # If somethinf goes wrong, exit immedietely
 
 echo "Processing SQL template and initializing database/users..."
 
-# Accede a las variables de entorno necesarias.
-# No necesitamos acceder a *todas* las variables aquí, solo las que envsubst usará
-# en la plantilla SQL. envsubst leerá todas las variables de entorno del contenedor.
-
-# Define las variables que envsubst debe buscar y sustituir.
-# Esto es opcional si quieres que envsubst sustituya *todas* las variables de entorno
-# con formato ${VAR} o $VAR, pero es más seguro ser explícito.
+# Sets the enviroment variables for the database
 VARIABLES_TO_SUBSTITUTE='$APP_DB_NAME $DB_OWNER_USER $DB_OWNER_PASSWORD $APP_USER $APP_USER_PASSWORD'
 
-# Procesa la plantilla SQL: sustituye las variables de entorno y envía la salida a psql
+# Changes the varialbes to the values in the .env file. Next, it will execute the sql.
 # ON_ERROR_STOP=1 hará que psql salga inmediatamente si encuentra un error
-# --username "$POSTGRES_USER" asegura que nos conectamos como el superusuario
-# --dbname "postgres" (o dejar por defecto) es seguro para crear otras DBs/usuarios
+# --username "$POSTGRES_USER" set the superuser to connect to the database
+# --dbname "postgres"
 envsubst < /docker-entrypoint-initdb.d/01-init-db.sql.template | \
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres"
 

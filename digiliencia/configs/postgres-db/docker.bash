@@ -1,3 +1,4 @@
+# Con esto levanto el contenedor.
 docker run --name postgres \
 --env-file .env \
 -v postgres_data:/var/lib/postgresql/data \

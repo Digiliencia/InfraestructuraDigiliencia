@@ -21,16 +21,14 @@ BEGIN
       RAISE NOTICE 'Application user "${APP_USER}" already exists.';
    END IF;
 
-   -- Crea la base de datos si no existe, asignándole el propietario
-   IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '${APP_DB_NAME}') THEN
-      CREATE DATABASE ${APP_DB_NAME} OWNER ${DB_OWNER_USER};
-      RAISE NOTICE 'Database "${APP_DB_NAME}" created.';
-   ELSE
-      RAISE NOTICE 'Database "${APP_DB_NAME}" already exists.';
-   END IF;
-
 END
 $$;
+
+-- Crea la base de datos si no existe, asignándole el propietario
+CREATE DATABASE ${APP_DB_NAME} OWNER ${DB_OWNER_USER};
+
+
+
 
 -- Otorga permisos básicos de conexión a los usuarios
 -- Estas sentencias se ejecutarán como el superusuario (postgres)

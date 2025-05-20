@@ -1,11 +1,13 @@
-# Usa la imagen oficial de PostgreSQL como base
+# Oficial PostgreSQL image
 FROM postgres:17
 
-# Copia todos los archivos del directorio 'scripts' a /docker-entrypoint-initdb.d/
-# Este directorio es especial: la imagen oficial de postgres ejecutará
-# cualquier script (.sql, .sh) que encuentre aquí en orden alfabético
-# durante la primera inicialización de la base de datos.
+RUN apt-get update && apt-get install -y gettext
+
+# Copy the content of the folder 'scripts' to /docker-entrypoint-initdb.d/
+# The offical PostgreSQL image will execute
+# any script (.sql, .sh) in this folder
+# during the initialization of the database
 COPY ./scripts/ /docker-entrypoint-initdb.d/
 
-# El puerto 5432 es el puerto por defecto de PostgreSQL.
+# 5432 is the default port for PostgreSQL
 EXPOSE 5432
