@@ -2053,8 +2053,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO Error scraping https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1555042/full:
-    # ERROR time data ' 25 April 2025' does not match format '%d %B %Y'
     def _scrap_frontiers_digital_health(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -2083,7 +2081,7 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CLASS_NAME, "JournalAbstract__titleWrapper").text
 
         time_elem = self.driver.find_element(By.XPATH, "//p[@class='ArticleLayoutHeader__info__journalDate']/span[2]").text
-        date_ft = time_elem.replace(",", "")
+        date_ft = time_elem.replace(", ", "")
         date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
         author_line = self.driver.find_elements(By.CSS_SELECTOR, "span.author-wrapper a")
