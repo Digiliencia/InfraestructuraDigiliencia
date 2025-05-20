@@ -10,6 +10,7 @@ import random
 import time
 from datetime import datetime
 import locale
+import dateparser
 from typing import Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -2106,8 +2107,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO Error scraping https://trendsresearch.org/ar/insight/%d9%85%d9%84%d8%a7%d9%85%d8%ad-%d8%a7%d9%84%d8%aa%d8%ad%d9%88%d9%84%d8%a7%d8%aa-%d8%a7%d9%84%d8%ac%d9%8a%d9%88%d8%b3%d9%8a%d8%a7%d8%b3%d9%8a%d8%a9-%d9%81%d9%8a-%d8%b9%d8%b5%d8%b1-%d8%a7%d9%84%d8%b0/:
-    # ERROR: time data '25 أبريل 2025' does not match format '%d %B %Y'
     def _scrap_trends_reach_advisory(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -2136,7 +2135,9 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div[class='inner-text'] span").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+        date_ft = dateparser.parse(time_elem, languages=['ar'])
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
