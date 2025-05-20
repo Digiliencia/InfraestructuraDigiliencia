@@ -1330,7 +1330,6 @@ class WEForumScraper(AbstractScraper):
             elems["title"] = "h1[class=sponsored-article-hed]"
             elems["date"] = "publication-date"
             elems["content"] = "content p"
-            elems["topic"]
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Harvard Business Review article scrapper"
@@ -2433,11 +2432,11 @@ Social Europe CHECK OKEY
 African Center for Economic Transformation CHECK
 Oliver Wyman CHECK TODO review
 IESE CHECK  OKEY
-Harvard Business Review CHECK TODO refactor
+Harvard Business Review CHECK
 Cornell University CHECK    OKEY
 GovLab - Living Library CHECK   OKEY
 Frontiers CHECK
-VoxEU TODO -> Canal de YouTube con enlaces a videos
+VoxEU -> Canal de YouTube con enlaces a videos
 
 Asian Development Bank CHECK
 DIW Berlin CHECK
