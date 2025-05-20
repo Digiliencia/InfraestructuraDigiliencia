@@ -1,8 +1,6 @@
 -- Optional: Drop tables if they exist (useful for development)
 DROP TABLE IF EXISTS MENSAJE;
 DROP TABLE IF EXISTS CHATS;
-DROP TABLE IF EXISTS CLIENTE;
-DROP TABLE IF EXISTS IA;
 DROP TABLE IF EXISTS USUARIO;
 DROP TABLE IF EXISTS IA_PROMPTS;
 DROP TABLE IF EXISTS MODELO;
@@ -13,17 +11,6 @@ CREATE TABLE USUARIO (
     ID SERIAL PRIMARY KEY, -- SERIAL automatically creates a sequence and provides unique integer IDs
     email VARCHAR(255) UNIQUE NOT NULL, -- Email should be unique and not null
     password VARCHAR(255) NOT NULL -- Password should not be null
-);
-
--- Create the CLIENTE table (inherits from USUARIO conceptually, linked by ID)
-CREATE TABLE CLIENTE (
-    ID INTEGER PRIMARY KEY REFERENCES USUARIO(ID) ON DELETE CASCADE ON UPDATE CASCADE -- Foreign key referencing USUARIO, cascade on delete/update
-);
-
--- Create the IA table (inherits from USUARIO conceptually, linked by ID)
-CREATE TABLE IA (
-    ID INTEGER PRIMARY KEY REFERENCES USUARIO(ID) ON DELETE CASCADE ON UPDATE CASCADE -- Foreign key referencing USUARIO, cascade on delete/update
-    -- Add any specific IA attributes here if needed in the future
 );
 
 -- Create the CHATS table
@@ -46,7 +33,6 @@ CREATE TABLE MODELO (
     ID SERIAL PRIMARY KEY,
     nombre VARCHAR(255) UNIQUE NOT NULL -- Assuming model names should be unique
 );
-
 
 -- Create the MENSAJE table
 CREATE TABLE MENSAJE (
