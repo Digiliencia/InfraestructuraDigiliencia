@@ -1,5 +1,5 @@
--- scripts/03-grant-permissions.sql.template
--- This template will be processed by 03-grant-permissions.sh
+-- scripts/04-grant-permissions.sql.template
+-- This template will be processed by 04-grant-permissions.sh
 
 -- Grant permissions on existing tables to the application user_login
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.USERS TO ${- **APP_USER_LOGIN**: The user your application will connect as for the account management
@@ -10,3 +10,5 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.MESSAGE TO ${APP_USER
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.CHATS TO ${APP_USER};
 GRANT SELECT ON TABLE $APP_DB_NAME.IA_PROMPTS TO ${APP_USER};
 GRANT SELECT ON TABLE $APP_DB_NAME.MODELS TO ${APP_USER};
+
+GRANT EXECUTE ON FUNCTION get_user_id_by_email(VARCHAR) TO ${APP_USER};
