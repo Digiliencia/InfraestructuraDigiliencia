@@ -1332,7 +1332,7 @@ class WEForumScraper(AbstractScraper):
 
             time_elem = self.driver.find_element(By.CSS_SELECTOR, "span[class='podcast-details__date publication-date text-gray']").text
             date_ft = time_elem.replace(",", "")
-            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+            date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
             content_container = self.driver.find_elements(By.CSS_SELECTOR, "section[id='details-section'] p")
             content = [
@@ -1365,7 +1365,7 @@ class WEForumScraper(AbstractScraper):
 
             time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl").text
             date_ft = time_elem.replace(",", "")
-            date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+            date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
             content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.Standard_content__mghDk p")
             content = [
@@ -1556,11 +1556,15 @@ class WEForumScraper(AbstractScraper):
         Returns:
             ScrapedNewsModel: an object with the publication information.
         '''
+
+        # TODO configurarlo tambien para paginas del estilo https://blogs.adb.org/blog/resilience-revolution-ai-bankers-insurance-thinks-ahead   
+
         logger.debug(f"Scraping Asian Development Bank article: {url}")
         if "https://development.asia/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Asian Development Bank article scrapper"
             )
+        
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
@@ -2028,6 +2032,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO Error scraping https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1555042/full:
+    # ERROR time data ' 25 April 2025' does not match format '%d %B %Y'
     def _scrap_frontiers_digital_health(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -2081,6 +2087,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO Error scraping https://trendsresearch.org/ar/insight/%d9%85%d9%84%d8%a7%d9%85%d8%ad-%d8%a7%d9%84%d8%aa%d8%ad%d9%88%d9%84%d8%a7%d8%aa-%d8%a7%d9%84%d8%ac%d9%8a%d9%88%d8%b3%d9%8a%d8%a7%d8%b3%d9%8a%d8%a9-%d9%81%d9%8a-%d8%b9%d8%b5%d8%b1-%d8%a7%d9%84%d8%b0/:
+    # ERROR: time data '25 أبريل 2025' does not match format '%d %B %Y'
     def _scrap_trends_reach_advisory(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -2179,6 +2187,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO Error scraping https://southernvoice.org/global-north-dominance-watch-building-alternative-development-narratives/?utm_source=rss&utm_medium=rss&utm_campaign=global-north-dominance-watch-building-alternative-development-narratives&utm_source=rss&utm_medium=rss&utm_campaign=global-north-dominance-watch-building-alternative-development-narratives:
+    # ERROR: Attempted to scrape invalid page for Southern Voice article scrapper
     def _scrap_southern_voice(
         self, url: str
     ) -> ScrapedNewsModel:
