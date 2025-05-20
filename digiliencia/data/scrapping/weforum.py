@@ -2207,8 +2207,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO Error scraping https://southernvoice.org/global-north-dominance-watch-building-alternative-development-narratives/?utm_source=rss&utm_medium=rss&utm_campaign=global-north-dominance-watch-building-alternative-development-narratives&utm_source=rss&utm_medium=rss&utm_campaign=global-north-dominance-watch-building-alternative-development-narratives:
-    # ERROR: Attempted to scrape invalid page for Southern Voice article scrapper
     def _scrap_southern_voice(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -2226,7 +2224,7 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping Southern Voice article: {url}")
-        if "https://blogs.lse.ac.uk/" not in url:
+        if "https://southernvoice.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Southern Voice article scrapper"
             )
@@ -2236,7 +2234,11 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title.fusion-post-title").text
 
-        author = self.driver.find_element(By.CLASS_NAME, "author-name").text
+        authors_line = self.driver.find_elements(By.CLASS_NAME, "author-name")
+        author = [
+            authors.text for authors in authors_line
+        ]
+        author = ''.join(author)
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard span").text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
