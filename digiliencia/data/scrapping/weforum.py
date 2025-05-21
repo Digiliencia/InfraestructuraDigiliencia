@@ -1131,9 +1131,11 @@ class WEForumScraper(AbstractScraper):
         author = "".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         date_without_suffix = TimeUtils.format_suffix_date(time_elem)
 
         date = datetime.strptime(date_without_suffix, "%d %b %Y")  # type: ignore
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
         
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
@@ -1343,9 +1345,11 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -1562,8 +1566,10 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         date_ft = time_elem.replace("Published: ", "")
         date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -2373,6 +2379,7 @@ class WEForumScraper(AbstractScraper):
             "Australian Institute of International Affairs": self._scrap_australian_institute_international_affairs,
             "Science Daily": self._scrap_sciencedaily,
             "Rand Corporation": self._scrap_rand_corporation,
+            "RAND Corporation": self._scrap_rand_corporation,
             "Eco-Business": self._scrap_eco_bussiness,
             "Social Europe": self._scrap_social_europe,
             "African Center for Economic Transformation": self._scrap_african_center_economic_transformation,
