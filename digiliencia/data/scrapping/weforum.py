@@ -1131,11 +1131,9 @@ class WEForumScraper(AbstractScraper):
         author = "".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
-        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         date_without_suffix = TimeUtils.format_suffix_date(time_elem)
 
-        date = datetime.strptime(date_without_suffix, "%d %b %Y")  # type: ignore
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
+        date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore
         
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
@@ -1181,9 +1179,11 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_text_inner h1").text
         author = self.driver.find_element(By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span").text
+
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner").text
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
+
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p")
         content = [
             contents.text for contents in content_container
@@ -1277,7 +1277,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "small-txt").text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
         authors_elem = self.driver.find_element(By.XPATH, '//div[@class="content description-subHeader"]/p[1]').text
         author = authors_elem.replace("By", "")
@@ -1345,11 +1345,9 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
-        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -1566,10 +1564,8 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
-        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
         date_ft = time_elem.replace("Published: ", "")
         date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -1767,10 +1763,7 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
-        # Set locale to French (this works on Unix-like systems)
-        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore 
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore 
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
 
@@ -1852,12 +1845,15 @@ class WEForumScraper(AbstractScraper):
         '''
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
+        '''
         if "https://www.nature.com/" in url:
             elems["title"] = "h1.c-article-magazine-title"
             elems["date"] = "li time"
             elems["author"] = "//li[@class='c-article-author-list__item']/a"
             elems["content"] = "div.main-content p"
-        elif "https://www.nature.com/articles/" in url:
+        el
+        '''
+        if "https://www.nature.com/articles/" in url:
             elems["title"] = "h1.c-article-title"
             elems["date"] = "li.c-article-identifiers__item time"
             elems["author"] = "//li[@class='c-article-author-list__item']/a"
@@ -2022,7 +2018,7 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text # TODO ERROR: time data '' does not match format '%d %B %Y'
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = 'UNIDIR' # There are not author
@@ -2124,7 +2120,7 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div[class='inner-text'] span").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
-        date_ft = dateparser.parse(time_elem, languages=['ar'])
+        date_ft = dateparser.parse(time_elem, languages=['ar']) # TODO ERROR:  strptime() argument 1 must be str, not None
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
         date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
@@ -2419,8 +2415,14 @@ class WEForumScraper(AbstractScraper):
                 )
                 if scrapper_function:
                     try:
+
+                        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
+
                         publication_data = scrapper_function(article["url"])
                         scraped_publications.append(publication_data)
+
+                        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
+                        
                     except Exception as e:
                         logger.error(f"Error scraping {article['url']}:\n {e}")
                 else:
