@@ -1133,7 +1133,7 @@ class WEForumScraper(AbstractScraper):
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
         date_without_suffix = TimeUtils.format_suffix_date(time_elem)
 
-        date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore
+        date = datetime.strptime(date_without_suffix, "%d %b %Y")  # type: ignore
         
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
@@ -1275,7 +1275,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "small-txt").text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
 
         authors_elem = self.driver.find_element(By.XPATH, '//div[@class="content description-subHeader"]/p[1]').text
         author = authors_elem.replace("By", "")
@@ -1345,7 +1345,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -1544,6 +1544,7 @@ class WEForumScraper(AbstractScraper):
            elems["title"] = ".title"
            elems["date"] = "time[class='datetime']"
            elems["content"] = "div.field__item p"
+           elems["author"] = "p.meta a"
         elif "https://blogs.adb.org/blog/" in url:
            elems["title"] = ".article-title span"
            elems["date"] = "p.article-timestamp"
@@ -1562,7 +1563,7 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace("Published: ", "")
-        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -2015,7 +2016,7 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.post-title__date-val").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = 'UNIDIR' # There are not author
