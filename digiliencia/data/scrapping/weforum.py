@@ -540,6 +540,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO ERROR: popup selector CloudFlare
     def _scrap_the_quantum_insider(self, url: str) -> ScrapedNewsModel:
         """Access the given URL and scrapes the post.
 
@@ -1074,7 +1075,7 @@ class WEForumScraper(AbstractScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text # TODO ERROR: time data '' does not match format '%B %d, %Y'
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text 
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "section.eb-article__body-content p")
@@ -1200,7 +1201,6 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    # TODO mirar si se scrapea noticias y sponsor
     def _scrap_oliver_wyman(
         self, url: str
     ) -> ScrapedNewsModel:
@@ -1218,21 +1218,33 @@ class WEForumScraper(AbstractScraper):
             ScrapedNewsModel: an object with the publication information.
         '''
         logger.debug(f"Scraping Oliver Wyman article: {url}")
+        elems = {}
         if "https://www.oliverwyman.com/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Oliver Wyman article scrapper"
             )
+        else:
+            if "our-expertise" is url:
+                elems["title"] = "h1.page-banner__title"
+                elems["author"] = "p.page-banner__authors"
+                elems["content"] = "div.main-content p"
+            else:
+                elems["title"] = "div.text-primary.text-primary--subheading"
+                elems["author"] = "div.authors.text-secondary.text-secondary--description__small"
+                elems["content"] = "div.text-secondary"
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.text-primary.text-primary--subheading").text
-        author_elem = self.driver.find_element(By.CSS_SELECTOR, "div.authors.text-secondary.text-secondary--description__small").text
+        title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
+
+        author_elem = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         author = ''.join(author_elem.replace("By ", ""))
 
         date = datetime.now() # article´s website without date
 
-        contents_container = self.driver.find_element(By.CSS_SELECTOR, "div.text-secondary")
+        contents_container = self.driver.find_element(By.CSS_SELECTOR, elems["content"])
         content = contents_container.text
 
         return ScrapedNewsModel(
@@ -1319,19 +1331,21 @@ class WEForumScraper(AbstractScraper):
         logger.debug(f"Scraping Harvard Business Review article: {url}")
         elems = {}
         if "https://hbr.org/" in url:
-            elems["title"] = "div.Title_standard__x_GEq.Title_standard__x_GEq"
-            elems["date"] = "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl"
-            elems["content"] = "div.Standard_content__mghDk p"
-            elems["topic"] = "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y"
-        elif "https://hbr.org/podcast/" in url:
-            elems["title"] = "h1.podcast-post__banner-title.podcast__h2"
-            elems["date"] = "span[class='podcast-details__date publication-date text-gray']"
-            elems["content"] = "section[id='details-section'] p"
-            elems["topic"] = "a[class='topic--large']"
-        elif "https://hbr.org/sponsored/" in url:
-            elems["title"] = "h1[class=sponsored-article-hed]"
-            elems["date"] = "publication-date"
-            elems["content"] = "content p"
+            if "podcast" in url:
+                elems["title"] = "h1.podcast-post__banner-title.podcast__h2"
+                elems["date"] = "span[class='podcast-details__date publication-date text-gray']"
+                elems["content"] = "section[id='details-section'] p"
+                elems["topic"] = "a[class='topic--large']"
+            elif "sponsored" in url:
+                elems["title"] = "h1[class=sponsored-article-hed]"
+                elems["date"] = ".publication-date"
+                elems["content"] = "content p"
+                elems["topic"] = "" # There is not topic
+            else:
+                elems["title"] = "div.Title_standard__x_GEq.Title_standard__x_GEq"
+                elems["date"] = "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl"
+                elems["content"] = "div.Standard_content__mghDk p"
+                elems["topic"] = "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y"
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Harvard Business Review article scrapper"
@@ -1552,6 +1566,11 @@ class WEForumScraper(AbstractScraper):
            elems["date"] = "p.article-timestamp"
            elems["content"] = "main p"
            elems["author"] = "p.meta a"
+        elif "https://www.adb.org/" in url:
+           elems["title"] = "div.row h1"
+           elems["date"] = ""
+           elems["content"] = "ul li"
+           elems["author"] = "li.field-item a"
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Asian Development Bank article scrapper"
@@ -1563,9 +1582,12 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
-        date_ft = time_elem.replace("Published: ", "")
-        date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
+        if elems["date"] == "":
+            date = datetime.now()
+        else:
+            time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
+            date_ft = time_elem.replace("Published: ", "")
+            date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [
@@ -1714,7 +1736,7 @@ class WEForumScraper(AbstractScraper):
         
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text # TODO ERROR: time data '' does not match format '%d/%m/%Y'
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text 
         date = datetime.strptime(time_elem, "%d/%m/%Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auteur__nom").text
@@ -1763,7 +1785,8 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
-        date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore 
+        date_ft = dateparser.parse(time_elem, languages=['fr']) 
+        date = date_ft.strptime("%d %b %Y")  # type: ignore 
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
 
@@ -1845,19 +1868,18 @@ class WEForumScraper(AbstractScraper):
         '''
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
-        '''
+        # TODO ERROR: articles con varios identificadores diferentes
         if "https://www.nature.com/" in url:
-            elems["title"] = "h1.c-article-magazine-title"
-            elems["date"] = "li time"
-            elems["author"] = "//li[@class='c-article-author-list__item']/a"
-            elems["content"] = "div.main-content p"
-        el
-        '''
-        if "https://www.nature.com/articles/" in url:
-            elems["title"] = "h1.c-article-title"
-            elems["date"] = "li.c-article-identifiers__item time"
-            elems["author"] = "//li[@class='c-article-author-list__item']/a"
-            elems["content"] = "div.c-article-body p"
+            if "articles" in url:
+                elems["title"] = "h1.c-article-title"
+                elems["date"] = "li.c-article-identifiers__item time"
+                elems["author"] = "//li[@class='c-article-author-list__item']/a"
+                elems["content"] = "div.c-article-body p"
+            else:
+                elems["title"] = "h1.c-article-magazine-title" # https://www.nature.com/articles/d41586-025-01034-x
+                elems["date"] = "li time"
+                elems["author"] = "//li[@class='c-article-author-list__item']/a"
+                elems["content"] = "div.main-content p"
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Nature article scrapper"
@@ -2018,7 +2040,7 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text # TODO ERROR: time data '' does not match format '%d %B %Y'
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text 
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = 'UNIDIR' # There are not author
@@ -2120,9 +2142,9 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, "div[class='inner-text'] span").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
-        date_ft = dateparser.parse(time_elem, languages=['ar']) # TODO ERROR:  strptime() argument 1 must be str, not None
+        date_ft = dateparser.parse(time_elem, languages=['ar']) 
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-        date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
+        date = date_ft.strptime("%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
@@ -2434,34 +2456,3 @@ class WEForumScraper(AbstractScraper):
         self._close()
         logger.info("WEForum scraping finished")
         return scraped_publications
-'''
-WEB SITES NOT SCRAP
-
-Eco-Business CHECK
-Social Europe CHECK OKEY
-African Center for Economic Transformation CHECK
-Oliver Wyman CHECK TODO review
-IESE CHECK  OKEY
-Harvard Business Review CHECK
-Cornell University CHECK    OKEY
-GovLab - Living Library CHECK   OKEY
-Frontiers CHECK
-VoxEU -> Canal de YouTube con enlaces a videos
-
-Asian Development Bank CHECK
-DIW Berlin CHECK
-War on the Rocks CHECK
-Institut des Relations Internationales et Stratégiques CHECK
-Institut Montaigne CHECK
-Geneva Centre for Security Sector Governance (DCAF) CHECK
-Nature CHECK
-Next City CHECK
-FinDev Gateway CHECK
-UNIDIR CHECK
-Frontiers in Digital Health CHECK
-TRENDS Research & Advisory CHECK
-London School of Economics and Political Science CHECK
-Southern Voice CHECK
-ReliefWeb CHECK
-Bank of England CHECk
-'''
