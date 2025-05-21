@@ -6,7 +6,6 @@ from digiliencia.data.daos.news_dao import NewsDAO
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.weforum import WEForumScraper
 from digiliencia.exc.dao_create_exc import DAOCreateError
-from digiliencia.configs.env import Env
 
 
 def scrap(from_days_ago: int = 5):

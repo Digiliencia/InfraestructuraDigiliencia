@@ -1,7 +1,6 @@
 from loguru import logger
 
 from digiliencia.cmd.scrap import scrap
-from digiliencia.configs.env import Env
 
 
 def set_up_logging():
