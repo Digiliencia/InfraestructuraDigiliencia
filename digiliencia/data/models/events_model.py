@@ -1,18 +1,16 @@
 from dataclasses import dataclass
 from datetime import datetime
-
-from pydantic import BaseModel
-
+from digiliencia.data.models.interface_model import IModel
+from digiliencia.data.models.organization.organization_model import OrganizationModel
 
 @dataclass(frozen=True)
-class ScrapedEventsModel(BaseModel):
+class ScrapedEventsModel(IModel):
     """Represents an event scraped from the website."""
 
-    type: str
     header: str
-    location: str
+    localitation: str
     address: str
     description: str
     date: datetime
     url: str
-    organizer: str
+    organization: OrganizationModel
