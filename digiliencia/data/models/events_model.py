@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
+
 from digiliencia.data.models.interface_model import IModel
+
 
 @dataclass(frozen=True)
 class ScrapedEventsModel(IModel):
