@@ -5,18 +5,21 @@ Created on Wed Jan 15 10:08:33 2025
 @author: Carlos Prieto
 Web scrapping: https://www.nist.gov/nice/ccw-events
 """
+import time
 from datetime import datetime
 from typing import Sequence
-from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.data.models.events_model import ScrapedEventsModel
-from digiliencia.utils.scrap import ScrapUtils
+
 from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from digiliencia.exc.nist_exec import NistExec
-import time
 from utils.time import TimeUtils
+
+from digiliencia.data.models.events_model import ScrapedEventsModel
+from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from digiliencia.exc.nist_exec import NistExec
+from digiliencia.utils.scrap import ScrapUtils
+
 
 class Nist(AbstractScraper):
     '''Scraps only the events of NIST'''
