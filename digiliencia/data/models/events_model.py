@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from digiliencia.data.models.interface_model import IModel
-from digiliencia.data.models.organization.organization_model import OrganizationModel
 
 @dataclass(frozen=True)
 class ScrapedEventsModel(IModel):
@@ -13,4 +12,4 @@ class ScrapedEventsModel(IModel):
     description: str
     date: datetime
     url: str
-    organization: OrganizationModel
+    source: str
