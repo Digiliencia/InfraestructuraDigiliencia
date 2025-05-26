@@ -41,7 +41,7 @@ class Nist(AbstractScraper):
 
         return {}
 
-    def _is_disabled_button_next(self):
+    def _is_disabled_button_next(self) -> bool:
         '''
         Return:
             True: button next is disabled.
@@ -49,6 +49,15 @@ class Nist(AbstractScraper):
         '''
         disabled_button_next = ".paginate_button.next.disabled"
         return ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, disabled_button_next) # type: ignore
+    
+    def _get_max_num_events_of_page(self) -> int:
+        '''
+        Give maximum number of events on a page.
+
+        '''
+        elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
+        show_line_str = elem_show_line.split()
+        return int(show_line_str[3])
 
     def scrap_events_cybersegurity(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
         '''
@@ -71,10 +80,11 @@ class Nist(AbstractScraper):
 
         self.driver.get(self.url_cybersegurity)
 
-        elems_table = self.driver.find_elements(By.CSS_SELECTOR, "tbody tr td")
-        for pos in elems_table:
-            # swicht pos 
-            pass
+        while(self._is_disabled_button_next() == False):
+            elems_table = self.driver.find_elements(By.CSS_SELECTOR, "tbody tr td")
+            for pos in elems_table:
+                # swicht pos 
+                pass
 
         news_events: list[ScrapedEventsModel] = []
 
