@@ -61,6 +61,8 @@ class Nist(AbstractScraper):
         '''
         '''
         
+        title = self.driver.find_element()
+
         return ScrapedEventsModel(
             header="",
             localitation="",
@@ -68,7 +70,7 @@ class Nist(AbstractScraper):
             description="",
             date=datetime.now(),
             url="",
-            source=None
+            source="NIST"
         )
 
     def scrap_events_cybersegurity(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
@@ -94,10 +96,25 @@ class Nist(AbstractScraper):
         news_events: list[ScrapedEventsModel] = []
 
         while(self._is_disabled_button_next() == False):
+            columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
+            
             elems_table = self.driver.find_elements(By.CSS_SELECTOR, "tbody tr td")
 
-            for event in range(self._get_max_num_events_of_page()):
-                for elems in elems_table:
+            num_columns = len(columns)
+            num_rows = self._get_max_num_events_of_page()
+            for row in range(0, num_rows):
+                for col in range(0, num_columns):
+                    event:ScrapedEventsModel = ScrapedEventsModel(
+                        type="",
+                        header="",
+                        localitation="",
+                        address="",
+                        description="",
+                        date=datetime.now(),
+                        url="",
+                        organizer="NIST"
+                    )
+                    news_events.append(event)
 
             if(self._is_disabled_button_next()):
                 ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
