@@ -11,6 +11,7 @@ from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.utils.scrap import ScrapUtils
 from loguru import logger
 from selenium.webdriver.common.by import By
+from datetime import datetime
 
 class Nist(AbstractScraper):
     '''Scraps only the events of NIST'''
@@ -51,13 +52,24 @@ class Nist(AbstractScraper):
         return ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, disabled_button_next) # type: ignore
     
     def _get_max_num_events_of_page(self) -> int:
-        '''
-        Give maximum number of events on a page.
-
-        '''
+        ''' Give maximum number of events on a page '''
         elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
         show_line_str = elem_show_line.split()
         return int(show_line_str[3])
+
+    def _get_event(self) -> ScrapedEventsModel:
+        '''
+        '''
+        
+        return ScrapedEventsModel(
+            header="",
+            localitation="",
+            address="",
+            description="",
+            date=datetime.now(),
+            url="",
+            source=None
+        )
 
     def scrap_events_cybersegurity(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
         '''
@@ -79,15 +91,15 @@ class Nist(AbstractScraper):
             raise ValueError("from_days_ago must be greater than 0")
 
         self.driver.get(self.url_cybersegurity)
+        news_events: list[ScrapedEventsModel] = []
 
         while(self._is_disabled_button_next() == False):
             elems_table = self.driver.find_elements(By.CSS_SELECTOR, "tbody tr td")
-            for pos in elems_table:
-                # swicht pos 
-                pass
 
-        news_events: list[ScrapedEventsModel] = []
+            for event in range(self._get_max_num_events_of_page()):
+                for elems in elems_table:
 
-
+            if(self._is_disabled_button_next()):
+                ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
 
         return news_events
