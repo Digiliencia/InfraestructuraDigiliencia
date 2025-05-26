@@ -6,10 +6,11 @@ from digiliencia.data.models.interface_model import IModel
 class ScrapedEventsModel(IModel):
     """Represents an event scraped from the website."""
 
+    type: str
     header: str
     localitation: str
     address: str
     description: str
     date: datetime
     url: str
-    source: str
+    organizer: str
