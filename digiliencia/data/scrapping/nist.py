@@ -6,6 +6,8 @@ Created on Wed Jan 15 10:08:33 2025
 Web scrapping: https://www.nist.gov/nice/ccw-events
 """
 
+from typing import Sequence
+from digiliencia.data.models.news_model import ScrapedNewsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.utils.scrap import ScrapUtils
@@ -56,24 +58,14 @@ class Nist(AbstractScraper):
         elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
         show_line_str = elem_show_line.split()
         return int(show_line_str[3])
+    
+    def _get_all_events(self) -> int:
+        ''' Give all events of website '''
+        elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
+        show_line_str = elem_show_line.split()
+        return int(show_line_str[5])
 
-    def _get_event(self) -> ScrapedEventsModel:
-        '''
-        '''
-        
-        title = self.driver.find_element()
-
-        return ScrapedEventsModel(
-            header="",
-            localitation="",
-            address="",
-            description="",
-            date=datetime.now(),
-            url="",
-            source="NIST"
-        )
-
-    def scrap_events_cybersegurity(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
+    def scrap_events(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
         '''
         Access the cybersegurity section of the NIST website and extract information of events.
         
@@ -88,35 +80,56 @@ class Nist(AbstractScraper):
         '''
         logger.info(f"Getting events from {from_days_ago} days ago")
 
-        if from_days_ago < 1:
+        if from_days_ago < 0:
             logger.error("from_days_ago must be greater than 0")
             raise ValueError("from_days_ago must be greater than 0")
 
         self.driver.get(self.url_cybersegurity)
         news_events: list[ScrapedEventsModel] = []
+        
+        columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
+        num_columns = len(columns)
+        num_rows = self._get_max_num_events_of_page()
+
+        logger.info(f"All Events to scarp website: {self._get_all_events()}")
+        logger.info(f"Number of columns: {num_columns} and rows: {num_rows} of table")
 
         while(self._is_disabled_button_next() == False):
-            columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
-            
-            elems_table = self.driver.find_elements(By.CSS_SELECTOR, "tbody tr td")
-
-            num_columns = len(columns)
-            num_rows = self._get_max_num_events_of_page()
             for row in range(0, num_rows):
                 for col in range(0, num_columns):
-                    event:ScrapedEventsModel = ScrapedEventsModel(
-                        type="",
-                        header="",
-                        localitation="",
-                        address="",
-                        description="",
-                        date=datetime.now(),
-                        url="",
-                        organizer="NIST"
-                    )
-                    news_events.append(event)
+                    if(col == 0): # Activity
+                        activity = columns[col].text 
+                    elif(col == 1): # Title
+                        title = columns[col].text
+                    elif(col == 2): # Organization
+                        organizer = columns[col].text
+                    elif(col == 3): # Date
+                        date=  datetime.strptime(columns[col].text, "%m/%d/%Y")
+                    elif(col == 4):
+                        location=columns[col].text
+                    elif(col == 5):
+                        address=columns[col].text
+                    elif((col == 6) or (col == 7)): # More Info Button
+                        self._button_more_info()
+                    else:
+                        logger.warning("Unexpected Columns")
 
+            event:ScrapedEventsModel = ScrapedEventsModel(
+                type=activity,
+                header=columns[1].text,
+                organizer=columns[2].text,
+                date=datetime.strptime(columns[3].text, "%m/%d/%Y"),
+                localitation=columns[4].text,
+                address=columns[5].text,
+                description="",
+                url=""
+            )
+            news_events.append(event)
+            
             if(self._is_disabled_button_next()):
                 ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
 
         return news_events
+    
+    def scrap_news(self, from_days_ago: int) -> Sequence[ScrapedNewsModel]:
+        return super().scrap_news(from_days_ago)
