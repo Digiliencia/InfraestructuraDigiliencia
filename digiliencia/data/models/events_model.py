@@ -8,7 +8,7 @@ class ScrapedEventsModel(IModel):
 
     type: str
     header: str
-    localitation: str
+    location: str
     address: str
     description: str
     date: datetime
