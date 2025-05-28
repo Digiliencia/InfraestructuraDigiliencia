@@ -30,7 +30,7 @@ class AbstractScraper(ABC):
         pass
 
     @abstractmethod
-    def scrap_events_cybersegurity(self, from_days_ago: int) -> Sequence[ScrapedEventsModel]:
+    def scrap_events(self, from_days_ago: int) -> Sequence[ScrapedEventsModel]:
         """
         Scraps the events content from from_days_ago days ago.
 
