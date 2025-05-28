@@ -77,6 +77,12 @@ class Nist(AbstractScraper):
         elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
         show_line_str = elem_show_line.split()
         return int(show_line_str[3])
+    
+    def _get_all_events(self) -> int:
+        ''' Give all events of website '''
+        elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
+        show_line_str = elem_show_line.split()
+        return int(show_line_str[5])
 
     def _get_all_events(self) -> int:
         """Give all events of website"""
@@ -107,6 +113,13 @@ class Nist(AbstractScraper):
 
         self.driver.get(self.url_cybersegurity)
         news_events: list[ScrapedEventsModel] = []
+        
+        columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
+        num_columns = len(columns)
+        num_rows = self._get_max_num_events_of_page()
+
+        logger.info(f"All Events to scarp website: {self._get_all_events()}")
+        logger.info(f"Number of columns: {num_columns} and rows: {num_rows} of table")
 
         num_rows = self._get_max_num_events_of_page()
 
