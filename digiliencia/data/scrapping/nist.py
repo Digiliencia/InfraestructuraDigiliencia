@@ -13,6 +13,8 @@ from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.utils.scrap import ScrapUtils
 from loguru import logger
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
+from digiliencia.exc.nist_exec import NistExec
 
 class Nist(AbstractScraper):
     '''Scraps only the events of NIST'''
@@ -22,26 +24,39 @@ class Nist(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.url_cybersegurity = "https://www.nist.gov/nice/ccw-events"
 
-    def _button_more_info(self, pos:int = 0) -> dict[str, str]:
+    def _button_more_info(self, col: WebElement) -> dict[str, str]:
         '''
         The method extract description and url of event. Each event have a button of more info. 
 
         Args:
-            pos(int) default 0, position of the event in the table
+            col
 
         Return:
             Description(str)
             url(str)
         '''
 
-        # Si aparece popup cliclarlo 
+        try:
+            # Si aparece popup cliclarlo 
 
-        # Si pertenece a la pagina de NIST. Entonces:
-        #   Extraer description y url
-        # En caso de no ser de la pagina NIST. Entonces:
-        #   Extraer directamente el contenido de la pagina y asignar la url del sitio web
+            # Si pertenece a la pagina de NIST. Entonces:
+            #   Extraer description y url
+            # En caso de no ser de la pagina NIST. Entonces:
+            #   Extraer directamente el contenido de la pagina y asignar la url del sitio web
+        
+            if(ScrapUtils.if_element_exists(col, By.TAG_NAME, 'a')):  # type: ignore
+                link = col.find_element(By.TAG_NAME, 'a')
+                link.click()
 
-        return {}
+                url = self.driver.current_url
+                description = self.driver.find_element(By.CSS_SELECTOR, "div.views-field.views-field-webform-submission-value-1 span.field-content").text
+
+                return {"description":description, "url":url} 
+            else:
+                return {"description":"", "url":""}
+        except NistExec as e:
+            logger.warning("")
+            return {"description":"", "url":""}
 
     def _is_disabled_button_next(self) -> bool:
         '''
@@ -97,15 +112,15 @@ class Nist(AbstractScraper):
             filas = tabla.find_elements(By.TAG_NAME, 'tr')
 
             for fila in filas:
-                elems_col = ['', '', '', '','', '', '']
+                elems_col = ['', '', '', '','', '', '', '']
                 columnas = fila.find_elements(By.TAG_NAME, 'td')
                 for index, col in enumerate(columnas):
-                    if((index == 6) or (index == 7)): # More Info Button
-                        self._button_more_info()
+                    if((index == 6)): # More Info Button
+                        more_info = self._button_more_info(col)
+                        elems_col[index] = more_info["description"]
+                        elems_col[index+1] = more_info["url"]
                     else:
                         elems_col[index] = col.text
-
-                logger.debug(f"Scrap title: {elems_col[1]}")
 
                 event:ScrapedEventsModel = ScrapedEventsModel(
                     type=elems_col[0],
@@ -114,8 +129,8 @@ class Nist(AbstractScraper):
                     date=datetime.now(), #datetime.strptime(elems_col[3], "%m/%d/%Y"),
                     location=elems_col[4],
                     address=elems_col[5],
-                    description="",
-                    url=""
+                    description=elems_col[6],
+                    url=elems_col[7]
                 )
                 news_events.append(event)
                 elems_col.clear()
