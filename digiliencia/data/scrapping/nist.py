@@ -5,7 +5,7 @@ Created on Wed Jan 15 10:08:33 2025
 @author: Carlos Prieto
 Web scrapping: https://www.nist.gov/nice/ccw-events
 """
-
+from datetime import datetime
 from typing import Sequence
 from digiliencia.data.models.news_model import ScrapedNewsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
@@ -84,10 +84,8 @@ class Nist(AbstractScraper):
             raise ValueError("from_days_ago must be greater than 0")
 
         self.driver.get(self.url_cybersegurity)
-        news_events: list[ScrapedEventsModel] = []
-        
-        tabla = self.driver.find_element(By.XPATH, '//table')
-        filas = tabla.find_elements(By.TAG_NAME, 'tr')
+        news_events: list[ScrapedEventsModel] = []       
+
         num_rows = self._get_max_num_events_of_page()
 
         logger.info(f"All Events to scarp website: {self._get_all_events()}")
@@ -95,57 +93,34 @@ class Nist(AbstractScraper):
 
         while(self._is_disabled_button_next() == False):
 
-            elems_col = ['', '', '', '','', '', '']
+            tabla = self.driver.find_element(By.XPATH, '//table')
+            filas = tabla.find_elements(By.TAG_NAME, 'tr')
 
             for fila in filas:
+                elems_col = ['', '', '', '','', '', '']
                 columnas = fila.find_elements(By.TAG_NAME, 'td')
                 for index, col in enumerate(columnas):
-                    if(index == 0): # Activity
-                        elems_col[0] = col.text
-                    elif(index == 1): # Title
-                        elems_col[1] = col.text
-                    elif(index == 2): # Organization
-                        elems_col[2] = col.text
-                    elif(index == 3): # Date
-                        elems_col[3] = col.text
-                    elif(index == 4): # Location
-                        elems_col[4] = col.text
-                    elif(index == 5): # Address
-                        elems_col[5] = col.text
-                    elif((index == 6) or (index == 7)): # More Info Button
+                    if((index == 6) or (index == 7)): # More Info Button
                         self._button_more_info()
                     else:
-                        logger.warning("Unexpected Column")
+                        elems_col[index] = col.text
 
                 logger.debug(f"Scrap title: {elems_col[1]}")
 
+                event:ScrapedEventsModel = ScrapedEventsModel(
+                    type=elems_col[0],
+                    header=elems_col[1],
+                    organizer=elems_col[2],
+                    date=datetime.now(), #datetime.strptime(elems_col[3], "%m/%d/%Y"),
+                    location=elems_col[4],
+                    address=elems_col[5],
+                    description="",
+                    url=""
+                )
+                news_events.append(event)
+                elems_col.clear()
 
-            '''
-            for row in range(0, num_rows):      
-                elems_col = ['', '', '', '','', '', '']
-                for col in range(0, num_columns):
-                    if(col == 0): # Activity
-                        elems_col[0] = elems_table[col].text 
-                    elif(col == 1): # Title
-                        elems_col[1] = elems_table[col].text
-                    elif(col == 2): # Organization
-                        elems_col[2] = elems_table[col].text
-                    elif(col == 3): # Date
-                        elems_col[3] = elems_table[col].text
-                    elif(col == 4): # Location
-                        elems_col[4] = elems_table[col].text
-                    elif(col == 5): # Address
-                        elems_col[5] = elems_table[col].text
-                    elif((col == 6) or (col == 7)): # More Info Button
-                        self._button_more_info()
-                    else:
-                        logger.warning("Unexpected Column")
-
-                logger.debug(f"Scrap title: {elems_table[1]}")
-
-
-            '''
-            if(self._is_disabled_button_next()):
+            if(self._is_disabled_button_next() == False):
                 ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
 
         return news_events
