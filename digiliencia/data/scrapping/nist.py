@@ -15,6 +15,7 @@ from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from digiliencia.exc.nist_exec import NistExec
+import time
 
 class Nist(AbstractScraper):
     '''Scraps only the events of NIST'''
@@ -23,6 +24,7 @@ class Nist(AbstractScraper):
         logger.debug("Initializing NIST")
         self.driver = ScrapUtils.get_driver()
         self.url_cybersegurity = "https://www.nist.gov/nice/ccw-events"
+        self.load_time = 1
 
     def _button_more_info(self, col: WebElement) -> dict[str, str]:
         '''
@@ -35,23 +37,18 @@ class Nist(AbstractScraper):
             Description(str)
             url(str)
         '''
-
-        try:
-            # Si aparece popup cliclarlo 
-
-            # Si pertenece a la pagina de NIST. Entonces:
-            #   Extraer description y url
-            # En caso de no ser de la pagina NIST. Entonces:
-            #   Extraer directamente el contenido de la pagina y asignar la url del sitio web
-        
+        try:        
             if(ScrapUtils.if_element_exists(col, By.TAG_NAME, 'a')):  # type: ignore
-                link = col.find_element(By.TAG_NAME, 'a')
-                link.click()
+                col.find_element(By.TAG_NAME, 'a').click() # Click button 'more info'
+                if("https://www.nist.gov/nice/ccw-events/" in self.driver.current_url):
+                    url = self.driver.current_url
+                    description = self.driver.find_element(By.CSS_SELECTOR, "div.views-field.views-field-webform-submission-value-1 span.field-content").text
 
-                url = self.driver.current_url
-                description = self.driver.find_element(By.CSS_SELECTOR, "div.views-field.views-field-webform-submission-value-1 span.field-content").text
-
-                return {"description":description, "url":url} 
+                    self.driver.back()
+                    return {"description":description, "url":url} 
+                else:
+                    self.driver.back()
+                    return {"description":"", "url":""}
             else:
                 return {"description":"", "url":""}
         except NistExec as e:
@@ -119,6 +116,7 @@ class Nist(AbstractScraper):
                         more_info = self._button_more_info(col)
                         elems_col[index] = more_info["description"]
                         elems_col[index+1] = more_info["url"]
+                        time.sleep(self.load_time)
                     else:
                         elems_col[index] = col.text
 
@@ -137,6 +135,8 @@ class Nist(AbstractScraper):
 
             if(self._is_disabled_button_next() == False):
                 ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
+
+        logger.debug(f"Number of eventes extract data: {len(news_events)}")
 
         return news_events
     
