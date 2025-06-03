@@ -174,3 +174,20 @@ class TimeUtils:
             new_date = date_actual - days_subtract
             format_date = new_date.strftime("%d %B %Y") 
             return format_date
+
+    @staticmethod
+    def format_suffix_date(date: str = ''):
+        '''
+        Remove a suffix given date by parameter
+
+        Example:
+            >>> format_suffix_date('9th May 2025')
+            9 May 2025
+        Return:
+            date(str): same format but without the suffix
+        '''
+        for suffix in ['st', 'nd', 'rd', 'th']:
+            if suffix in date:
+                date = date.replace(suffix, '')
+
+        return date
