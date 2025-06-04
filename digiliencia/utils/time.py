@@ -124,6 +124,21 @@ class TimeUtils:
         today = datetime.now()
         date_result = today - timedelta(days=days_ago)
         return date_result.strftime("%d/%m/%Y")
+    
+    @staticmethod
+    def format_eeuu_date(days_ago: int) -> str:
+        """
+        Formats a date based on the number of days ago in mm/dd/yyyy format.
+
+        Args:
+            days_ago (int): The number of days ago.
+
+        Returns:
+            str: A formatted string representing the date in mm/dd/yyyy format.
+        """
+        today = datetime.now()
+        date_result = today - timedelta(days=days_ago)
+        return date_result.strftime("%m/%d/%Y")
 
     @staticmethod
     def format_eeuu_date(days_ago: int) -> str:
