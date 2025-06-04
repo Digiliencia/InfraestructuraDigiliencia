@@ -12,7 +12,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     volumes:
-      - ../..:/workspaces/${localWorkspaceFolderBasename}:cached
+      - ../:/workspaces/InfraestructuraDiligencia:cached
     command: sleep infinity
     networks:
       - dev-network

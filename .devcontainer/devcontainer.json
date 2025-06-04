@@ -1,5 +1,5 @@
 {
-  "name": "Python 3.13 + uv",
+  "name": "Python 3.13 + uv + selenium",
   "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspaces/InfraestructuraDiligencia",
@@ -37,8 +37,6 @@
   },
 
   "forwardPorts": [5432],
-
-  "postCreateCommand": "uv pip install --upgrade pip && uv sync --frozen",
 
   "containerEnv": {
     "DISPLAY": "dummy",
