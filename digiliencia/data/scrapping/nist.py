@@ -108,7 +108,7 @@ class Nist(AbstractScraper):
             tabla = self.driver.find_element(By.XPATH, '//table')
             filas = tabla.find_elements(By.TAG_NAME, 'tr')
 
-            for fila in filas:
+            for fila in filas[1:]:
                 elems_col = ['', '', '', '','', '', '', '']
                 columnas = fila.find_elements(By.TAG_NAME, 'td')
                 for index, col in enumerate(columnas):
@@ -124,7 +124,7 @@ class Nist(AbstractScraper):
                     type=elems_col[0],
                     header=elems_col[1],
                     organizer=elems_col[2],
-                    date=datetime.now(), #datetime.strptime(elems_col[3], "%m/%d/%Y"),
+                    date=datetime.strptime(elems_col[3], "%m/%d/%Y"),
                     location=elems_col[4],
                     address=elems_col[5],
                     description=elems_col[6],
