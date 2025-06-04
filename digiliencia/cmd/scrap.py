@@ -1,6 +1,7 @@
 from loguru import logger
 from typing import List
 
+from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNewsModel
 from digiliencia.data.daos.news_dao import NewsDAO
 from digiliencia.data.scrapping.incibe import IncibeScraper
