@@ -1,16 +1,17 @@
 from loguru import logger
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 from digiliencia.configs.env import Env
 
 
 class ScrapUtils:
-
     def __init__(self):
         self.timeout = Env().webdriverwait_timeout
 
@@ -29,6 +30,12 @@ class ScrapUtils:
             + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"  # TODO to .env
         )
         options.add_argument("--disable-blink-features=AutomationControlled")
+        # Recommended options for containers/headless
+        options.add_argument("--headless=new")  # Use modern headless mode
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
         prefs = {
             "profile.default_content_setting_values.geolocation": 2,
             "credentials_enable_service": False,
@@ -42,7 +49,8 @@ class ScrapUtils:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument("log-level=3")
         options.add_argument("--start-maximized")
-        driver = WebDriver(options=options)
+        service = Service(ChromeDriverManager().install())
+        driver = WebDriver(service=service, options=options)
         driver.implicitly_wait(Env().implicit_wait)
         return driver
 
@@ -83,7 +91,7 @@ class ScrapUtils:
         """
 
         try:
-            driver.find_element(by, element)
+            driver.find_element(by, element)  # type: ignore
         except NoSuchElementException:
             return False
         return True
