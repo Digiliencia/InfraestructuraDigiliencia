@@ -4,6 +4,8 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspaces/InfraestructuraDiligencia",
 
+  "postCreateCommand": "uv venv && uv sync",
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -31,7 +33,8 @@
         },
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff"
-        }
+        },
+        "python.defaultInterpreterPath": ".venv/bin/python"
       }
     }
   },
