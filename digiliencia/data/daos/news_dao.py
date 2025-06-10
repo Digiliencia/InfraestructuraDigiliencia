@@ -363,17 +363,42 @@ class NewsDAO(AbstractDAO):
             List[RawNewsModel]: A list of news from the specified source.
 
         Raises:
-            DAOReadError: If reading fails.
+            DAOReadError: If reading fails or source does not exist.
         """
         try:
-            query = """
-                MATCH (n:News)
-                WHERE n.source_id = $source_id
-                RETURN n
+            # First, verify that the source exists
+            source_check_query = """
+                MATCH (o:Organization:NewsAgency {id: $source_id})
+                RETURN o
             """
             with self.db.get_connection(AccessMode.READ) as session:
+                result = session.run(source_check_query, {"source_id": source_id})
+                if result.single() is None:
+                    logger.warning(f"No source found with id: {source_id}")
+                    raise DAOReadError(f"No source found with id: {source_id}")
+
+                # Now get the news from this source with all relationships
+                query = """
+                    MATCH (n:News)-[:PUBLISHED_BY]->(na:NewsAgency {id: $source_id})
+                    OPTIONAL MATCH (n)-[:WRITTEN_BY]->(a:Author)
+                    OPTIONAL MATCH (n)-[:BELONGS_TO]->(t:Topic)
+                    RETURN n, 
+                           na.id as source_id,
+                           collect(DISTINCT a.id) as author_ids,
+                           collect(DISTINCT t.id) as topic_ids
+                """
                 result = session.run(query, {"source_id": source_id})
-                news_items = [self._build_model(record["n"]) for record in result]
+                news_items = []
+                for record in result:
+                    news_node = dict(record["n"])
+                    news_node["source_id"] = record["source_id"]
+                    news_node["author_ids"] = [
+                        aid for aid in record["author_ids"] if aid is not None
+                    ]
+                    news_node["topic_ids"] = [
+                        tid for tid in record["topic_ids"] if tid is not None
+                    ]
+                    news_items.append(self._build_model(news_node))
                 logger.debug(
                     f"Read {len(news_items)} news items from source {source_id}"
                 )
@@ -394,17 +419,32 @@ class NewsDAO(AbstractDAO):
         Reads news items related to a specific topic with optional date range filtering.
         """
         try:
-            base_query = """
-                MATCH (n:News)-[:BELONGS_TO]->(t:Topic {id: $topic_id})
-                RETURN n
-                LIMIT $limit
+            # First, verify that the topic exists
+            topic_check_query = """
+                MATCH (t:Topic {id: $topic_id})
+                RETURN t
             """
+            with self.db.get_connection(AccessMode.READ) as session:
+                result = session.run(topic_check_query, {"topic_id": topic_id})
+                if result.single() is None:
+                    logger.warning(f"No topic found with id: {topic_id}")
+                    raise DAOReadError(f"No topic found with id: {topic_id}")
 
-            query, params = self._build_date_filter_query(
-                base_query, {"topic_id": topic_id, "limit": limit}, start_date, end_date
-            )
+                # Now get the news related to this topic
+                base_query = """
+                    MATCH (n:News)-[:BELONGS_TO]->(t:Topic {id: $topic_id})
+                    RETURN n
+                    LIMIT $limit
+                """
 
-            return self._execute_read_query(query, params, f"topic {topic_id}")
+                query, params = self._build_date_filter_query(
+                    base_query,
+                    {"topic_id": topic_id, "limit": limit},
+                    start_date,
+                    end_date,
+                )
+
+                return self._execute_read_query(query, params, f"topic {topic_id}")
 
         except Exception as e:
             logger.error(f"Error reading news by topic {topic_id}: {e}")

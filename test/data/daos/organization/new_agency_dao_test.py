@@ -79,9 +79,6 @@ def test_integration_create_read_and_list(news_agency_dao):
     # Eliminar agencia
     news_agency_dao.delete(created_agency.id)
 
-    # Comprobar borrado
-    import pytest
-
     with pytest.raises(DAOReadError):
         news_agency_dao.read_by_id(created_agency.id)
 
