@@ -6,20 +6,20 @@ Created on Wed Jan 15 10:08:33 2025
 Web scrapping: https://www.incibe.es/
 """
 
+import re
 import time
 
 # Importing the necessary libraries
 from datetime import datetime
 
 from loguru import logger
-import re
-
-from digiliencia.utils.time import TimeUtils
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from selenium.webdriver.common.by import By
+
 from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
 
 
 class IncibeScraper(AbstractScraper):
@@ -135,25 +135,25 @@ class IncibeScraper(AbstractScraper):
             author = "INCIBE"
         affected_resources = None
         if classes.get("affected_resources"):
-            affected_resources = self.driver.find_element(
+            affected_resources = self.driver.find_element(  # noqa: F841
                 By.CSS_SELECTOR,
                 classes["affected_resources"],
             ).text
         description = None
         if classes.get("description"):
-            description = self.driver.find_element(
+            description = self.driver.find_element(  # noqa: F841
                 By.CSS_SELECTOR,
                 classes["description"],
             ).text
         solution = None
         if classes.get("solution"):
-            solution = self.driver.find_element(
+            solution = self.driver.find_element(  # noqa: F841
                 By.CSS_SELECTOR,
                 classes["solution"],
             ).text
         details = None
         if classes.get("details"):
-            details = self.driver.find_element(
+            details = self.driver.find_element(  # noqa: F841
                 By.CSS_SELECTOR,
                 classes["details"],
             ).text
@@ -187,7 +187,7 @@ class IncibeScraper(AbstractScraper):
         try:
             self.driver.get(url_to_open_incibe + "?page=" + str(page_num))
             logger.debug(f"Incibe blog page number {page_num} opened")
-        except Exception as e:
+        except Exception:
             logger.warning(f"Error opening Incibe blog page number {page_num}")
 
     def manage_cookies(self):

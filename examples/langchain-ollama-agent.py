@@ -7,7 +7,6 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 import requests
-import time
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain_ollama import OllamaLLM

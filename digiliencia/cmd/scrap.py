@@ -20,7 +20,7 @@ def scrap(from_days_ago: int = 5):
             for news in scraped_news:
                 try:
                     news_dao.create_from_scrap(news)
-                except DAOCreateError as e:
+                except DAOCreateError:
                     pass
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")

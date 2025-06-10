@@ -11,15 +11,11 @@ from datetime import datetime
 from loguru import logger
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.utils.env_loader import EnvLoader
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.ncsc_exec import NcscExec
 from digiliencia.configs.env import Env
-from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 
 
@@ -200,7 +196,7 @@ class Ncsc(AbstractScraper):
                 article: ScrapedNewsModel | None = self._get_article_from_date(
                     until_date
                 )
-                if article == None:
+                if article is None:
                     break
                 else:
                     self.articles.append(article)
