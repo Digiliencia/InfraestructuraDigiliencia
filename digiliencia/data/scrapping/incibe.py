@@ -49,8 +49,12 @@ class IncibeScraper(AbstractScraper):
         }
 
     def get_urls_to_scrap(
-        self, url, selector: str, days: int, get_urls_function: callable # type: ignore[valid-type]
-    ) -> set[str]: 
+        self,
+        url,
+        selector: str,
+        days: int,
+        get_urls_function: callable,  # type: ignore[valid-type]
+    ) -> set[str]:
         """
         Retrieves a set of URLs to scrape from the specified website.
 
@@ -78,9 +82,9 @@ class IncibeScraper(AbstractScraper):
         i = 0
         urls: set[str] = set()
         while not found_oldest:
-            found_oldest, retrieved_urls = get_urls_function( # type: ignore
+            found_oldest, retrieved_urls = get_urls_function(  # type: ignore
                 url_to_open, until_date, selector, i
-            ) 
+            )
             total_size = len(urls)
             # If set union does not work, a for loop can be used to add the elements
             # for url in retrieved_urls:
@@ -239,12 +243,12 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()  # type: ignore
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link) # type: ignore
+                    blog_urls.add(link)  # type: ignore
                 else:
                     found_oldest = True
                     break
@@ -252,7 +256,7 @@ class IncibeScraper(AbstractScraper):
             return (found_oldest, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts {url_to_open}")
-            return [] # type: ignore
+            return []  # type: ignore
 
     def get_blog_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
@@ -283,12 +287,12 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()  # type: ignore
                 if TimeUtils.days_between_es_dates(date, published_date) > 0:
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link) # type: ignore
+                    blog_urls.add(link)  # type: ignore
                 else:
                     found_oldest = True
                     break
@@ -296,7 +300,7 @@ class IncibeScraper(AbstractScraper):
             return (found_oldest, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts {url_to_open}")
-            return [] # type: ignore
+            return []  # type: ignore
 
     def get_bitacora_urls(
         self, url_to_open: str, date: str, posts_selector: str, page_num: int = 0
@@ -329,7 +333,7 @@ class IncibeScraper(AbstractScraper):
             for post in blog_posts:
                 published_on_elem = post.find_element(By.CLASS_NAME, "postedOnLabel")
                 phrase = published_on_elem.text
-                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group() # type: ignore
+                published_date = re.search(r"\d{2}/\d{2}/\d{4}", phrase).group()  # type: ignore
 
                 is_newer = TimeUtils.days_between_es_dates(date, published_date) > 0
                 all_newer |= is_newer
@@ -338,12 +342,12 @@ class IncibeScraper(AbstractScraper):
                     link = post.find_element(
                         By.CSS_SELECTOR, ".node__links a"
                     ).get_attribute("href")
-                    blog_urls.add(link) # type: ignore
+                    blog_urls.add(link)  # type: ignore
 
             return (not all_newer, blog_urls)
         except NoSuchElementException:
             logger.warning(f"Error getting Incibe blog posts from {url_to_open}")
-            return [] # type: ignore
+            return []  # type: ignore
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
         """

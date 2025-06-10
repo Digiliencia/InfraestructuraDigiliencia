@@ -97,12 +97,14 @@ def test_create_from_scrap_no_source(news_dao, sample_scraped_news):
     )
 
     created = news_dao.create_from_scrap(modified_scraped_news)
-    
+
     # Verify that a new source was created with the name "non-existent"
     agency_dao = NewsAgencyDAO()
     non_existent_source = agency_dao.read_by_id(created.source_id)
-    assert non_existent_source is not None, "Source 'non-existent' should have been created"
-    
+    assert non_existent_source is not None, (
+        "Source 'non-existent' should have been created"
+    )
+
     # Verify that the created news has correct fields
     assert created.header == modified_scraped_news.header
     assert created.content == modified_scraped_news.content
@@ -130,7 +132,6 @@ def test_read_by_id_success(news_dao):
     assert result.content == sample_data["content"]
     assert result.url == sample_data["url"]
     assert result.date == sample_data["date"]
-
 
 
 def test_read_by_id_not_found(news_dao):
@@ -175,13 +176,13 @@ def test_read_by_source(news_dao):
     agency = agency_dao.create(name="Test Source", description="Test Organization")
     assert agency is not None
     assert agency.id is not None
-    
+
     # Check there are no news for this source
     results = news_dao.read_by_source(agency.id)
     assert isinstance(results, list)
     assert all(isinstance(r, RawNewsModel) for r in results)
     assert len(results) == 0
-    
+
     # Create a news item for this source
     sample_data = {
         "header": "Source Test Headline",
@@ -197,7 +198,7 @@ def test_read_by_source(news_dao):
     assert created_news.source_id == agency.id
     assert created_news.header == sample_data["header"]
     assert created_news.content == sample_data["content"]
-    
+
     # Read news by source
     results = news_dao.read_by_source(agency.id)
     assert isinstance(results, list)
@@ -206,13 +207,13 @@ def test_read_by_source(news_dao):
     assert results[0].id == created_news.id
     assert results[0].header == sample_data["header"]
     assert results[0].content == sample_data["content"]
-    
+
     # Create another two news items for the same source
     for i in range(2):
         sample_data["header"] = f"Source Test Headline {i + 2}"
         sample_data["content"] = f"Source Test Content {i + 2}"
         news_dao.create(**sample_data)
-        
+
     # Read news by source again
     results = news_dao.read_by_source(agency.id)
     assert isinstance(results, list)
@@ -220,6 +221,7 @@ def test_read_by_source(news_dao):
     assert len(results) == 3  # Should have 3 news items now
     assert all(r.source_id == agency.id for r in results)
     assert all(r.header.startswith("Source Test Headline") for r in results)
+
 
 def test_read_by_source_exception(news_dao):
     with pytest.raises(DAOReadError):
