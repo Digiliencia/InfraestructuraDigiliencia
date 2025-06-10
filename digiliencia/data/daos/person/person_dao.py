@@ -50,6 +50,9 @@ class PersonDAO(AbstractDAO):
             email (Optional[str]): The email address of the person.
             description (Optional[str]): A description of the person.
         """
+        if not name:
+            logger.error("Name is required to create a person")
+            raise DAOCreateError("Name is required to create a person")
         try:
             query = """
                 CREATE (p:Person {
