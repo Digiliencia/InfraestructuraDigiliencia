@@ -18,6 +18,12 @@ def reset_neo4j_db():
 
     driver = GraphDatabase.driver(uri, auth=(user, passwd))
     with driver.session() as session:
+        # Eliminar todos los constraints existentes
+        constraints = session.run("SHOW CONSTRAINTS")
+        for record in constraints:
+            name = record["name"]
+            # Usar consulta parametrizada para evitar problemas de tipado
+            session.run("DROP CONSTRAINT " + name)
         # Eliminar todos los nodos y relaciones
         session.run("MATCH (n) DETACH DELETE n")
         # Ejecutar el script de constraints
@@ -28,7 +34,10 @@ def reset_neo4j_db():
         with open(cypher_path, "r") as f:
             cypher = f.read()
         try:
-            session.run(cypher) # type: ignore
+            for query in cypher.split(";"):
+                query = query.strip()
+                if query:
+                    session.run(query)  # type: ignore
         except Exception as e:
             print(
                 f"[ADVERTENCIA] Error ejecutando initialization.cypher completo:\n{e}"
