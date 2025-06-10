@@ -1244,7 +1244,7 @@ class WEForumScraper(AbstractScraper):
                 "Attempted to scrape invalid page for Oliver Wyman article scrapper"
             )
         else:
-            if "our-expertise" is url:
+            if "our-expertise" == url:
                 elems["title"] = "h1.page-banner__title"
                 elems["author"] = "p.page-banner__authors"
                 elems["content"] = "div.main-content p"
