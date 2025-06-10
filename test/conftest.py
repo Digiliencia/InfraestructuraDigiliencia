@@ -27,12 +27,11 @@ def reset_neo4j_db():
         cypher_path = os.path.abspath(cypher_path)
         with open(cypher_path, "r") as f:
             cypher = f.read()
-        # Ejecutar cada sentencia separada por ';'
-        for stmt in cypher.split(";"):
-            stmt = stmt.strip()
-            if stmt:
-                try:
-                    session.run(stmt)
-                except Exception:
-                    pass  # ignorar errores de constraints ya existentes
+        try:
+            session.run(cypher) # type: ignore
+        except Exception as e:
+            print(
+                f"[ADVERTENCIA] Error ejecutando initialization.cypher completo:\n{e}"
+            )
+            pass  # ignorar errores de constraints ya existentes
     driver.close()
