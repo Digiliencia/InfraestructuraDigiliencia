@@ -48,8 +48,8 @@ REQUIRE p.name IS NOT NULL;
 
 CREATE CONSTRAINT unique_topic_name
 FOR (t:Topic)
-REQUIRE t.name IS UNIQUE
+REQUIRE t.name IS UNIQUE;
 
 CREATE CONSTRAINT require_topic_name
 FOR (t:Topic)
-REQUIRE t.name IS NOT NULL
+REQUIRE t.name IS NOT NULL;
