@@ -62,6 +62,10 @@ class TopicDAO(AbstractDAO):
                 })
                 RETURN t
             """
+
+            if not name:
+                raise DAOCreateError("Topic name cannot be empty")
+
             with self.db.get_connection(AccessMode.WRITE) as session:
                 result = session.run(
                     query,
