@@ -700,7 +700,7 @@ class NewsDAO(AbstractDAO):
     ) -> Sequence[RawNewsModel]:
         """Ejecuta una consulta de lectura y devuelve los resultados como modelos."""
         with self.db.get_connection(AccessMode.READ) as session:
-            result = session.run(query, params)
+            result = session.run(query, params)  # type: ignore
             news_items = [self._build_model(record["n"]) for record in result]
             logger.debug(
                 f"Read {len(news_items)} news items"

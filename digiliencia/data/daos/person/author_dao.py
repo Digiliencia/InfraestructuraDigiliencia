@@ -59,7 +59,7 @@ class AuthorDAO(AbstractDAO):
         """
         if not name:
             logger.error("Name is required to create an author")
-            raise DAOCreateError("Name is required to create an author")        
+            raise DAOCreateError("Name is required to create an author")
         try:
             query = """
                 CREATE (p:Person:Author {
