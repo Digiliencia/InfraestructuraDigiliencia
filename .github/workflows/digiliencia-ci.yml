@@ -18,20 +18,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
-      postgres:
-        image: postgres:17-bookworm
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
       neo4j:
         image: neo4j:latest
         env:
@@ -40,11 +26,11 @@ jobs:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd "curl http://localhost:7474 || exit 1"
-          --health-interval 10s
+          --health-cmd "curl -f http://localhost:7474 || exit 1"
+          --health-interval 20s
           --health-timeout 10s
-          --health-retries 5
-
+          --health-retries 10
+          
     steps:
       - uses: actions/checkout@v4
 
@@ -69,11 +55,6 @@ jobs:
 
       - name: Run tests
         env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
           NEO4J_URI: bolt://localhost:7687
           NEO4J_USER: neo4j
           NEO4J_PASSWORD: testpassword
