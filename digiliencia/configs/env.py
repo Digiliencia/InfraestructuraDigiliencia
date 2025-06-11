@@ -33,7 +33,7 @@ class Env:
     def __new__(cls):
         logger.debug("Loading environment variables")
         if cls._instance is None:
-            cls._instance = super(Env, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.load_env_vars()
             cls._instance._ddbb_uri = cls._instance.get_env_var("DDBB_URI")
             cls._instance._ddbb_username = cls._instance.get_env_var("DDBB_USERNAME")
@@ -47,6 +47,11 @@ class Env:
                 cls._instance.get_env_var("IMPLICIT_WAIT", 2)
             )
         return cls._instance
+
+    @classmethod
+    def reset_instance(cls):
+        """Reset the singleton instance. Useful for testing."""
+        cls._instance = None
 
     @property
     def ddbb_uri(self) -> str:
