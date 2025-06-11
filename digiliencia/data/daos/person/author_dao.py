@@ -87,7 +87,7 @@ class AuthorDAO(AbstractDAO):
                 author_node: Node = record["p"]
                 logger.debug(f"Created author: {author_node}")
 
-                # Al crear un nuevo autor, inicialmente no tiene noticias asociadas
+                # When creating a new author, initially there are no associated news
                 author_data = dict(author_node)
                 author_data["news"] = []
 
@@ -126,7 +126,7 @@ class AuthorDAO(AbstractDAO):
                 author_node: Node = record["p"]
                 news_ids = record["news"]
 
-                # Combinar los datos del autor con la lista de IDs de noticias
+                # Combine author data with the list of news IDs
                 author_data = dict(author_node)
                 author_data["news"] = news_ids
 
@@ -162,7 +162,7 @@ class AuthorDAO(AbstractDAO):
                     author_node = record["p"]
                     news_ids = record["news"]
 
-                    # Combinar los datos del autor con la lista de IDs de noticias
+                    # Combine author data with the list of news IDs
                     author_data = dict(author_node)
                     author_data["news"] = news_ids
 
@@ -216,7 +216,7 @@ class AuthorDAO(AbstractDAO):
                 author_node: Node = record["p"]
                 logger.debug(f"Updated author: {author_node}")
 
-                # Después de actualizar, leer el autor completo con sus noticias
+                # After updating, read the complete author with their news
                 return self.read_by_id(id)
 
         except Exception as e:
