@@ -60,4 +60,7 @@ jobs:
           DDBB_URI: bolt://neo4j:7687
           DDBB_USERNAME: neo4j
           DDBB_PASSWD: testpassword
+          WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
+          WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
+          WEBDRIVERWAIT_TIMEOUT: 10
         run: uv run pytest
