@@ -27,11 +27,6 @@ jobs:
         ports:
           - 7474:7474
           - 7687:7687
-        options: >-
-          --health-cmd="nc -z localhost 7687"
-          --health-interval 15s
-          --health-timeout 10s
-          --health-retries 30
 
     steps:
       - uses: actions/checkout@v4
