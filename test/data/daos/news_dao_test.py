@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from neo4j.exceptions import ConstraintError
 
 from digiliencia.data.daos.news_dao import NewsDAO
 from digiliencia.data.daos.organization.news_agency_dao import NewsAgencyDAO
@@ -361,25 +362,105 @@ def test_update_no_valid_fields(news_dao, sample_data, monkeypatch):
 
 
 def test_create_news_relationships_error(news_dao, sample_data, monkeypatch):
-    # Simula error en relaciones
-
+    # Simulate error in relationships
     try:
         news_dao._create_news_relationships("nid", "sid", ["aid"], ["tid"])
     except Exception:
-        pass  # El método solo loguea y continúa
+        pass  # The method only logs and continues
 
 
 def test_execute_read_query_error(news_dao, monkeypatch):
-    # Simula error en sesión
-
+    # Simulate error in session
     monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
     with pytest.raises(Exception):
         news_dao._execute_read_query("q", {}, "ctx")
 
 
 def test_delete_exception(news_dao, sample_data, monkeypatch):
-    # Simula excepción en delete
-
+    # Simulate exception in delete
     monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
     with pytest.raises(DAODeleteError):
         news_dao.delete("some-id")
+
+
+def test_create_constraint_error_branch(news_dao, sample_data, monkeypatch):
+    # Simulate ConstraintError in create
+    def fake_create_news_node(*a, **k):
+        raise ConstraintError("constraint!")
+
+    monkeypatch.setattr(news_dao, "_create_news_node", fake_create_news_node)
+    with pytest.raises(Exception):
+        news_dao.create(**sample_data)
+
+
+def test_create_generic_exception_branch(news_dao, sample_data, monkeypatch):
+    # Simulate generic Exception in create
+    def fake_create_news_node(*a, **k):
+        raise Exception("generic!")
+
+    monkeypatch.setattr(news_dao, "_create_news_node", fake_create_news_node)
+    with pytest.raises(Exception):
+        news_dao.create(**sample_data)
+
+
+def test_build_date_filter_query_branches(news_dao):
+    # Covers all branches of _build_date_filter_query
+    base = "MATCH (n:News) RETURN n"
+    # No dates
+    q, p = news_dao._build_date_filter_query(base, {})
+    assert "RETURN" in q
+    # Only start_date
+    q, p = news_dao._build_date_filter_query(base, {}, datetime(2020, 1, 1), None)
+    assert "start_date" in p
+    # Only end_date
+    q, p = news_dao._build_date_filter_query(base, {}, None, datetime(2020, 1, 2))
+    assert "end_date" in p
+    # Both, with WHERE
+    base2 = "MATCH (n:News) WHERE n.header IS NOT NULL RETURN n"
+    q, p = news_dao._build_date_filter_query(
+        base2, {}, datetime(2020, 1, 1), datetime(2020, 1, 2)
+    )
+    assert "AND" in q
+
+
+def test_update_exception(news_dao, sample_data, monkeypatch):
+    # Simula excepción en update
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.update("some-id", header="fail")
+
+
+def test_read_by_id_exception(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_by_id("some-id")
+
+
+def test_read_all_exception(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_all()
+
+
+def test_read_by_source_exception_branch(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_by_source("some-id")
+
+
+def test_read_by_topic_exception_branch(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_by_topic("some-id")
+
+
+def test_read_by_organization_exception(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_by_organization("some-id")
+
+
+def test_read_by_date_range_exception(news_dao, monkeypatch):
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao.read_by_date_range(datetime(2020, 1, 1), datetime(2020, 1, 2))
