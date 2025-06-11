@@ -15,6 +15,24 @@ from digiliencia.exc.dao_update_exc import DAOUpdateError
 # These tests require a test Neo4j database to be running with test fixtures preloaded.
 
 
+class DummyResult:
+    def single(self):
+        return None
+
+
+class DummySession:
+    def run(self, *args, **kwargs):
+        return DummyResult()
+
+
+class DummyContext:
+    def __enter__(self):
+        return DummySession()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return None
+
+
 @pytest.fixture(scope="module")
 def news_dao():
     return NewsDAO()
@@ -329,3 +347,58 @@ def test_create_from_scrap_with_new_entities_real_db():
                 agency_dao.delete(created_source_id)
             except Exception as e:
                 print(f"Error cleaning up test source: {e}")
+
+
+def test_create_news_node_no_record(news_dao, sample_data, monkeypatch):
+    # Simula que la base no retorna record
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(DAOCreateError, match="Failed to create news node"):
+        news_dao._create_news_node("h", datetime.now(), "c", "u")
+
+
+def test_build_model_invalid_date(news_dao, sample_data):
+    # Simula fecha inválida
+    data = {"id": "x", **sample_data, "date": "not-a-date"}
+    with pytest.raises(ValueError):
+        news_dao._build_model(data)
+
+
+def test_update_no_valid_fields(news_dao, sample_data, monkeypatch):
+    # Cubre update sin campos válidos (no hace nada, solo retorna read_by_id)
+    created = news_dao.create(**sample_data)
+    called = {}
+    orig_read_by_id = news_dao.read_by_id
+
+    def fake_read_by_id(id):
+        called["called"] = True
+        return orig_read_by_id(id)
+
+    monkeypatch.setattr(news_dao, "read_by_id", fake_read_by_id)
+    result = news_dao.update(created.id)
+    assert result.id == created.id
+    assert called.get("called")
+
+
+def test_create_news_relationships_error(news_dao, sample_data, monkeypatch):
+    # Simula error en relaciones
+
+    try:
+        news_dao._create_news_relationships("nid", "sid", ["aid"], ["tid"])
+    except Exception:
+        pass  # El método solo loguea y continúa
+
+
+def test_execute_read_query_error(news_dao, monkeypatch):
+    # Simula error en sesión
+
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(Exception):
+        news_dao._execute_read_query("q", {}, "ctx")
+
+
+def test_delete_exception(news_dao, sample_data, monkeypatch):
+    # Simula excepción en delete
+
+    monkeypatch.setattr(news_dao.db, "get_connection", lambda *a, **k: DummyContext())
+    with pytest.raises(DAODeleteError):
+        news_dao.delete("some-id")

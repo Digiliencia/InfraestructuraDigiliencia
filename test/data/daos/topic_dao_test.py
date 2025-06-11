@@ -69,6 +69,11 @@ class TestTopicDAO:
         with pytest.raises(DAOCreateError):
             self.topic_dao.create(name="Test Topic", definition="Test definition")
 
+    def test_create_topic_empty_name(self):
+        """Test that creating a topic with an empty name raises DAOCreateError."""
+        with pytest.raises(DAOCreateError, match="Topic name cannot be empty"):
+            self.topic_dao.create(name="", definition="Should fail")
+
     def test_read_by_id_not_found(self, monkeypatch):
         """Test read_by_id method when no record is found"""
         monkeypatch.setattr(
@@ -244,3 +249,38 @@ class TestTopicDAO:
         assert topic1.id not in topic_ids_after
         assert topic2.id not in topic_ids_after
         assert topic3.id not in topic_ids_after
+
+    def test_update_no_valid_fields(self, monkeypatch):
+        """Test update method when no valid fields are provided (empty kwargs or None)."""
+        # Create a real topic to get a valid id
+        topic = self.topic_dao.create(
+            name="No Update Topic", definition="No update definition"
+        )
+
+        # Patch read_by_id to verify it is called and returns the same object
+        called = {}
+        original_read_by_id = self.topic_dao.read_by_id
+
+        def fake_read_by_id(id):
+            called["called"] = True
+            return original_read_by_id(id)
+
+        monkeypatch.setattr(self.topic_dao, "read_by_id", fake_read_by_id)
+
+        # Empty kwargs
+        result = self.topic_dao.update(topic.id)
+        assert result.id == topic.id
+        assert result.name == topic.name
+        assert result.definition == topic.definition
+        assert called.get("called")
+
+        # kwargs with all None
+        called.clear()
+        result2 = self.topic_dao.update(topic.id, name=None, definition=None)
+        assert result2.id == topic.id
+        assert result2.name == topic.name
+        assert result2.definition == topic.definition
+        assert called.get("called")
+
+        # Cleanup
+        self.topic_dao.delete(topic.id)
