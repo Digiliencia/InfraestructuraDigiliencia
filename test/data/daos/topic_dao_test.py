@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, Mock
-
 import pytest
 
 from digiliencia.data.daos.topic_dao import TopicDAO
@@ -8,6 +6,24 @@ from digiliencia.exc.dao_create_exc import DAOCreateError
 from digiliencia.exc.dao_delete_exc import DAODeleteError
 from digiliencia.exc.dao_read_exc import DAOReadError
 from digiliencia.exc.dao_update_exc import DAOUpdateError
+
+
+class DummyResult:
+    def single(self):
+        return None
+
+
+class DummySession:
+    def run(self, *args, **kwargs):
+        return DummyResult()
+
+
+class DummyContextManager:
+    def __enter__(self):
+        return DummySession()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return None
 
 
 class TestTopicDAO:
@@ -43,131 +59,98 @@ class TestTopicDAO:
         topic = self.topic_dao.read_by_name("Test Topic")
         self.topic_dao.delete(topic.id)
 
-    def test_create_topic_no_record(self):
+    def test_create_topic_no_record(self, monkeypatch):
         """Test create method when database fails to return a record"""
-        # Use actual database call but ensure cleanup
-        try:
-            # This should fail as we expect the database to not return a record
-            with pytest.raises(DAOCreateError):
-                self.topic_dao.create(name="Test Topic", definition="Test definition")
-        finally:
-            # Cleanup any potential partial creation
-            try:
-                topic = self.topic_dao.read_by_name("Test Topic")
-                if topic:
-                    self.topic_dao.delete(topic.id)
-            except Exception:
-                pass
+        monkeypatch.setattr(
+            self.topic_dao.db,
+            "get_connection",
+            lambda *args, **kwargs: DummyContextManager(),
+        )
+        with pytest.raises(DAOCreateError):
+            self.topic_dao.create(name="Test Topic", definition="Test definition")
 
-    def test_read_by_id_not_found(self):
+    def test_read_by_id_not_found(self, monkeypatch):
         """Test read_by_id method when no record is found"""
-        mock_result = Mock()
-        mock_result.single.return_value = None
-
-        mock_session = Mock()
-        mock_session.run.return_value = mock_result
-
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
-
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db,
+            "get_connection",
+            lambda *args, **kwargs: DummyContextManager(),
+        )
         with pytest.raises(DAOReadError):
             self.topic_dao.read_by_id("non-existent-uuid")
 
-    def test_read_by_name_not_found(self):
+    def test_read_by_name_not_found(self, monkeypatch):
         """Test read_by_name method when no record is found"""
-        mock_result = Mock()
-        mock_result.single.return_value = None
-
-        mock_session = Mock()
-        mock_session.run.return_value = mock_result
-
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
-
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db,
+            "get_connection",
+            lambda *args, **kwargs: DummyContextManager(),
+        )
         with pytest.raises(DAOReadError):
             self.topic_dao.read_by_name("non-existent-topic")
 
-    def test_read_all_exception(self):
+    def test_read_all_exception(self, monkeypatch):
         """Test read_all method when exception occurs"""
-        mock_session = Mock()
-        mock_session.run.side_effect = Exception("Database error")
 
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
+        class DummySession:
+            def run(self, *args, **kwargs):
+                raise Exception("Database error")
 
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db, "get_connection", lambda: DummyContextManager()
+        )
         with pytest.raises(DAOReadError):
             self.topic_dao.read_all()
 
-    def test_update_topic_not_found(self):
+    def test_update_topic_not_found(self, monkeypatch):
         """Test update method when no topic is found"""
-        mock_result = Mock()
-        mock_result.single.return_value = None
-
-        mock_session = Mock()
-        mock_session.run.return_value = mock_result
-
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
-
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db,
+            "get_connection",
+            lambda *args, **kwargs: DummyContextManager(),
+        )
         with pytest.raises(DAOUpdateError):
             self.topic_dao.update("non-existent-uuid", name="Updated Topic")
 
-    def test_update_topic_exception(self):
+    def test_update_topic_exception(self, monkeypatch):
         """Test update method when exception occurs"""
-        mock_session = Mock()
-        mock_session.run.side_effect = Exception("Database error")
 
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
+        class DummySession:
+            def run(self, *args, **kwargs):
+                raise Exception("Database error")
 
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db, "get_connection", lambda: DummyContextManager()
+        )
         with pytest.raises(DAOUpdateError):
             self.topic_dao.update("some-uuid", name="Updated Topic")
 
-    def test_delete_topic_not_found(self):
+    def test_delete_topic_not_found(self, monkeypatch):
         """Test delete method when no topic is found"""
-        mock_result = Mock()
-        mock_consume = Mock()
-        mock_consume.counters.nodes_deleted = 0
-        mock_result.consume.return_value = mock_consume
 
-        mock_session = Mock()
-        mock_session.run.return_value = mock_result
+        class DummyResult:
+            def consume(self):
+                class DummyConsume:
+                    counters = type("counters", (), {"nodes_deleted": 0})()
 
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
+                return DummyConsume()
 
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db, "get_connection", lambda: DummyContextManager()
+        )
         with pytest.raises(DAODeleteError):
             self.topic_dao.delete("non-existent-uuid")
 
-    def test_delete_topic_exception(self):
+    def test_delete_topic_exception(self, monkeypatch):
         """Test delete method when exception occurs"""
-        mock_session = Mock()
-        mock_session.run.side_effect = Exception("Database error")
 
-        mock_cm = MagicMock()
-        mock_cm.__enter__.return_value = mock_session
-        mock_cm.__exit__.return_value = None
+        class DummySession:
+            def run(self, *args, **kwargs):
+                raise Exception("Database error")
 
-        self.topic_dao.db.get_connection = Mock(return_value=mock_cm)
-
+        monkeypatch.setattr(
+            self.topic_dao.db, "get_connection", lambda: DummyContextManager()
+        )
         with pytest.raises(DAODeleteError):
             self.topic_dao.delete("some-uuid")
 
