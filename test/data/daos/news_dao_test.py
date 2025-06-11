@@ -11,26 +11,7 @@ from digiliencia.exc.dao_create_exc import DAOCreateError
 from digiliencia.exc.dao_delete_exc import DAODeleteError
 from digiliencia.exc.dao_read_exc import DAOReadError
 from digiliencia.exc.dao_update_exc import DAOUpdateError
-
-# These tests require a test Neo4j database to be running with test fixtures preloaded.
-
-
-class DummyResult:
-    def single(self):
-        return None
-
-
-class DummySession:
-    def run(self, *args, **kwargs):
-        return DummyResult()
-
-
-class DummyContext:
-    def __enter__(self):
-        return DummySession()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return None
+from test.data.utils import DummyContext
 
 
 @pytest.fixture(scope="module")
