@@ -64,10 +64,6 @@ class TestAuthorDAO:
             self.author_dao.read_by_id("non-existent-uuid")
 
     def test_read_all_exception(self, monkeypatch):
-        class DummySession:
-            def run(self, *args, **kwargs):
-                raise Exception("Database error")
-
         monkeypatch.setattr(
             self.author_dao.db, "get_connection", lambda: DummyContextManager()
         )
@@ -84,10 +80,6 @@ class TestAuthorDAO:
             self.author_dao.update("non-existent-uuid", name="Updated Name")
 
     def test_update_author_exception(self, monkeypatch):
-        class DummySession:
-            def run(self, *args, **kwargs):
-                raise Exception("Database error")
-
         monkeypatch.setattr(
             self.author_dao.db, "get_connection", lambda: DummyContextManager()
         )
@@ -116,13 +108,6 @@ class TestAuthorDAO:
         self.author_dao.delete(author.id)
 
     def test_delete_author_not_found(self, monkeypatch):
-        class DummyResult:
-            def consume(self):
-                class DummyConsume:
-                    counters = type("counters", (), {"nodes_deleted": 0})()
-
-                return DummyConsume()
-
         monkeypatch.setattr(
             self.author_dao.db, "get_connection", lambda: DummyContextManager()
         )
@@ -130,10 +115,6 @@ class TestAuthorDAO:
             self.author_dao.delete("non-existent-uuid")
 
     def test_delete_author_exception(self, monkeypatch):
-        class DummySession:
-            def run(self, *args, **kwargs):
-                raise Exception("Database error")
-
         monkeypatch.setattr(
             self.author_dao.db, "get_connection", lambda: DummyContextManager()
         )
