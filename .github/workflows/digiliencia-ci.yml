@@ -23,15 +23,15 @@ jobs:
         image: neo4j:latest
         env:
           NEO4J_AUTH: neo4j/testpassword
-          NEO4J_dbms_usageReport_enabled: "false"
+          server_config_strict_validation_enabled: "false"
         ports:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd="nc -z localhost 7687"
-          --health-interval 5s
-          --health-timeout 2s
-          --health-retries 20
+          --health-cmd="curl -f http://localhost:7474 || exit 1" 
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 15
 
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +46,11 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Debug Neo4j port
+        run: |
+          echo "Waiting for Neo4j..."
+          timeout 60 bash -c 'until echo > /dev/tcp/localhost/7687; do sleep 5; done'
 
       - name: Check ruff formatting
         run: uv run ruff format --check
