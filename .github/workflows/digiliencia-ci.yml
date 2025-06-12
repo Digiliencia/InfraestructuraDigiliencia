@@ -57,7 +57,7 @@ jobs:
 
       - name: Run tests
         env:
-          DDBB_URI: bolt://neo4j:7687
+          DDBB_URI: bolt://localhost:7687
           DDBB_USERNAME: neo4j
           DDBB_PASSWD: testpassword
           WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
