@@ -22,17 +22,18 @@ jobs:
       neo4j:
         image: neo4j:latest
         env:
+          # Using updated parameter names based on the warnings in the logs
           NEO4J_AUTH: neo4j/testpassword
-          NEO4J_dbms_memory_pagecache_size: 512M
-          NEO4J_dbms_memory_heap_initial__size: 512M
-          NEO4J_dbms_memory_heap_max__size: 1G
-          server_config_strict_validation_enabled: "false"
+          NEO4J_server_memory_pagecache_size: 512M
+          NEO4J_server_memory_heap_initial_size: 512M
+          NEO4J_server_memory_heap_max_size: 1G
+          NEO4J_server_default__listen__address: 0.0.0.0
+          NEO4J_dbms_connector_bolt_advertised__address: localhost:7687
         ports:
           - 7474:7474
           - 7687:7687
-        # Add health check option
         options: >-
-          --health-cmd "nc -z localhost 7687 || exit 1"
+          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -53,24 +54,25 @@ jobs:
 
       - name: Install Neo4j client tools
         run: |
-          apt-get update
-          apt-get install -y cypher-shell curl jq
+          sudo apt-get update
+          sudo apt-get install -y cypher-shell curl jq netcat-traditional wget
 
-      - name: Robust Neo4j readiness check
+      - name: Wait for Neo4j
         run: |
-          echo "Waiting for Neo4j port to be available..."
-          for i in {1..60}; do
+          echo "Waiting for Neo4j to be fully available..."
+          # Wait for port to be open
+          for i in {1..30}; do
             if nc -z localhost 7687; then
-              echo "Neo4j port is open!"
+              echo "Neo4j port 7687 is open!"
               break
             fi
-            echo "Waiting for Neo4j (attempt $i)..."
-            sleep 2
+            echo "Waiting for Neo4j port (attempt $i)..."
+            sleep 3
           done
 
-          echo "Waiting for Neo4j DBMS to be fully available..."
+          # Wait for HTTP interface
           for i in {1..20}; do
-            if curl -s http://localhost:7474/browser/ > /dev/null; then
+            if curl -s http://localhost:7474/ > /dev/null; then
               echo "Neo4j HTTP interface is responding!"
               break
             fi
@@ -78,18 +80,31 @@ jobs:
             sleep 3
           done
 
-          echo "Verifying Neo4j connection and authentication..."
-          for i in {1..30}; do
-            if echo "RETURN 1 AS result" | cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword --format plain > /dev/null 2>&1; then
-              echo "Neo4j authentication and query execution successful!"
+          # Allow time for Neo4j to fully initialize
+          echo "Giving Neo4j time to complete initialization..."
+          sleep 10
+
+          # Verify we can connect and execute a query
+          for i in {1..10}; do
+            if echo "RETURN 1 AS n;" | cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword --format plain; then
+              echo "✅ Neo4j is ready and accepting queries!"
               exit 0
             fi
-            echo "Waiting for Neo4j to accept authentication (attempt $i)..."
-            sleep 2
+            echo "Waiting for Neo4j to accept queries (attempt $i)..."
+            sleep 5
           done
 
-          echo "Neo4j failed to fully initialize" >&2
+          echo "❌ Neo4j failed to initialize properly"
           exit 1
+
+      - name: Configure test database constraints
+        run: |
+          echo "Setting up Neo4j constraints for tests..."
+          cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword \
+            "CREATE CONSTRAINT topic_name_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.name IS UNIQUE;"
+          cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword \
+            "CREATE CONSTRAINT topic_id_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.id IS UNIQUE;"
+          echo "✅ Neo4j constraints configured successfully!"
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -98,15 +113,6 @@ jobs:
       - name: Lint with ruff
         run: uv run ruff check
         working-directory: digiliencia
-
-      - name: Configure test database constraints
-        run: |
-          echo "Setting up Neo4j constraints for tests..."
-          cat <<EOF | cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword
-          CREATE CONSTRAINT topic_name_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.name IS UNIQUE;
-          CREATE CONSTRAINT topic_id_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.id IS UNIQUE;
-          EOF
-          echo "Neo4j constraints configured successfully!"
 
       - name: Run tests
         env:
