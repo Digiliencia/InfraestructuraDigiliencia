@@ -1,6 +1,20 @@
-# MOVER EN UN FUTURO
+# PosgreSQL (MOVER EN UN FUTURO)
 
-## Postgres Database Schema
+This directory contains the configuration files for a PostgreSQL database used in the project. It includes SQL scripts for creating the database schema, views, and stored procedures, as well as environment variables for configuring the database connection. It also contains a set of tests to check the database functionality.
+
+## Set up
+
+The dockerfile is used to set up the database. It will create a database with the name specified in the `.env` file and run the SQL scripts to create the schema, views, and stored procedures.
+
+## Postgres Database Configuration
+
+The main configuration is located in the `.env` file. The schema, views and precedimmets are defined in the scripts folder.
+
+## Test
+
+
+
+## PostgresSQL Database Schema
 
 ### Views
 
@@ -21,7 +35,7 @@
 - **APP_DB_NAME**: The name of the database your application will use
 - **DB_OWNER_USER** The user who owns the database
 - **DB_OWNER_PASSWORD**: Password for the database owner
-  
+
 - **APP_USER**: The user your application will connect as
 - **APP_USER_PASSWORD**: Password for the application user
 

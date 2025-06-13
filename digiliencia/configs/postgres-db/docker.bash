@@ -1,4 +1,4 @@
-# Con esto levanto el contenedor.
+# THis script set up POstgreSQL container.
 docker run --name postgres \
 --env-file .env \
 -v postgres_data:/var/lib/postgresql/data \
