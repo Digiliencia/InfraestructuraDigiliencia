@@ -18,6 +18,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+          server_config_strict_validation_enabled: "false"
+        ports:
+          - 7474:7474
+          - 7687:7687
 
     steps:
       - uses: actions/checkout@v4
@@ -33,41 +42,20 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Start Neo4j container
+      - name: Debug Neo4j port
         run: |
-          docker run -d \
-            --name test-neo4j \
-            -p 7474:7474 -p 7687:7687 \
-            -e NEO4J_AUTH=neo4j/testpassword \
-            -e NEO4JLABS_PLUGINS='["apoc"]' \
-            -e NEO4J_dbms_security_procedures_unrestricted=apoc.* \
-            -e NEO4J_metrics_enabled=false \
-            -e NEO4J_STRICT_CONFIG_VALIDATION=false \
-            neo4j:5.19
+          echo "Waiting for Neo4j..."
+          timeout 60 bash -c 'until echo > /dev/tcp/localhost/7687; do sleep 5; done'
 
       - name: Wait for Neo4j to be ready
         run: |
-          echo "Waiting for Neo4j to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 7687 && curl -s http://localhost:7474 > /dev/null; then
-              echo "✅ Neo4j is ready!"
-              exit 0
-            fi
-            echo "⏳ Waiting for Neo4j (attempt $i)..."
-            sleep 3
+            nc -z localhost 7687 && echo "Neo4j is up!" && exit 0
+            echo "Waiting for Neo4j..."
+            sleep 2
           done
-          echo "❌ Neo4j did not start in time"
-          docker logs test-neo4j
+          echo "Neo4j did not start in time" >&2
           exit 1
-
-      - name: Configure test database constraints
-        run: |
-          echo "Setting up Neo4j constraints..."
-          docker exec test-neo4j cypher-shell -u neo4j -p testpassword \
-            "CREATE CONSTRAINT topic_name_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.name IS UNIQUE;"
-          docker exec test-neo4j cypher-shell -u neo4j -p testpassword \
-            "CREATE CONSTRAINT topic_id_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.id IS UNIQUE;"
-          echo "✅ Constraints configured."
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -86,7 +74,3 @@ jobs:
           WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
           WEBDRIVERWAIT_TIMEOUT: 10
         run: uv run pytest
-
-      - name: Clean up Neo4j
-        if: always()
-        run: docker rm -f test-neo4j || true
