@@ -18,25 +18,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      neo4j:
-        image: neo4j:5.19
-        env:
-          NEO4J_AUTH: neo4j/testpassword
-          NEO4JLABS_PLUGINS: '["apoc"]'
-          NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
-          NEO4J_metrics_enabled: "false"
-          NEO4J_STRICT_CONFIG_VALIDATION: "false" # ✅ disables validation so we can use legacy configs
-          NEO4J_dbms_memory_heap_max__size: 1G # ✅ correct legacy style with double underscores
-          NEO4J_dbms_memory_pagecache_size: 512M
-        ports:
-          - 7474:7474
-          - 7687:7687
-        options: >-
-          --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+  services:
+    neo4j:
+      image: neo4j:5.19
+      env:
+        NEO4J_AUTH: neo4j/testpassword
+        NEO4JLABS_PLUGINS: '["apoc"]'
+        NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+        NEO4J_metrics_enabled: "false"
+        NEO4J_STRICT_CONFIG_VALIDATION: "false" # ✅ disables validation so we can use legacy configs
+        NEO4J_dbms_memory_heap_max__size: 1G # ✅ correct legacy style with double underscores
+        NEO4J_dbms_memory_pagecache_size: 512M
+      ports:
+        - 7474:7474
+        - 7687:7687
+      options: >-
+        --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
