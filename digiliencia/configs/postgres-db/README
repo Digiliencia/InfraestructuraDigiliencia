@@ -1,5 +1,15 @@
 # MOVER EN UN FUTURO
 
+## Postgres Database Schema
+
+### Views
+
+- **view_user**: View for user information, including user ID, email, and name.
+
+### Procediments
+
+- **get_user_id_by_email**: returns the user ID based on the provided email.
+
 ## .env variables
 
 - **POSTGRES_PASSWORD**: Password for the default 'postgres' superuser.
