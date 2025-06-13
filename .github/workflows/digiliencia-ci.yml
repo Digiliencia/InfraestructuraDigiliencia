@@ -18,25 +18,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-  services:
-    neo4j:
-      image: neo4j:5.19
-      env:
-        NEO4J_AUTH: neo4j/testpassword
-        NEO4JLABS_PLUGINS: '["apoc"]'
-        NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
-        NEO4J_metrics_enabled: "false"
-        NEO4J_STRICT_CONFIG_VALIDATION: "false" # ✅ disables validation so we can use legacy configs
-        NEO4J_dbms_memory_heap_max__size: 1G # ✅ correct legacy style with double underscores
-        NEO4J_dbms_memory_pagecache_size: 512M
-      ports:
-        - 7474:7474
-        - 7687:7687
-      options: >-
-        --health-cmd "wget -q --method=HEAD http://localhost:7474 || exit 1"
-        --health-interval 10s
-        --health-timeout 5s
-        --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -52,55 +33,41 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Install Neo4j client tools
+      - name: Start Neo4j container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cypher-shell curl jq netcat-traditional wget
+          docker run -d \
+            --name test-neo4j \
+            -p 7474:7474 -p 7687:7687 \
+            -e NEO4J_AUTH=neo4j/testpassword \
+            -e NEO4JLABS_PLUGINS='["apoc"]' \
+            -e NEO4J_dbms_security_procedures_unrestricted=apoc.* \
+            -e NEO4J_metrics_enabled=false \
+            -e NEO4J_STRICT_CONFIG_VALIDATION=false \
+            neo4j:5.19
 
-      - name: Wait for Neo4j
+      - name: Wait for Neo4j to be ready
         run: |
-          echo "Waiting for Neo4j to be fully available..."
+          echo "Waiting for Neo4j to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 7687; then
-              echo "Neo4j port 7687 is open!"
-              break
-            fi
-            echo "Waiting for Neo4j port (attempt $i)..."
-            sleep 3
-          done
-
-          for i in {1..20}; do
-            if curl -s http://localhost:7474/ > /dev/null; then
-              echo "Neo4j HTTP interface is responding!"
-              break
-            fi
-            echo "Waiting for Neo4j HTTP interface (attempt $i)..."
-            sleep 3
-          done
-
-          echo "Giving Neo4j time to complete initialization..."
-          sleep 10
-
-          for i in {1..10}; do
-            if echo "RETURN 1 AS n;" | cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword --format plain; then
-              echo "✅ Neo4j is ready and accepting queries!"
+            if nc -z localhost 7687 && curl -s http://localhost:7474 > /dev/null; then
+              echo "✅ Neo4j is ready!"
               exit 0
             fi
-            echo "Waiting for Neo4j to accept queries (attempt $i)..."
-            sleep 5
+            echo "⏳ Waiting for Neo4j (attempt $i)..."
+            sleep 3
           done
-
-          echo "❌ Neo4j failed to initialize properly"
+          echo "❌ Neo4j did not start in time"
+          docker logs test-neo4j
           exit 1
 
       - name: Configure test database constraints
         run: |
-          echo "Setting up Neo4j constraints for tests..."
-          cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword \
+          echo "Setting up Neo4j constraints..."
+          docker exec test-neo4j cypher-shell -u neo4j -p testpassword \
             "CREATE CONSTRAINT topic_name_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.name IS UNIQUE;"
-          cypher-shell -a bolt://localhost:7687 -u neo4j -p testpassword \
+          docker exec test-neo4j cypher-shell -u neo4j -p testpassword \
             "CREATE CONSTRAINT topic_id_unique IF NOT EXISTS FOR (t:Topic) REQUIRE t.id IS UNIQUE;"
-          echo "✅ Neo4j constraints configured successfully!"
+          echo "✅ Constraints configured."
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -119,3 +86,7 @@ jobs:
           WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
           WEBDRIVERWAIT_TIMEOUT: 10
         run: uv run pytest
+
+      - name: Clean up Neo4j
+        if: always()
+        run: docker rm -f test-neo4j || true
