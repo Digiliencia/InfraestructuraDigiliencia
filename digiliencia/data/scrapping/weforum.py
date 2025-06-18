@@ -107,18 +107,18 @@ class WEForumScraper(AbstractScraper):
     def _get_websites_to_scrap(self, max_age_date: int = 7) -> list[dict[str, str]]:
         """
         Obtiene los sitios web a escrapear que sean más recientes que max_age_date días.
-        
+
         Args:
             max_age_date: Número máximo de días de antigüedad para los artículos
-            
+
         Returns:
             Lista de diccionarios con información de los artículos válidos
-        
+
         Raises:
             ValueError: Si max_age_date es menor que 1
         """
         logger.info(f"Getting articles from {max_age_date} days ago")
-        
+
         if max_age_date < 1:
             logger.error("max_age_date debe ser mayor que 0")
             raise ValueError("max_age_date debe ser mayor que 0")
@@ -126,7 +126,7 @@ class WEForumScraper(AbstractScraper):
         age_words = TimeUtils.format_days_ago(max_age_date)
         processed_articles = []
         processed_urls = set()  # Para evitar artículos duplicados
-        
+
         # Configuración inicial
         aside_div = self.driver.find_element(
             By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0"
@@ -135,7 +135,9 @@ class WEForumScraper(AbstractScraper):
         time.sleep(self.load_time)
 
         # Cambiar a artículos recientes
-        self.driver.find_element(By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']").click()
+        self.driver.find_element(
+            By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']"
+        ).click()
         time.sleep(self.load_time)
 
         latest_articles_div = self.driver.find_element(
@@ -145,22 +147,22 @@ class WEForumScraper(AbstractScraper):
         found_old_article = False
         no_new_articles_count = 0
         last_articles_count = 0
-        
+
         logger.debug("Starting articles scanning")
-        
+
         while not found_old_article:
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
                 By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
             )
-            
+
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
             new_articles_count = len(current_articles) - last_articles_count
-            
+
             if new_articles_count > 0:
                 logger.debug(f"Processing {new_articles_count} new articles")
                 no_new_articles_count = 0  # Reiniciar contador de intentos
-                
+
                 # Procesar solo los nuevos artículos
                 for article in current_articles[last_articles_count:]:
                     try:
@@ -169,16 +171,19 @@ class WEForumScraper(AbstractScraper):
                             By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
                         )
                         age = age_element.text
-                        
+
                         # Verificar si es demasiado antiguo
-                        if "hour" not in age and TimeUtils.days_between_dates(age, age_words) > 0:
+                        if (
+                            "hour" not in age
+                            and TimeUtils.days_between_dates(age, age_words) > 0
+                        ):
                             title = article.find_element(
                                 By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
                             ).text
                             logger.info(f"Too old article found: '{title}' from {age}")
                             found_old_article = True
                             break
-                        
+
                         # Procesar el artículo al vuelo
                         type_element = article.find_element(
                             By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
@@ -193,19 +198,26 @@ class WEForumScraper(AbstractScraper):
                                 By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
                             ).text
                             link_element = article.find_element(
-                                By.CLASS_NAME, "UIActionButton__StyledButton-sc-d03545d8-2"
+                                By.CLASS_NAME,
+                                "UIActionButton__StyledButton-sc-d03545d8-2",
                             )
                             title_attr = link_element.get_attribute("title")
                             href = link_element.get_attribute("href")
-                            
-                            if title_attr == "Open" and href and href not in processed_urls:
+
+                            if (
+                                title_attr == "Open"
+                                and href
+                                and href not in processed_urls
+                            ):
                                 processed_urls.add(href)  # Evitar duplicados
-                                processed_articles.append({
-                                    "type": article_type,
-                                    "publisher": publisher,
-                                    "title": title,
-                                    "url": href,
-                                })
+                                processed_articles.append(
+                                    {
+                                        "type": article_type,
+                                        "publisher": publisher,
+                                        "title": title,
+                                        "url": href,
+                                    }
+                                )
                         elif article_type == "video":
                             logger.debug("Ignoring article type 'video'")
                             continue
@@ -213,23 +225,26 @@ class WEForumScraper(AbstractScraper):
                             logger.warning(f"Unknown article type: {article_type}")
                     except Exception as e:
                         logger.warning(f"Error processing article: {str(e)}")
-                
+
                 # Actualizar el contador de artículos vistos
                 last_articles_count = len(current_articles)
             else:
                 no_new_articles_count += 1
-                logger.debug(f"No new articles found. Retrying ({no_new_articles_count}/{self.MAX_SCROLL_RELOADS})")
-                
+                logger.debug(
+                    f"No new articles found. Retrying ({no_new_articles_count}/{self.MAX_SCROLL_RELOADS})"
+                )
+
                 # Reiniciar el scroll si no se encuentran nuevos artículos después de varios intentos
                 if no_new_articles_count >= self.MAX_SCROLL_RELOADS:
                     logger.warning("Max retries reached. Stopping articles discovery.")
                     break
-                
+
                 # Scroll hacia arriba para refrescar y luego hacia abajo para cargar nuevos
                 if no_new_articles_count % 2 == 0:
-                    self.driver.execute_script("arguments[0].scrollTo(0, 0);", aside_div)
-                
-            
+                    self.driver.execute_script(
+                        "arguments[0].scrollTo(0, 0);", aside_div
+                    )
+
             # Scroll hacia abajo para cargar más artículos si es necesario
             if not found_old_article:
                 self.driver.execute_script(
@@ -238,8 +253,10 @@ class WEForumScraper(AbstractScraper):
                 # Tiempo de espera aleatorio para simular comportamiento humano
                 wait_time = random.uniform(self.load_time, self.load_time + 1)
                 time.sleep(wait_time)
-        
-        logger.info(f"Articles discovery ended. Found {len(processed_articles)} articles.")
+
+        logger.info(
+            f"Articles discovery ended. Found {len(processed_articles)} articles."
+        )
         return processed_articles
 
     def _close(self):
@@ -475,9 +492,7 @@ class WEForumScraper(AbstractScraper):
             "/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]",
         )
 
-        content = (
-            content_container.text
-        )  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
+        content = content_container.text  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
         return ScrapedNewsModel(
             header=header,
             date=date,
@@ -562,13 +577,16 @@ class WEForumScraper(AbstractScraper):
 
         # Access the URL
         self.driver.get(url)
-        time.sleep(self.load_time+1)
+        time.sleep(self.load_time + 1)
 
         # Disable JS
         ScrapUtils.disable_js(self.driver)
 
         # Get the title
-        title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='elementor-heading-title elementor-size-default']").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR,
+            "h1[class='elementor-heading-title elementor-size-default']",
+        ).text
 
         # Get the date
         date_element = self.driver.find_element(By.CSS_SELECTOR, "span time")
@@ -1024,11 +1042,11 @@ class WEForumScraper(AbstractScraper):
         time_elem = self.driver.find_element(By.CLASS_NAME, "publish-date")
         date = datetime.strptime(time_elem.text, "%d %b %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.body-content p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.body-content p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1040,12 +1058,10 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    ''''''
+    """"""
 
-    def _scrap_eco_bussiness(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_eco_bussiness(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Eco-bussiness.
 
         Args:
@@ -1057,32 +1073,36 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Eco-bussiness: {url}")
         if "https://www.eco-business.com" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Eco-bussiness scrapper"
             )
-        
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
         title = self.driver.find_element(By.ID, "ebStoryHeadline").text
 
-        author_line = self.driver.find_element(By.CLASS_NAME, "eb-article__byline__author").text
+        author_line = self.driver.find_element(
+            By.CLASS_NAME, "eb-article__byline__author"
+        ).text
         author_line = author_line.replace("By", "")
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.eb-article__byline__publish-date").text 
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "time.eb-article__byline__publish-date"
+        ).text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "section.eb-article__body-content p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "section.eb-article__body-content p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1094,11 +1114,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-
-    def _scrap_social_europe(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_social_europe(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Social Europe.
 
         Args:
@@ -1110,14 +1127,14 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Social Europe article: {url}")
         if "https://www.socialeurope.eu/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for The Atlantic article scrapper"
             )
 
-        ScrapUtils.disable_js(self.driver) # Disable JS
+        ScrapUtils.disable_js(self.driver)  # Disable JS
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
@@ -1126,16 +1143,14 @@ class WEForumScraper(AbstractScraper):
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
         authors_line = authors_line.replace(",", " ").replace("and", " ")
-        authors = [
-            authors_line.strip()
-        ]
+        authors = [authors_line.strip()]
         author = "".join(authors)
 
         time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
         date_without_suffix = TimeUtils.format_suffix_date(time_elem)
 
         date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore
-        
+
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
         content = content_container.text
 
@@ -1150,12 +1165,11 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
-    
 
     def _scrap_african_center_economic_transformation(
         self, url: str
     ) -> ScrapedNewsModel:
-        '''
+        """
         Access the given URL and scrapes African Center Economic Transformation.
 
         Args:
@@ -1167,29 +1181,37 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping African Center Economic Transformation article: {url}")
         if "https://acetforafrica.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for African Center Economic Transformation article scrapper"
             )
-        
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_text_inner h1").text
-        author = self.driver.find_element(By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "div.et_pb_text_inner h1"
+        ).text
+        author = self.driver.find_element(
+            By.CSS_SELECTOR, "div.dmach-postmeta-item-containter p span"
+        ).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner").text
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR,
+            "div.et_pb_module.et_pb_text.et_pb_text_3_tb_body.et_pb_text_align_left.et_pb_bg_layout_light div.et_pb_text_inner",
+        ).text
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR,
+            "div.et_pb_module.et_pb_post_content.et_pb_post_content_0_tb_body p",
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1201,10 +1223,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_oliver_wyman(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_oliver_wyman(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Oliver Wyman.
 
         Args:
@@ -1216,7 +1236,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Oliver Wyman article: {url}")
         elems = {}
         if "https://www.oliverwyman.com/" not in url:
@@ -1224,13 +1244,15 @@ class WEForumScraper(AbstractScraper):
                 "Attempted to scrape invalid page for Oliver Wyman article scrapper"
             )
         else:
-            if "our-expertise" is url:
+            if "our-expertise" == url:
                 elems["title"] = "h1.page-banner__title"
                 elems["author"] = "p.page-banner__authors"
                 elems["content"] = "div.main-content p"
             else:
                 elems["title"] = "div.text-primary.text-primary--subheading"
-                elems["author"] = "div.authors.text-secondary.text-secondary--description__small"
+                elems["author"] = (
+                    "div.authors.text-secondary.text-secondary--description__small"
+                )
                 elems["content"] = "div.text-secondary"
 
         # Access the URL
@@ -1240,9 +1262,9 @@ class WEForumScraper(AbstractScraper):
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
         author_elem = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
-        author = ''.join(author_elem.replace("By ", ""))
+        author = "".join(author_elem.replace("By ", ""))
 
-        date = datetime.now() # article´s website without date
+        date = datetime.now()  # article´s website without date
 
         contents_container = self.driver.find_element(By.CSS_SELECTOR, elems["content"])
         content = contents_container.text
@@ -1257,10 +1279,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_iese(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_iese(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes IESE.
 
         Args:
@@ -1272,15 +1292,15 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping IESE article: {url}")
         if "https://www.iese.edu/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for IESE article scrapper"
             )
 
-        ScrapUtils.disable_js(self.driver) # Disable JS
-        
+        ScrapUtils.disable_js(self.driver)  # Disable JS
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
@@ -1291,14 +1311,16 @@ class WEForumScraper(AbstractScraper):
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
-        authors_elem = self.driver.find_element(By.XPATH, '//div[@class="content description-subHeader"]/p[1]').text
+        authors_elem = self.driver.find_element(
+            By.XPATH, '//div[@class="content description-subHeader"]/p[1]'
+        ).text
         author = authors_elem.replace("By", "")
 
-        content_container = self.driver.find_elements(By.XPATH, '//div[@class="content description-subHeader"]/p')
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.XPATH, '//div[@class="content description-subHeader"]/p'
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
@@ -1312,10 +1334,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_harvard_business_review(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_harvard_business_review(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Harvard Business Review.
 
         Args:
@@ -1327,31 +1347,37 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Harvard Business Review article: {url}")
         elems = {}
         if "https://hbr.org/" in url:
             if "podcast" in url:
                 elems["title"] = "h1.podcast-post__banner-title.podcast__h2"
-                elems["date"] = "span[class='podcast-details__date publication-date text-gray']"
+                elems["date"] = (
+                    "span[class='podcast-details__date publication-date text-gray']"
+                )
                 elems["content"] = "section[id='details-section'] p"
                 elems["topic"] = "a[class='topic--large']"
             elif "sponsored" in url:
                 elems["title"] = "h1[class=sponsored-article-hed]"
                 elems["date"] = ".publication-date"
                 elems["content"] = "content p"
-                elems["topic"] = "" # There is not topic
+                elems["topic"] = ""  # There is not topic
             else:
                 elems["title"] = "div.Title_standard__x_GEq.Title_standard__x_GEq"
-                elems["date"] = "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl"
+                elems["date"] = (
+                    "div.PublicationDate_standard__rpflO.PublicationDate_non-magazine-date-container__Ln4Wl"
+                )
                 elems["content"] = "div.Standard_content__mghDk p"
-                elems["topic"] = "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y"
+                elems["topic"] = (
+                    "div.MainTopicLink_container__L7tHy.MainTopicLink_standard__WcK3Y"
+                )
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Harvard Business Review article scrapper"
             )
 
-        ScrapUtils.disable_js(self.driver) # Disable JS
+        ScrapUtils.disable_js(self.driver)  # Disable JS
 
         # Access the URL
         self.driver.get(url)
@@ -1364,17 +1390,15 @@ class WEForumScraper(AbstractScraper):
         date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["topic"]): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["topic"]):  # type: ignore
             topic = self.driver.find_element(By.CSS_SELECTOR, elems["topic"]).text
         else:
-            topic = ''
+            topic = ""
 
-        author = 'HBR' # There is not an author
+        author = "HBR"  # There is not an author
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
@@ -1388,10 +1412,8 @@ class WEForumScraper(AbstractScraper):
             topics=[topic],
         )
 
-    def _scrap_coronell_university(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_coronell_university(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Cornell University.
 
         Args:
@@ -1403,7 +1425,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Cornell University article: {url}")
         if "https://news.cornell.edu/" not in url:
             raise WEForumError(
@@ -1414,7 +1436,9 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "header.expanded.stories h1").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "header.expanded.stories h1"
+        ).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.byline time").text
         date_ft = time_elem.replace(",", "")
@@ -1422,11 +1446,11 @@ class WEForumScraper(AbstractScraper):
 
         author = self.driver.find_element(By.CSS_SELECTOR, "h2.byline span").text
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.field__item p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.field__item p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1438,10 +1462,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_govlab_living_library(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_govlab_living_library(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes GovLab - Living Library.
 
         Args:
@@ -1453,7 +1475,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping GovLab - Living Library article: {url}")
         if "https://thelivinglib.org/" not in url:
             raise WEForumError(
@@ -1466,17 +1488,19 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "time.entry-date.published").text
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "time.entry-date.published"
+        ).text
         date_ft = time_elem.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "span.author.vcard").text
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.entry-content p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.entry-content p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1488,10 +1512,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_fronteirs(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_fronteirs(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Frontiers.
 
         Args:
@@ -1503,7 +1525,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Frontiers article: {url}")
         if "https://www.frontiersin.org/" not in url:
             raise WEForumError(
@@ -1513,17 +1535,19 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.JournalAbstract__titleWrapper h1").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "div.JournalAbstract__titleWrapper h1"
+        ).text
 
-        time_elem = self.driver.find_element(By.XPATH, '//p[@class="ArticleLayoutHeader__info__journalDate"]/span[2]').text
+        time_elem = self.driver.find_element(
+            By.XPATH, '//p[@class="ArticleLayoutHeader__info__journalDate"]/span[2]'
+        ).text
         date_ft = time_elem.replace(", ", "")
         date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
         authors_group = self.driver.find_elements(By.CLASS_NAME, "authors")
-        author = [
-            authors.text for authors in authors_group
-        ]
-        author = ''.join(author)
+        author = [authors.text for authors in authors_group]
+        author = "".join(author)
 
         content_container = self.driver.find_element(By.CLASS_NAME, "JournalFullText")
         content = content_container.text
@@ -1538,10 +1562,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_asian_developement_bank(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_asian_developement_bank(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Asian Development Bank.
 
         Args:
@@ -1553,29 +1575,29 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Asian Development Bank article: {url}")
         elems = {}
         if "https://development.asia/" in url:
-           elems["title"] = ".title"
-           elems["date"] = "time[class='datetime']"
-           elems["content"] = "div.field__item p"
-           elems["author"] = "p.meta a"
+            elems["title"] = ".title"
+            elems["date"] = "time[class='datetime']"
+            elems["content"] = "div.field__item p"
+            elems["author"] = "p.meta a"
         elif "https://blogs.adb.org/blog/" in url:
-           elems["title"] = ".article-title span"
-           elems["date"] = "p.article-timestamp"
-           elems["content"] = "main p"
-           elems["author"] = "p.meta a"
+            elems["title"] = ".article-title span"
+            elems["date"] = "p.article-timestamp"
+            elems["content"] = "main p"
+            elems["author"] = "p.meta a"
         elif "https://www.adb.org/" in url:
-           elems["title"] = "div.row h1"
-           elems["date"] = ""
-           elems["content"] = "ul li"
-           elems["author"] = "li.field-item a"
+            elems["title"] = "div.row h1"
+            elems["date"] = ""
+            elems["content"] = "ul li"
+            elems["author"] = "li.field-item a"
         else:
             raise WEForumError(
                 "Attempted to scrape invalid page for Asian Development Bank article scrapper"
             )
-        
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
@@ -1590,15 +1612,13 @@ class WEForumScraper(AbstractScraper):
             date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["author"]): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["author"]):  # type: ignore
             author = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         else:
-            author = 'Asian Development Bank' # There is not author
+            author = "Asian Development Bank"  # There is not author
 
         return ScrapedNewsModel(
             header=title,
@@ -1609,11 +1629,9 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
-    
-    def _scrap_diw_berlin(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+
+    def _scrap_diw_berlin(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes DIW Berlin.
 
         Args:
@@ -1625,7 +1643,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping DIW Berlin article: {url}")
         if "https://www.diw.de/" not in url:
             raise WEForumError(
@@ -1639,13 +1657,13 @@ class WEForumScraper(AbstractScraper):
 
         author = self.driver.find_element(By.CSS_SELECTOR, "a[class='info_link']").text
 
-        date = datetime.now() # There is not date
+        date = datetime.now()  # There is not date
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[class='row justify-content-md-center'] p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div[class='row justify-content-md-center'] p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1657,10 +1675,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_war_on_rocks(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_war_on_rocks(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes War on the Rocks.
 
         Args:
@@ -1672,7 +1688,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping War on the Rocks article: {url}")
         if "https://warontherocks.com/" not in url:
             raise WEForumError(
@@ -1684,20 +1700,24 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.TAG_NAME, "h1").text
 
-        authors_elem = self.driver.find_elements(By.CSS_SELECTOR, "a[class='author url fn']")
-        author = [
-            authors.text for authors in authors_elem
-        ]
-        author = ''.join(author)
+        authors_elem = self.driver.find_elements(
+            By.CSS_SELECTOR, "a[class='author url fn']"
+        )
+        author = [authors.text for authors in authors_elem]
+        author = "".join(author)
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div[class='small-12 large-4 columns wotr_meta wotr_datetime']").text
-        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore 
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR,
+            "div[class='small-12 large-4 columns wotr_meta wotr_datetime']",
+        ).text
+        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[class='small-12 small-centered columns wotr_content'] p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR,
+            "div[class='small-12 small-centered columns wotr_content'] p",
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1708,11 +1728,9 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
-    
-    def _scrap_institut_montaigne(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+
+    def _scrap_institut_montaigne(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Institut Montaigne.
 
         Args:
@@ -1724,7 +1742,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Institut Montaigne article: {url}")
         if "https://www.institutmontaigne.org/" not in url:
             raise WEForumError(
@@ -1733,19 +1751,17 @@ class WEForumScraper(AbstractScraper):
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
-        
+
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text 
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text
         date = datetime.strptime(time_elem, "%d/%m/%Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auteur__nom").text
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, "div p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1757,10 +1773,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_institut_relations_internationales(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_institut_relations_internationales(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Institut des Relations Internationales et Stratégiques.
 
         Args:
@@ -1772,8 +1786,10 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
-        logger.debug(f"Scraping Institut des Relations Internationales et Stratégiques article: {url}")
+        """
+        logger.debug(
+            f"Scraping Institut des Relations Internationales et Stratégiques article: {url}"
+        )
         if "https://www.iris-france.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Institut des Relations Internationales et Stratégiques article scrapper"
@@ -1781,20 +1797,22 @@ class WEForumScraper(AbstractScraper):
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
-        
+
         title = self.driver.find_element(By.CSS_SELECTOR, "h1.article-title").text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
-        date_ft = dateparser.parse(time_elem, languages=['fr']) 
-        date = date_ft.strptime("%d %b %Y")  # type: ignore 
+        date_ft = dateparser.parse(time_elem, languages=["fr"])
+        date = date_ft.strptime("%d %b %Y")  # type: ignore
 
-        author = self.driver.find_element(By.CSS_SELECTOR, "div.card-content p.card-title").text
+        author = self.driver.find_element(
+            By.CSS_SELECTOR, "div.card-content p.card-title"
+        ).text
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.cms-content p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.cms-content p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1806,10 +1824,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_geneva_centre_security_sector_gov(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_geneva_centre_security_sector_gov(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Geneva Centre for Security Sector Governance (DCAF).
 
         Args:
@@ -1821,8 +1837,10 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
-        logger.debug(f"Scraping Geneva Centre for Security Sector Governance (DCAF) article: {url}")
+        """
+        logger.debug(
+            f"Scraping Geneva Centre for Security Sector Governance (DCAF) article: {url}"
+        )
         if "https://www.dcaf.ch/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Geneva Centre for Security Sector Governance (DCAF) article scrapper"
@@ -1833,12 +1851,18 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "title").text
 
-        time_elem = self.driver.find_element(By.CLASS_NAME, "publication-date-display").text
+        time_elem = self.driver.find_element(
+            By.CLASS_NAME, "publication-date-display"
+        ).text
         date = datetime.strptime(time_elem, "%d %B, %Y")  # type: ignore
 
-        author = self.driver.find_element(By.CSS_SELECTOR, "div[itemprop='author']").text
+        author = self.driver.find_element(
+            By.CSS_SELECTOR, "div[itemprop='author']"
+        ).text
 
-        content = self.driver.find_element(By.CSS_SELECTOR, "div[itemprop='description']").text
+        content = self.driver.find_element(
+            By.CSS_SELECTOR, "div[itemprop='description']"
+        ).text
 
         return ScrapedNewsModel(
             header=title,
@@ -1850,10 +1874,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_nature(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_nature(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Nature.
 
         Args:
@@ -1865,7 +1887,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
         # TODO ERROR: articles con varios identificadores diferentes
@@ -1876,7 +1898,9 @@ class WEForumScraper(AbstractScraper):
                 elems["author"] = "//li[@class='c-article-author-list__item']/a"
                 elems["content"] = "div.c-article-body p"
             else:
-                elems["title"] = "h1.c-article-magazine-title" # https://www.nature.com/articles/d41586-025-01034-x
+                elems["title"] = (
+                    "h1.c-article-magazine-title"  # https://www.nature.com/articles/d41586-025-01034-x
+                )
                 elems["date"] = "li time"
                 elems["author"] = "//li[@class='c-article-author-list__item']/a"
                 elems["content"] = "div.main-content p"
@@ -1884,7 +1908,7 @@ class WEForumScraper(AbstractScraper):
             raise WEForumError(
                 "Attempted to scrape invalid page for Nature article scrapper"
             )
-        
+
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
@@ -1898,10 +1922,8 @@ class WEForumScraper(AbstractScraper):
         author = self.driver.find_element(By.XPATH, elems["author"]).text
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1913,10 +1935,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_next_city(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_next_city(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Next City.
 
         Args:
@@ -1928,7 +1948,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Next City article: {url}")
         if "https://nextcity.org/" not in url:
             raise WEForumError(
@@ -1940,20 +1960,22 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "daily-title").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span[itemprop='datePublished']").text
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "span[itemprop='datePublished']"
+        ).text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
-        authors_line = self.driver.find_elements(By.CSS_SELECTOR, "span[itemprop='author']")
-        author = [
-            authors.text for authors in authors_line
-        ]
-        author = ''.join(author)
+        authors_line = self.driver.find_elements(
+            By.CSS_SELECTOR, "span[itemprop='author']"
+        )
+        author = [authors.text for authors in authors_line]
+        author = "".join(author)
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.entry-content p")
-        content = [
-            contents.text for contents in contents_container
-        ] 
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.entry-content p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -1965,10 +1987,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_findev_gateway(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_findev_gateway(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes FinDev Gateway.
 
         Args:
@@ -1980,7 +2000,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping FinDev Gateway article: {url}")
         if "https://www.findevgateway.org/" not in url:
             raise WEForumError(
@@ -1990,18 +2010,23 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.field--name-node-title h1").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "div.field--name-node-title h1"
+        ).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.heading div.field--name-field-date-m-y.field--type-datetime.field--label-hidden.field__item time.datetime").text
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR,
+            "div.heading div.field--name-field-date-m-y.field--type-datetime.field--label-hidden.field__item time.datetime",
+        ).text
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CLASS_NAME, "author").text
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.text-formatted.field.field--name-body p")
-        content = [
-            contents.text for contents in contents_container
-        ]
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.text-formatted.field.field--name-body p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2012,11 +2037,9 @@ class WEForumScraper(AbstractScraper):
             authors=[author],
             topics=None,
         )
-    
-    def _scrap_unidir(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+
+    def _scrap_unidir(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes UNIDIR.
 
         Args:
@@ -2028,7 +2051,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping UNIDIR article: {url}")
         if "https://unidir.org/" not in url:
             raise WEForumError(
@@ -2040,16 +2063,18 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, ".post-title__date-val").text 
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, ".post-title__date-val"
+        ).text
         date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
-        author = 'UNIDIR' # There are not author
+        author = "UNIDIR"  # There are not author
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.post-content p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.post-content p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2061,10 +2086,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_frontiers_digital_health(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_frontiers_digital_health(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Frontiers in Digital Health.
 
         Args:
@@ -2076,7 +2099,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Frontiers in Digital Health article: {url}")
         if "https://www.frontiersin.org/" not in url:
             raise WEForumError(
@@ -2086,23 +2109,27 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CLASS_NAME, "JournalAbstract__titleWrapper").text
+        title = self.driver.find_element(
+            By.CLASS_NAME, "JournalAbstract__titleWrapper"
+        ).text
 
-        time_elem = self.driver.find_element(By.XPATH, "//p[@class='ArticleLayoutHeader__info__journalDate']/span[2]").text
+        time_elem = self.driver.find_element(
+            By.XPATH, "//p[@class='ArticleLayoutHeader__info__journalDate']/span[2]"
+        ).text
         date_ft = time_elem.replace(", ", "")
         date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
 
-        author_line = self.driver.find_elements(By.CSS_SELECTOR, "span.author-wrapper a")
-        author = [
-            authors.text for authors in author_line
-        ]
-        author = ''.join(author)
+        author_line = self.driver.find_elements(
+            By.CSS_SELECTOR, "span.author-wrapper a"
+        )
+        author = [authors.text for authors in author_line]
+        author = "".join(author)
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div.JournalFullText p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.JournalFullText p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2114,10 +2141,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_trends_reach_advisory(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_trends_reach_advisory(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes TRENDS Research & Advisory.
 
         Args:
@@ -2129,7 +2154,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping TRENDS Research & Advisory article: {url}")
         if "https://trendsresearch.org/" not in url:
             raise WEForumError(
@@ -2139,20 +2164,22 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div[class='inner-text'] span").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "div[class='inner-text'] span"
+        ).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
-        date_ft = dateparser.parse(time_elem, languages=['ar']) 
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        date_ft = dateparser.parse(time_elem, languages=["ar"])
+        locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
         date = date_ft.strptime("%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.sp-content-full p")
-        content = [
-            contents.text for contents in contents_container
-        ]
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.sp-content-full p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2167,7 +2194,7 @@ class WEForumScraper(AbstractScraper):
     def _scrap_london_school_economics_political_science(
         self, url: str
     ) -> ScrapedNewsModel:
-        '''
+        """
         Access the given URL and scrapes London School of Economics and Political Science.
 
         Args:
@@ -2179,8 +2206,10 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
-        logger.debug(f"Scraping London School of Economics and Political Science article: {url}")
+        """
+        logger.debug(
+            f"Scraping London School of Economics and Political Science article: {url}"
+        )
         if "https://blogs.lse.ac.uk/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for London School of Economics and Political Science article scrapper"
@@ -2189,20 +2218,26 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "div.container.container--small h1").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "div.container.container--small h1"
+        ).text
 
-        time_elem = self.driver.find_element(By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[2]").text
+        time_elem = self.driver.find_element(
+            By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[2]"
+        ).text
         date_ft = TimeUtils.format_suffix_date(time_elem)
         date_ft = date_ft.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
-        author = self.driver.find_element(By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[1]").text
+        author = self.driver.find_element(
+            By.XPATH, "//div[@class='mobile-post-main-image__date']/h3[1]"
+        ).text
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.post-content p")
-        content = [
-            contents.text for contents in contents_container
-        ]
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.post-content p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2214,10 +2249,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_southern_voice(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_southern_voice(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Southern Voice.
 
         Args:
@@ -2229,7 +2262,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Southern Voice article: {url}")
         if "https://southernvoice.org/" not in url:
             raise WEForumError(
@@ -2239,22 +2272,22 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title.fusion-post-title").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, "h1.entry-title.fusion-post-title"
+        ).text
 
         authors_line = self.driver.find_elements(By.CLASS_NAME, "author-name")
-        author = [
-            authors.text for authors in authors_line
-        ]
-        author = ''.join(author)
+        author = [authors.text for authors in authors_line]
+        author = "".join(author)
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard span").text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.fusion-text p")
-        content = [
-            contents.text for contents in contents_container
-        ]
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.fusion-text p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2266,10 +2299,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_reliefweb(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scrap_reliefweb(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes ReliefWeb.
 
         Args:
@@ -2281,7 +2312,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping ReliefWeb article: {url}")
         if "https://reliefweb.int/" not in url:
             raise WEForumError(
@@ -2291,17 +2322,19 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, ".rw-article__title.rw-article__title").text
+        title = self.driver.find_element(
+            By.CSS_SELECTOR, ".rw-article__title.rw-article__title"
+        ).text
 
         date = datetime.now()
 
-        contents_container = self.driver.find_elements(By.CSS_SELECTOR, "div.rw-report__content p")
-        content = [
-            contents.text for contents in contents_container
-        ]
-        content = ''.join(content)
+        contents_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.rw-report__content p"
+        )
+        content = [contents.text for contents in contents_container]
+        content = "".join(content)
 
-        author = 'ReliefWeb' # There is not author
+        author = "ReliefWeb"  # There is not author
 
         return ScrapedNewsModel(
             header=title,
@@ -2313,10 +2346,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scarap_bank_england(
-        self, url: str
-    ) -> ScrapedNewsModel:
-        '''
+    def _scarap_bank_england(self, url: str) -> ScrapedNewsModel:
+        """
         Access the given URL and scrapes Bank of England.
 
         Args:
@@ -2328,7 +2359,7 @@ class WEForumScraper(AbstractScraper):
 
         Returns:
             ScrapedNewsModel: an object with the publication information.
-        '''
+        """
         logger.debug(f"Scraping Bank of England article: {url}")
         if "https://blogs.lse.ac.uk/" not in url:
             raise WEForumError(
@@ -2344,13 +2375,13 @@ class WEForumScraper(AbstractScraper):
         date_ft = time_elem.replace("Published on ", "")
         date = datetime.strptime(date_ft, "%B %d, %Y")  # type: ignore
 
-        author = 'Bank of England' # There is not author
+        author = "Bank of England"  # There is not author
 
-        content_container = self.driver.find_elements(By.CSS_SELECTOR, "div[id='output'] p")
-        content = [
-            contents.text for contents in content_container
-        ]
-        content = ''.join(content)
+        content_container = self.driver.find_elements(
+            By.CSS_SELECTOR, "div[id='output'] p"
+        )
+        content = [contents.text for contents in content_container]
+        content = "".join(content)
 
         return ScrapedNewsModel(
             header=title,
@@ -2362,7 +2393,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    ''''''
+    """"""
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
         logger.info("Scraping WEForum")
@@ -2422,12 +2453,12 @@ class WEForumScraper(AbstractScraper):
             "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
             "Southern Voice": self._scrap_southern_voice,
             "ReliefWeb": self._scrap_reliefweb,
-            "Bank of England": self._scarap_bank_england
-        } 
+            "Bank of England": self._scarap_bank_england,
+        }
 
         scraped_publications: list[ScrapedNewsModel] = []
 
-        #with Progress() as progress:
+        # with Progress() as progress:
         #    task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
 
         for article in articles:
@@ -2437,14 +2468,17 @@ class WEForumScraper(AbstractScraper):
                 )
                 if scrapper_function:
                     try:
-
-                        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8') # Change language to english
+                        locale.setlocale(
+                            locale.LC_TIME, "en_US.UTF-8"
+                        )  # Change language to english
 
                         publication_data = scrapper_function(article["url"])
                         scraped_publications.append(publication_data)
 
-                        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8') # Change language to spanish
-                        
+                        locale.setlocale(
+                            locale.LC_TIME, "es_ES.UTF-8"
+                        )  # Change language to spanish
+
                     except Exception as e:
                         logger.error(f"Error scraping {article['url']}:\n {e}")
                 else:

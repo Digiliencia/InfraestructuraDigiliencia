@@ -9,6 +9,7 @@ Class to contain time utility functions.
 from datetime import datetime, timedelta
 import platform
 
+
 class TimeUtils:
     @staticmethod
     def format_days_ago(days_ago: int) -> str:
@@ -71,7 +72,7 @@ class TimeUtils:
                     return datetime.now() - timedelta(days=days_ago)
                 except ValueError:
                     raise ValueError(f"Invalid relative date format: {date_str}")
-                
+
             # Handle "Now"
             if date_str.lower() == "now":
                 return datetime.now()
@@ -81,13 +82,13 @@ class TimeUtils:
                 formats = [
                     "%b %#d, %Y",
                     "%b %d, %Y",
-                    "%d %B %Y"
+                    "%d %B %Y",
                 ]  # Handle both variants for Windows
             else:
                 formats = [
                     "%b %-d, %Y",
                     "%b %d, %Y",
-                    "%d %B %Y"
+                    "%d %B %Y",
                 ]  # Handle both variants for Unix/Linux/MacOS
 
             for date_format in formats:
@@ -141,43 +142,43 @@ class TimeUtils:
         """
         date_formats = ["%d/%m/%Y", "%d %B %Y", "%d %b %Y"]
         for date_format in date_formats:
-                try:
-                    date1 = datetime.strptime(date_str1, date_format)
-                    date2 = datetime.strptime(date_str2, date_format)
-                    delta = date2 - date1
-                    return delta.days
-                except ValueError:
-                    continue
+            try:
+                date1 = datetime.strptime(date_str1, date_format)
+                date2 = datetime.strptime(date_str2, date_format)
+                delta = date2 - date1
+                return delta.days
+            except ValueError:
+                continue
         raise ValueError("No format matched date text")
 
     @staticmethod
-    def format_subtract_days_to_actual_date(days: int=0) -> str:
-        '''
-       
+    def format_subtract_days_to_actual_date(days: int = 0) -> str:
+        """
+
         Args:
             days:
-        Return: 
+        Return:
             A date subtract a days to actual date. If days = 0, else return actual date
-            str: actual date or an earlier date with fomat: Year-Month-Day 
+            str: actual date or an earlier date with fomat: Year-Month-Day
         Example:
             >>> subtract_days_to_actual_date()
             21 January 2025 # Actual Date
             >>> subtract_days_to_actual_date(2)
             19 January 2025
-        '''
+        """
         date_actual = datetime.now()
-        if(days == 0):
-            format_date = date_actual.strftime("%d %B %Y") 
+        if days == 0:
+            format_date = date_actual.strftime("%d %B %Y")
             return format_date
         else:
             days_subtract = timedelta(days)
             new_date = date_actual - days_subtract
-            format_date = new_date.strftime("%d %B %Y") 
+            format_date = new_date.strftime("%d %B %Y")
             return format_date
 
     @staticmethod
-    def format_suffix_date(date: str = ''):
-        '''
+    def format_suffix_date(date: str = ""):
+        """
         Remove a suffix given date by parameter
 
         Example:
@@ -185,9 +186,9 @@ class TimeUtils:
             9 May 2025
         Return:
             date(str): same format but without the suffix
-        '''
-        for suffix in ['st', 'nd', 'rd', 'th']:
+        """
+        for suffix in ["st", "nd", "rd", "th"]:
             if suffix in date:
-                date = date.replace(suffix, '')
+                date = date.replace(suffix, "")
 
         return date

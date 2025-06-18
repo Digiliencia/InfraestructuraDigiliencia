@@ -90,7 +90,7 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
                 RETURN o
             """
             with self.db.get_connection(AccessMode.READ) as session:
-                result = session.run(query, {"id": id}) # type: ignore
+                result = session.run(query, {"id": id})  # type: ignore
                 record = result.single()
                 if record is None:
                     logger.warning(f"No {self._organization_type} found with id: {id}")
@@ -152,7 +152,7 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
                 RETURN o
             """
             with self.db.get_connection(AccessMode.WRITE) as session:
-                result = session.run(query, {"id": id, **kwargs}) # type: ignore
+                result = session.run(query, {"id": id, **kwargs})  # type: ignore
                 record = result.single()
                 if record is None:
                     logger.warning(f"No {self._organization_type} found with id: {id}")
@@ -186,7 +186,7 @@ class OrganizationDAO(AbstractDAO, Generic[T], ABC):
                 DELETE o
             """
             with self.db.get_connection(AccessMode.WRITE) as session:
-                result = session.run(query, {"id": id}) # type: ignore
+                result = session.run(query, {"id": id})  # type: ignore
                 summary = result.consume()
                 if summary.counters.nodes_deleted == 0:
                     logger.warning(f"No {self._organization_type} found with id: {id}")

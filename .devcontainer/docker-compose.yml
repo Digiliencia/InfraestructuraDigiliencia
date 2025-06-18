@@ -1,0 +1,58 @@
+volumes:
+  postgres-data:
+  neo4j-data:
+
+networks:
+  dev-network:
+
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../:/workspaces/InfraestructuraDiligencia:cached
+    command: sleep infinity
+    networks:
+      - dev-network
+    depends_on:
+      - db
+      - neo4j
+
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - dev-network
+
+  neo4j:
+    image: neo4j:latest
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/testpassword
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - dev-network
+
+  neo4j-test:
+    image: neo4j:latest
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/testpassword
+    ports:
+      - "7475:7474" # HTTP
+      - "7688:7687" # Bolt
+    networks:
+      - dev-network

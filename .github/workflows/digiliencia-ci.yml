@@ -1,0 +1,100 @@
+name: Digiliencia CI
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "digiliencia/**"
+      - "test/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "digiliencia/**"
+      - "test/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+        ports:
+          - 7474:7474
+          - 7687:7687
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Neo4j HTTP API to be ready
+        run: |
+          for i in {1..30}; do
+            echo "Waiting for Neo4j HTTP API (attempt $i)..."
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7474 || echo "000")
+            if [ "$http_code" = "200" ]; then
+              echo "Neo4j HTTP API is ready!"
+              break
+            fi
+            sleep 2
+          done
+
+
+
+      - name: Check container status and logs
+        run: |
+          echo "Running containers:"
+          docker ps -a
+
+          echo "Neo4j logs:"
+          docker ps -a --filter ancestor=neo4j:latest
+          docker logs $(docker ps -q --filter ancestor=neo4j:latest)
+
+
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Debug Neo4j port
+        run: |
+          echo "Waiting for Neo4j..."
+          timeout 60 bash -c 'until echo > /dev/tcp/localhost/7687; do sleep 5; done'
+
+      - name: Wait for Neo4j to be ready
+        run: |
+          for i in {1..30}; do
+            nc -z localhost 7687 && echo "Neo4j is up!" && exit 0
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+          echo "Neo4j did not start in time" >&2
+          exit 1
+
+      - name: Check ruff formatting
+        run: uv run ruff format --check
+        working-directory: digiliencia
+
+      - name: Lint with ruff
+        run: uv run ruff check
+        working-directory: digiliencia
+
+      - name: Run tests
+        env:
+          DDBB_URI: bolt://localhost:7687
+          DDBB_USERNAME: neo4j
+          DDBB_PASSWD: testpassword
+          WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
+          WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
+          WEBDRIVERWAIT_TIMEOUT: 10
+        run: uv run pytest
