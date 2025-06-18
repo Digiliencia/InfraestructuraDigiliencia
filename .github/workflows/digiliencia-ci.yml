@@ -31,6 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Wait for Neo4j to be ready
+        run: |
+          for i in {1..30}; do
+            echo "Waiting for Neo4j (attempt $i)..."
+            nc -z localhost 7687 && echo "Neo4j is up!" && break
+            sleep 2
+          done
+
+      - name: Print Neo4j logs
+        run: docker logs $(docker ps -q --filter ancestor=neo4j:latest)
+
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
