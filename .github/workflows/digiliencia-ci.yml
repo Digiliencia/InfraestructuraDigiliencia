@@ -31,13 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Wait for Neo4j to be ready
+      - name: Wait for Neo4j HTTP API to be ready
         run: |
           for i in {1..30}; do
-            echo "Waiting for Neo4j (attempt $i)..."
-            nc -z localhost 7687 && echo "Neo4j is up!" && break
+            echo "Waiting for Neo4j HTTP API (attempt $i)..."
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7474)
+            if [ "$http_code" = "200" ]; then
+              echo "Neo4j HTTP API is ready!"
+              break
+            fi
             sleep 2
           done
+
 
       - name: Check container status and logs
         run: |
