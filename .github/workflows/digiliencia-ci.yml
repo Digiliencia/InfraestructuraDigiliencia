@@ -35,13 +35,14 @@ jobs:
         run: |
           for i in {1..30}; do
             echo "Waiting for Neo4j HTTP API (attempt $i)..."
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7474)
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7474 || echo "000")
             if [ "$http_code" = "200" ]; then
               echo "Neo4j HTTP API is ready!"
               break
             fi
             sleep 2
           done
+
 
 
       - name: Check container status and logs
