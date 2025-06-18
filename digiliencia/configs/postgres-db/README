@@ -12,7 +12,7 @@ The main configuration is located in the `.env` file. The schema, views and prec
 
 ## Test
 
-
+`conftest.py` prepares the enviromment for the tests. Loads Environment Variables
 
 ## PostgresSQL Database Schema
 
