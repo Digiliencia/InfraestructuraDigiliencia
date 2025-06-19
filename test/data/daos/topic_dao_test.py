@@ -52,6 +52,13 @@ class TestTopicDAO:
         with pytest.raises(DAOCreateError):
             self.topic_dao.create(name="Test Topic", definition="Test definition")
 
+    def test_create_topic_empty_definition(self):
+        """Test that creating a topic with an empty definition raises DAOCreateError."""
+        with pytest.raises(
+            DAOCreateError, match="Definition is required to create a topic"
+        ):
+            self.topic_dao.create(name="Test Topic", definition="")
+
     def test_create_topic_empty_name(self):
         """Test that creating a topic with an empty name raises DAOCreateError."""
         with pytest.raises(DAOCreateError, match="Name is required to create a topic"):
