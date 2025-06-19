@@ -48,6 +48,9 @@ class PublicOrganizationDAO(OrganizationDAO[PublicOrganizationModel]):
         Raises:
             DAOCreateError: If creation fails.
         """
+        if not name:
+            logger.error("Name is required to create a public organization")
+            raise DAOCreateError("Name is required to create a public organization")
         try:
             query = """
                 CREATE (o:Organization:PublicOrganization {

@@ -53,6 +53,12 @@ class TopicDAO(AbstractDAO):
         Raises:
             DAOCreateError: If creation fails.
         """
+        if not name:
+            logger.error("Name is required to create a topic")
+            raise DAOCreateError("Name is required to create a topic")
+        if not definition:
+            logger.error("Definition is required to create a topic")
+            raise DAOCreateError("Definition is required to create a topic")
         try:
             query = """
                 CREATE (t:Topic {
