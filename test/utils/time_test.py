@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Test module for TimeUtils class.
-
-This module contains comprehensive tests for all methods in the TimeUtils class
-to achieve 100% code coverage using pytest-mock.
-
-@author: Test Suite
-"""
-
 from datetime import datetime
 
 import pytest

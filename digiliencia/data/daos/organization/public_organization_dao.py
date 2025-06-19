@@ -15,6 +15,8 @@ from digiliencia.exc.dao_read_exc import DAOReadError
 class PublicOrganizationDAO(OrganizationDAO[PublicOrganizationModel]):
     """Data Access Object (DAO) for Public Organizations."""
 
+    _organization_type = "PublicOrganization"
+
     def _build_model(self, raw_data: Any) -> PublicOrganizationModel:
         """
         Builds a PublicOrganizationModel from raw data.

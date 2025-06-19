@@ -17,6 +17,15 @@ def test_build_model():
     assert model.description == "desc"
 
 
+def test_create_news_agency_empty_name():
+    """Test that creating a news agency with an empty name raises DAOCreateError."""
+    dao = NewsAgencyDAO()
+    with pytest.raises(
+        DAOCreateError, match="Name is required to create a news agency"
+    ):
+        dao.create(name="", description="Should fail")
+
+
 def test_create_news_agency_success():
     dao = NewsAgencyDAO()
     agency = dao.create(name="Agency1", description="desc1")
