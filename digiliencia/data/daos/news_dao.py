@@ -173,6 +173,18 @@ class NewsDAO(AbstractDAO):
         Raises:
             DAOCreateError: If creation fails.
         """
+        if not header:
+            logger.error("Header is required to create a news item")
+            raise DAOCreateError("Header is required to create a news item")
+        if not date:
+            logger.error("Date is required to create a news item")
+            raise DAOCreateError("Date is required to create a news item")
+        if not content:
+            logger.error("Content is required to create a news item")
+            raise DAOCreateError("Content is required to create a news item")
+        if not url:
+            logger.error("URL is required to create a news item")
+            raise DAOCreateError("URL is required to create a news item")
         try:
             author_ids = author_ids or []
             topic_ids = topic_ids or []

@@ -54,7 +54,7 @@ class TestTopicDAO:
 
     def test_create_topic_empty_name(self):
         """Test that creating a topic with an empty name raises DAOCreateError."""
-        with pytest.raises(DAOCreateError, match="Topic name cannot be empty"):
+        with pytest.raises(DAOCreateError, match="Name is required to create a topic"):
             self.topic_dao.create(name="", definition="Should fail")
 
     def test_read_by_id_not_found(self, monkeypatch):

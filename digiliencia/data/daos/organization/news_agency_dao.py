@@ -48,6 +48,9 @@ class NewsAgencyDAO(OrganizationDAO[NewsAgencyModel]):
         Raises:
             DAOCreateError: If creation fails.
         """
+        if not name:
+            logger.error("Name is required to create a news agency")
+            raise DAOCreateError("Name is required to create a news agency")
         try:
             query = """
                 CREATE (o:Organization:NewsAgency {
