@@ -16,6 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from digiliencia.exc.nist_exec import NistExec
 import time
+from utils.time import TimeUtils
 
 class Nist(AbstractScraper):
     '''Scraps only the events of NIST'''
@@ -25,6 +26,7 @@ class Nist(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.url_cybersegurity = "https://www.nist.gov/nice/ccw-events"
         self.load_time = 1
+        self.list_date = []
 
     def _button_more_info(self, col: WebElement) -> dict[str, str]:
         '''
@@ -94,6 +96,8 @@ class Nist(AbstractScraper):
         if from_days_ago < 0:
             logger.error("from_days_ago must be greater than 0")
             raise ValueError("from_days_ago must be greater than 0")
+        
+        until_date_str = TimeUtils.format_eeuu_date(from_days_ago)
 
         self.driver.get(self.url_cybersegurity)
         news_events: list[ScrapedEventsModel] = []       
@@ -120,11 +124,21 @@ class Nist(AbstractScraper):
                     else:
                         elems_col[index] = col.text
 
+                if(TimeUtils.days_between_es_dates(until_date_str, elems_col[3]) <= 0):
+                    logger.debug(f"Number of eventes extract data: {len(news_events)}")
+                    return news_events
+
+                date_dt = datetime.strptime(elems_col[3], "%m/%d/%Y")
+                if(date_dt == ''):
+                    date_dt = self.list_date[-1]
+                else:
+                    self.list_date.append(date_dt)
+
                 event:ScrapedEventsModel = ScrapedEventsModel(
                     type=elems_col[0],
                     header=elems_col[1],
                     organizer=elems_col[2],
-                    date=datetime.strptime(elems_col[3], "%m/%d/%Y"),
+                    date=date_dt,
                     location=elems_col[4],
                     address=elems_col[5],
                     description=elems_col[6],
