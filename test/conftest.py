@@ -3,30 +3,39 @@ import os
 import pytest
 from neo4j import GraphDatabase
 
+from digiliencia.configs.env import Env
+
+@pytest.fixture(autouse=True, scope="session")
+def override_env_vars():
+    os.environ["DDBB_URI"] = "bolt://neo4j-test:7687"
+    os.environ["DDBB_USERNAME"] = "neo4j"
+    os.environ["DDBB_PASSWD"] = "testpassword"
+
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_neo4j_db():
     """
-    Resetea la base de datos Neo4j de testing antes de cada test usando el script de inicialización.
+    Reset the Neo4j database before each test function.
     """
-    uri = os.getenv("DDBB_URI")
-    user = os.getenv("DDBB_USERNAME")
-    passwd = os.getenv("DDBB_PASSWD")
+    env = Env()
+    uri = env.ddbb_uri
+    user = env.ddbb_username
+    passwd = env.ddbb_passwd
+
     assert uri and user and passwd, (
-        "Variables de entorno de conexión a Neo4j no definidas."
+        "DDBB_URI, DDBB_USERNAME, and DDBB_PASSWD must be set in the environment variables."
     )
 
     driver = GraphDatabase.driver(uri, auth=(user, passwd))
     with driver.session() as session:
-        # Eliminar todos los constraints existentes
+        # Drop all constraints
         constraints = session.run("SHOW CONSTRAINTS")
         for record in constraints:
             name = record["name"]
-            # Usar consulta parametrizada para evitar problemas de tipado
             session.run("DROP CONSTRAINT " + name)
-        # Eliminar todos los nodos y relaciones
+        # Detach and delete all nodes
         session.run("MATCH (n) DETACH DELETE n")
-        # Ejecutar el script de constraints
+        # Run the initialization.cypher script
         cypher_path = os.path.join(
             os.path.dirname(__file__), "../digiliencia/data/db/initialization.cypher"
         )
@@ -42,5 +51,5 @@ def reset_neo4j_db():
             print(
                 f"[ADVERTENCIA] Error ejecutando initialization.cypher completo:\n{e}"
             )
-            pass  # ignorar errores de constraints ya existentes
+            pass
     driver.close()
