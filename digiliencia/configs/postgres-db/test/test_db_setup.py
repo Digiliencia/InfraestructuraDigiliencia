@@ -1,9 +1,11 @@
 import pytest
 import psycopg2
 import os
-from faker import Faker # Still useful for temporary data generation within tests
+from faker import Faker
 
-fake = Faker() # Initialize Faker
+import conftest
+
+fake = Faker()
 
 # --- Tests ---
 
@@ -23,7 +25,6 @@ def test_database_and_users_exist(db_connection):
 
 def test_tables_created(db_connection):
     """
-    Test if the tables defined in the schema script were created.
     This test assumes the tables are already set up (schema exists).
     """
     cursor = db_connection.cursor()
@@ -35,7 +36,7 @@ def test_tables_created(db_connection):
     """)
     tables = [row[0] for row in cursor.fetchall()]
 
-    expected_tables = ['users', 'products', 'orders'] # Based on your 01-full-init.sh
+    expected_tables = ['USER','CHATS','IA_PROMPTS','MODELS','MESSAGE']
     for table in expected_tables:
         assert table in tables, f"Table '{table}' was not created."
     print("Expected tables verified to exist.")
@@ -68,7 +69,7 @@ def test_app_user_select_permissions_on_populated_data(get_db_connection_for_rol
     try:
         cursor.execute("SELECT COUNT(*) FROM public.users;")
         assert cursor.fetchone()[0] > 0, "App user should be able to select from users and get data."
-        print("App user can SELECT from users table.")
+        print("App us # Still useful for temporary data generation within testser can SELECT from users table.")
 
         cursor.execute("SELECT COUNT(*) FROM public.products;")
         assert cursor.fetchone()[0] > 0, "App user should be able to select from products and get data."
