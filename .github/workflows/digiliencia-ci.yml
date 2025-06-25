@@ -42,7 +42,9 @@ jobs:
             sleep 2
           done
 
-
+      - name: Add neo4j-test alias to /etc/hosts
+        run: |
+          echo "127.0.0.1 neo4j-test" | sudo tee -a /etc/hosts
 
       - name: Check container status and logs
         run: |
@@ -52,8 +54,6 @@ jobs:
           echo "Neo4j logs:"
           docker ps -a --filter ancestor=neo4j:latest
           docker logs $(docker ps -q --filter ancestor=neo4j:latest)
-
-
 
       - name: Set up Python
         uses: actions/setup-python@v5
