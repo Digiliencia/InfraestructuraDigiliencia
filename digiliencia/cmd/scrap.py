@@ -9,6 +9,8 @@ from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.weforum import WEForumScraper
 from digiliencia.exc.dao_create_exc import DAOCreateError
 
+#from configs.env import Env
+from digiliencia.data.scrapping.nist import Nist
 
 #from configs.env import Env
 from digiliencia.data.scrapping.nist import Nist
