@@ -143,7 +143,7 @@ class TimeUtils:
     @staticmethod
     def days_between_es_dates(date_str1: str, date_str2: str) -> int:
         """
-        Calculates the difference in days between two dates in dd/mm/yyyy format.
+        Calculates the difference in days between two dates in several formats. 
         Args:
             date_str1 (str): The first date string (e.g., "1/10/2023").
             date_str2 (str): The second date string (e.g., "10/10/2023").
@@ -155,7 +155,7 @@ class TimeUtils:
             >>> TimeUtils.days_between_dates('1/10/2023', '10/10/2023')
             9
         """
-        date_formats = ["%d/%m/%Y", "%d %B %Y", "%d %b %Y"]
+        date_formats = ["%d/%m/%Y", "%d %B %Y", "%d %b %Y", "%m/%d/%Y"]
         for date_format in date_formats:
             try:
                 date1 = datetime.strptime(date_str1, date_format)
