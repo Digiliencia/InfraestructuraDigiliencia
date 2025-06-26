@@ -83,7 +83,9 @@ class Env:
 
     @staticmethod
     def load_env_vars():
-        load_dotenv(override=True)
+        # In testing mode, don't load from .env to avoid overwriting test variables
+        if not os.getenv("TESTING"):
+            load_dotenv(override=True)
         logger.debug("Environment variables loaded")
 
     @staticmethod
