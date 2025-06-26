@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
 from digiliencia.data.models.interface_model import IModel
 from digiliencia.data.models.organization.news_agency_model import NewsAgencyModel
 from digiliencia.data.models.topic_model import TopicModel

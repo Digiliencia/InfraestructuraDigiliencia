@@ -1,21 +1,17 @@
 from loguru import logger
-#from typing import List
 
-#from digiliencia.configs.env import Env
-#from digiliencia.data.models.news_model import ScrapedNewsModel
-#from digiliencia.data.daos.news_dao import NewsDAO
-#from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.weforum import WEForumScraper
-#from digiliencia.exc.dao_create_exc import DAOCreateError
+
+# from digiliencia.exc.dao_create_exc import DAOCreateError
 
 
 def scrap(from_days_ago: int = 365):
     logger.info("Start scraping")
     WEForumScraper().scrap_news(from_days_ago)
-    '''
+    """
     Env()
     news_dao = NewsDAO()
-    scrapers = [WEForumScraper, IncibeScraper]
+    scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNewsModel] = scraper().scrap_news(from_days_ago)
@@ -26,7 +22,7 @@ def scrap(from_days_ago: int = 365):
                     pass
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    '''
+    """
     logger.info("Scraping finished")
 
 

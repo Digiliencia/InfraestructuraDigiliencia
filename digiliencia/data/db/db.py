@@ -1,5 +1,7 @@
-from neo4j import GraphDatabase, Driver, Session
 from threading import Lock
+from typing import Optional
+
+from neo4j import Driver, GraphDatabase, Session
 
 from digiliencia.configs.db_config import DatabaseConfig
 from digiliencia.data.db.access_mode_enum import AccessMode
@@ -17,7 +19,7 @@ class Database:
     """
 
     _instance = None
-    _driver: Driver = None  # type: ignore
+    _driver: Optional[Driver] = None
     _lock: Lock = Lock()
 
     def __new__(cls) -> "Database":
@@ -51,6 +53,8 @@ class Database:
             DatabaseConnectionError: If the connection to the database fails.
         """
         try:
+            if self._driver is None:
+                raise DatabaseConnectionError("Database driver is not initialized")
             self._driver.verify_connectivity()
             return self._driver.session(default_access_mode=access_mode.value)
         except Exception as e:
@@ -62,7 +66,17 @@ class Database:
         """Explicitly close the database connection when needed."""
         if self._driver is not None:
             self._driver.close()
+            self._driver = None
 
     def __del__(self) -> None:
         """Ensure connection is closed when the object is garbage collected."""
         self.close()
+
+    @classmethod
+    def reset_instance(cls):
+        """Reset the singleton instance. Useful for testing."""
+        with cls._lock:
+            if cls._driver is not None:
+                cls._driver.close()
+            cls._instance = None
+            cls._driver = None
