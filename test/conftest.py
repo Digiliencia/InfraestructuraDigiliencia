@@ -5,11 +5,13 @@ from neo4j import GraphDatabase
 
 from digiliencia.configs.env import Env
 
+
 @pytest.fixture(autouse=True, scope="session")
 def override_env_vars():
     os.environ["DDBB_URI"] = "bolt://neo4j-test:7687"
     os.environ["DDBB_USERNAME"] = "neo4j"
     os.environ["DDBB_PASSWD"] = "testpassword"
+    # Clear any cached Env instance if it exists
 
 
 @pytest.fixture(autouse=True, scope="function")
