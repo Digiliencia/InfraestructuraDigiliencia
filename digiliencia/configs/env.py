@@ -23,8 +23,6 @@ class Env:
 
     _instance = None
     _ddbb_uri: str = ""
-    _ddbb_username: str = ""
-    _ddbb_passwd: str = ""
     _weforum_email: str = ""
     _weforum_passwd: str = ""
     _webdriverwait_timeout: int = 5
@@ -36,8 +34,6 @@ class Env:
             cls._instance = super().__new__(cls)
             cls._instance.load_env_vars()
             cls._instance._ddbb_uri = cls._instance.get_env_var("DDBB_URI")
-            cls._instance._ddbb_username = cls._instance.get_env_var("DDBB_USERNAME")
-            cls._instance._ddbb_passwd = cls._instance.get_env_var("DDBB_PASSWD")
             cls._instance._weforum_email = cls._instance.get_env_var("WEFORUM_EMAIL")
             cls._instance._weforum_passwd = cls._instance.get_env_var("WEFORUM_PASSWD")
             cls._instance._webdriverwait_timeout = int(
@@ -56,14 +52,6 @@ class Env:
     @property
     def ddbb_uri(self) -> str:
         return self._ddbb_uri
-
-    @property
-    def ddbb_username(self) -> str:
-        return self._ddbb_username
-
-    @property
-    def ddbb_passwd(self) -> str:
-        return self._ddbb_passwd
 
     @property
     def weforum_email(self) -> str:

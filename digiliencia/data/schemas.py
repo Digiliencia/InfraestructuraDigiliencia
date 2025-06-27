@@ -1,0 +1,24 @@
+"""Pydantic models for data validation."""
+
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, HttpUrl
+
+
+class ScrapedNewsData(BaseModel):
+    """Pydantic model for scraped news data validation."""
+
+    header: str
+    date: datetime
+    source: str
+    content: str
+    url: HttpUrl
+    authors: List[str]
+    topics: Optional[List[str]] = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        str_strip_whitespace = True
+        validate_assignment = True
