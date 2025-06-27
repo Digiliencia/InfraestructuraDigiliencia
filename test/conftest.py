@@ -7,9 +7,7 @@ from neo4j import GraphDatabase
 
 # Configuration constants
 TEST_DB_CONFIG = {
-    "DDBB_URI": "bolt://neo4j-test:7687",
-    "DDBB_USERNAME": "neo4j",
-    "DDBB_PASSWD": "testpassword",
+    "DDBB_URI": "bolt://neo4j:testpassword@neo4j-test:7687",
     "TESTING": "true",
 }
 
@@ -47,10 +45,9 @@ def setup_test_environment() -> Generator[None, None, None]:
 def _reset_singletons() -> None:
     """Reset singleton instances for testing."""
     from digiliencia.configs.env import Env
-    from digiliencia.data.db.db import Database
 
     Env.reset_instance()
-    Database.reset_instance()
+    # Note: Database singleton is no longer used with neomodel
 
 
 def _restore_environment(original_env: Dict[str, str | None]) -> None:
@@ -65,14 +62,23 @@ def _restore_environment(original_env: Dict[str, str | None]) -> None:
 @pytest.fixture(autouse=True, scope="function")
 def reset_neo4j_db():
     """Reset the Neo4j database before each test function."""
+    from urllib.parse import urlparse
     from digiliencia.configs.env import Env
 
     env = Env()
     _validate_db_config(env)
 
-    driver = GraphDatabase.driver(
-        env.ddbb_uri, auth=(env.ddbb_username, env.ddbb_passwd)
-    )
+    # Parse URI to extract credentials if present
+    parsed_uri = urlparse(env.ddbb_uri)
+    
+    if parsed_uri.username and parsed_uri.password:
+        # URI contains credentials, extract them
+        clean_uri = f"{parsed_uri.scheme}://{parsed_uri.hostname}:{parsed_uri.port or 7687}"
+        driver = GraphDatabase.driver(clean_uri, auth=(parsed_uri.username, parsed_uri.password))
+    else:
+        # URI doesn't contain credentials
+        driver = GraphDatabase.driver(env.ddbb_uri)
+    
     try:
         _clear_database(driver)
         _initialize_database(driver)
@@ -82,9 +88,7 @@ def reset_neo4j_db():
 
 def _validate_db_config(env) -> None:
     """Validate that required database configuration is present."""
-    assert env.ddbb_uri and env.ddbb_username and env.ddbb_passwd, (
-        "DDBB_URI, DDBB_USERNAME, and DDBB_PASSWD must be set in the environment variables."
-    )
+    assert env.ddbb_uri, "DDBB_URI must be set in the environment variables."
 
 
 def _clear_database(driver) -> None:
