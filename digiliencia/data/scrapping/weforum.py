@@ -129,7 +129,7 @@ class WEForumScraper(AbstractScraper):
 
         # Configuración inicial
         aside_div = self.driver.find_element(
-            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0"
+            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-f9692827-0"
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
