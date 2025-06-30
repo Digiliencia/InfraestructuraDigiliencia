@@ -129,7 +129,7 @@ class WEForumScraper(AbstractScraper):
 
         # Configuración inicial
         aside_div = self.driver.find_element(
-            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-9d1f1b4c-0"
+            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-f9692827-0"
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
@@ -153,7 +153,7 @@ class WEForumScraper(AbstractScraper):
         while not found_old_article:
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
-                By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
+                By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
             )
 
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
@@ -166,40 +166,38 @@ class WEForumScraper(AbstractScraper):
                 # Procesar solo los nuevos artículos
                 for article in current_articles[last_articles_count:]:
                     try:
-                        # Verificar la edad del artículo
+                        # Check article date
                         age_element = article.find_element(
-                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
+                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
                         )
                         age = age_element.text
 
-                        # Verificar si es demasiado antiguo
                         if (
                             "hour" not in age
                             and TimeUtils.days_between_dates(age, age_words) > 0
                         ):
                             title = article.find_element(
-                                By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
+                                By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                             ).text
                             logger.info(f"Too old article found: '{title}' from {age}")
                             found_old_article = True
                             break
 
-                        # Procesar el artículo al vuelo
                         type_element = article.find_element(
-                            By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
+                            By.CLASS_NAME, "shared__StyledType-sc-16a1486f-0"
                         )
                         article_type = type_element.text.lower()
 
                         if article_type == "publication":
                             publisher = article.find_element(
-                                By.CLASS_NAME, "SourceLabel__StyledText-sc-b4751e57-2"
+                                By.CLASS_NAME, "SourceLabel__StyledText-sc-dca16eb8-2"
                             ).text
                             title = article.find_element(
-                                By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
+                                By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                             ).text
                             link_element = article.find_element(
                                 By.CLASS_NAME,
-                                "UIActionButton__StyledButton-sc-d03545d8-2",
+                                "UIActionButton__StyledButton-sc-bc4b16c4-2",
                             )
                             title_attr = link_element.get_attribute("title")
                             href = link_element.get_attribute("href")
@@ -2346,7 +2344,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scarap_bank_england(self, url: str) -> ScrapedNewsModel:
+    def _scrap_bank_england(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Bank of England.
 
@@ -2406,7 +2404,7 @@ class WEForumScraper(AbstractScraper):
             self._login()
 
         ScrapUtils.click_element(
-            self.driver, ".CallToAction__CloseButton-sc-9356e940-7.fOhVSD"
+            self.driver, ".CallToAction__CloseButton-sc-a62859f4-7.kFxtTm"
         )
         time.sleep(self.load_time)
 
@@ -2453,13 +2451,10 @@ class WEForumScraper(AbstractScraper):
             "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
             "Southern Voice": self._scrap_southern_voice,
             "ReliefWeb": self._scrap_reliefweb,
-            "Bank of England": self._scarap_bank_england,
+            "Bank of England": self._scrap_bank_england,
         }
 
         scraped_publications: list[ScrapedNewsModel] = []
-
-        # with Progress() as progress:
-        #    task = progress.add_task("[cyan]Scraping articles...", total=len(articles))
 
         for article in articles:
             if article["type"] == "publication":
