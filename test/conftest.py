@@ -63,6 +63,7 @@ def _restore_environment(original_env: Dict[str, str | None]) -> None:
 def reset_neo4j_db():
     """Reset the Neo4j database before each test function."""
     from urllib.parse import urlparse
+
     from digiliencia.configs.env import Env
 
     env = Env()
@@ -70,15 +71,19 @@ def reset_neo4j_db():
 
     # Parse URI to extract credentials if present
     parsed_uri = urlparse(env.ddbb_uri)
-    
+
     if parsed_uri.username and parsed_uri.password:
         # URI contains credentials, extract them
-        clean_uri = f"{parsed_uri.scheme}://{parsed_uri.hostname}:{parsed_uri.port or 7687}"
-        driver = GraphDatabase.driver(clean_uri, auth=(parsed_uri.username, parsed_uri.password))
+        clean_uri = (
+            f"{parsed_uri.scheme}://{parsed_uri.hostname}:{parsed_uri.port or 7687}"
+        )
+        driver = GraphDatabase.driver(
+            clean_uri, auth=(parsed_uri.username, parsed_uri.password)
+        )
     else:
         # URI doesn't contain credentials
         driver = GraphDatabase.driver(env.ddbb_uri)
-    
+
     try:
         _clear_database(driver)
         _initialize_database(driver)
