@@ -5,7 +5,6 @@ from datetime import datetime
 from neomodel import (
     DateTimeProperty,
     One,
-    RelationshipFrom,
     RelationshipTo,
     StringProperty,
     StructuredNode,
@@ -13,7 +12,9 @@ from neomodel import (
     ZeroOrMore,
 )
 
-from .base_models import NewsAgency, Person, Topic
+from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
+from digiliencia.data.models.neomodel.person.author import Author
+from digiliencia.data.models.neomodel.topic import Topic
 
 
 class News(StructuredNode):
@@ -94,10 +95,3 @@ class News(StructuredNode):
                     news.covers.connect(topic)
 
         return news
-
-
-class Author(Person):
-    """Author node model that extends Person."""
-
-    # Relationships
-    wrote = RelationshipFrom("News", "WRITTEN_BY", cardinality=ZeroOrMore)
