@@ -1,3 +1,5 @@
+import platform
+
 from loguru import logger
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
@@ -9,7 +11,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from digiliencia.configs.env import Env
-import platform
 
 
 class ScrapUtils:
