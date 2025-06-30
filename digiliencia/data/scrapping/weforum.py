@@ -2406,8 +2406,8 @@ class WEForumScraper(AbstractScraper):
             self._login()
 
         ScrapUtils.click_element(
-            self.driver, ".CallToAction__CloseButton-sc-9356e940-7.fOhVSD"
-        )
+            self.driver, "aside button.CallToAction__CloseButton-sc-a62859f4-7"
+        )                   
         time.sleep(self.load_time)
 
         articles = self._get_websites_to_scrap(from_days_ago)

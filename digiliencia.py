@@ -12,5 +12,5 @@ def set_up_logging():
 if __name__ == "__main__":
     logger.info("Starting the application")
     set_up_logging()
-    Env()
+    #Env()
     scrap(2)
