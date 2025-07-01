@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 
 class ScrapedNewsData(BaseModel):
@@ -17,8 +17,4 @@ class ScrapedNewsData(BaseModel):
     authors: List[str]
     topics: Optional[List[str]] = None
 
-    class Config:
-        """Pydantic configuration."""
-
-        str_strip_whitespace = True
-        validate_assignment = True
+    model_config = ConfigDict(str_strip_whitespace=True, validate_assignment=True)

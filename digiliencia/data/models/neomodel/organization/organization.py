@@ -7,6 +7,3 @@ class Organization(StructuredNode):
     uid = UniqueIdProperty()
     name = StringProperty(required=True, unique_index=True)
     description = StringProperty()
-
-    class Meta:
-        app_label = "digiliencia"
