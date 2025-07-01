@@ -6,15 +6,16 @@ Created on Wed Jan 21 12:39:40 2025
 Scrapper for the World Economic Forum website. It allows to scrape the articles from the Cybersecurity topic.
 """
 
+import locale
 import random
 import time
 from datetime import datetime
-import locale
-import dateparser
 from typing import Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
+import dateparser
 from loguru import logger
+from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -351,7 +352,7 @@ class WEForumScraper(AbstractScraper):
             date=datetime.strptime(date, "%b %d, %Y"),   # ERROR se cambio la B en mayuscula por una b en minuscula
             source="Rand Corporation",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[authors],
             topics=None,
         )
@@ -393,7 +394,7 @@ class WEForumScraper(AbstractScraper):
             date=datetime.strptime(date, "%B %d, %Y"),
             source="Science Daily",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[authors],
             topics=None,
         )
@@ -450,7 +451,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Wired",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -505,7 +506,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="World Economic Forum",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -557,7 +558,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="GlobalData",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[],
             topics=None,
         )
@@ -639,14 +640,12 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="The Quantum Insider",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
 
-    def _scrap_australian_strategic_policy_institute(
-        self, url: str
-    ) -> ScrapedNews:
+    def _scrap_australian_strategic_policy_institute(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -710,7 +709,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Australian Strategic Policy Institute",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
@@ -770,7 +769,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="ProPublica",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
@@ -842,7 +841,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="The Conversation",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
@@ -904,7 +903,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="The Atlantic",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
@@ -957,14 +956,12 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="SpringerOpen",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
 
-    def _scrap_electronic_frontier_foundation_deeplink(
-        self, url: str
-    ) -> ScrapedNews:
+    def _scrap_electronic_frontier_foundation_deeplink(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Electronic Frontier Foundation deeplink.
 
@@ -1009,7 +1006,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Electronic Frontier Foundation",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=authors,
             topics=None,
         )
@@ -1066,7 +1063,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Australian Institute Of International Affairs",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1122,7 +1119,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Eco-bussiness",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1174,14 +1171,12 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Australian Institute Of International Affairs",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
 
-    def _scrap_african_center_economic_transformation(
-        self, url: str
-    ) -> ScrapedNews:
+    def _scrap_african_center_economic_transformation(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes African Center Economic Transformation.
 
@@ -1231,7 +1226,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Australian Institute Of International Affairs",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1290,7 +1285,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Oliver Wyman",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1345,7 +1340,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="IESE",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1424,7 +1419,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Harvard Business Review",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=[topic],
         )
@@ -1474,7 +1469,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Cornell University",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1524,7 +1519,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="GovLab - Living Library",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1574,7 +1569,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="GovLab - Living Library",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1642,7 +1637,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Asian Development Bank",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1687,7 +1682,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="DIW Berlin",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1745,7 +1740,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="War on the Rocks",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1789,7 +1784,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Institut Montaigne",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1840,7 +1835,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Institut des Relations Internationales et Stratégiques",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1890,7 +1885,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Geneva Centre for Security Sector Governance (DCAF)",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -1953,7 +1948,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Nature",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2005,7 +2000,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Next City",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2056,7 +2051,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="FinDev Gateway",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2106,7 +2101,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="UNIDIR",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2161,7 +2156,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Frontiers in Digital Health",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2215,14 +2210,12 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="TRENDS Research & Advisory",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
 
-    def _scrap_london_school_economics_political_science(
-        self, url: str
-    ) -> ScrapedNews:
+    def _scrap_london_school_economics_political_science(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes London School of Economics and Political Science.
 
@@ -2273,7 +2266,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="London School of Economics and Political Science",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2323,7 +2316,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Southern Voice",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2370,7 +2363,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="ReliefWeb",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -2417,7 +2410,7 @@ class WEForumScraper(AbstractScraper):
             date=date,
             source="Bank of England",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
