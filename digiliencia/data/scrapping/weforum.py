@@ -153,7 +153,7 @@ class WEForumScraper(AbstractScraper):
         while not found_old_article:
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
-                By.CLASS_NAME, "ListItemBox-sc-47508d61-0"
+                By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
             )
 
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
@@ -168,7 +168,7 @@ class WEForumScraper(AbstractScraper):
                     try:
                         # Verificar la edad del artículo
                         age_element = article.find_element(
-                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-b4751e57-4"
+                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
                         )
                         age = age_element.text
 
@@ -186,20 +186,20 @@ class WEForumScraper(AbstractScraper):
 
                         # Procesar el artículo al vuelo
                         type_element = article.find_element(
-                            By.CLASS_NAME, "shared__StyledType-sc-fd9f989e-0"
+                            By.CLASS_NAME, "shared__StyledType-sc-16a1486f-0"
                         )
                         article_type = type_element.text.lower()
 
                         if article_type == "publication":
                             publisher = article.find_element(
-                                By.CLASS_NAME, "SourceLabel__StyledText-sc-b4751e57-2"
+                                By.CLASS_NAME, "SourceLabel__StyledText-sc-dca16eb8-2"
                             ).text
                             title = article.find_element(
-                                By.CLASS_NAME, "shared__StyledTitle-sc-fd9f989e-1"
+                                By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                             ).text
                             link_element = article.find_element(
                                 By.CLASS_NAME,
-                                "UIActionButton__StyledButton-sc-d03545d8-2",
+                                "UIActionButton__StyledButton-sc-bc4b16c4-2",
                             )
                             title_attr = link_element.get_attribute("title")
                             href = link_element.get_attribute("href")

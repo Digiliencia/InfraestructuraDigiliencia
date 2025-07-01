@@ -9,7 +9,7 @@ from digiliencia.data.scrapping.weforum import WEForumScraper
 #from digiliencia.exc.dao_create_exc import DAOCreateError
 
 
-def scrap(from_days_ago: int = 5):
+def scrap(from_days_ago: int = 365):
     logger.info("Start scraping")
     WEForumScraper().scrap_news(from_days_ago)
     '''
