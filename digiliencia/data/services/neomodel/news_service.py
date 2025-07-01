@@ -6,7 +6,7 @@ from typing import List, Optional
 from loguru import logger
 
 from digiliencia.data.models.neomodel.news import News
-from digiliencia.data.schemas import ScrapedNewsData
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.config import configure_neomodel
 
 
@@ -17,7 +17,7 @@ class NewsService:
         """Initialize the news service."""
         configure_neomodel()
 
-    def create_from_scraped_data(self, scraped_data: ScrapedNewsData) -> News:
+    def create_from_scraped_data(self, scraped_data: ScrapedNews) -> News:
         """
         Create a news item from scraped data.
 

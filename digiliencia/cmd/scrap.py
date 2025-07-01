@@ -12,11 +12,11 @@ def scrap(from_days_ago: int = 365):
     scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
-            scraped_news: List[ScrapedNewsModel] = scraper().scrap_news(from_days_ago)
+            scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
             for news in scraped_news:
                 try:
-                    # Convert ScrapedNewsModel to ScrapedNewsData for validation
-                    validated_data = ScrapedNewsData(
+                    # Convert ScrapedNews to ScrapedNews for validation
+                    validated_data = ScrapedNews(
                         header=news.header,
                         date=news.date,
                         source=news.source,
