@@ -3,11 +3,11 @@ from typing import List
 from loguru import logger
 
 from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.data.neomodel_manager import NewsService, ScrapedNewsData
-from digiliencia.data.scrapping.weforum import WEForumScraper
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
+from digiliencia.data.scrapping.weforum import WEForumScraper
+from digiliencia.data.services.neomodel.news_service import NewsService
 
 
 def scrap(from_days_ago: int = 5):
@@ -17,11 +17,11 @@ def scrap(from_days_ago: int = 5):
     scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
-            scraped_news: List[ScrapedNewsModel] = scraper().scrap_news(from_days_ago)
+            scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
             for news in scraped_news:
                 try:
-                    # Convert ScrapedNewsModel to ScrapedNewsData for validation
-                    validated_data = ScrapedNewsData(
+                    # Convert ScrapedNews to ScrapedNews for validation
+                    validated_data = ScrapedNews(
                         header=news.header,
                         date=news.date,
                         source=news.source,
