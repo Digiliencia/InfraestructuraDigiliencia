@@ -322,7 +322,9 @@ class WEForumScraper(AbstractScraper):
             ScrapedNews: An object with the publication information.
         """
         # Verify URL  # TODO fix: 'list' object has no attribute 'text'
-        if "https://www.rand.org/pubs/research_reports/" not in url: # TODO fix: Error scraping https://www.rand.org/pubs/perspectives/PEA3886-1.html: Attempted to scrape invalid page for Rand Corporation newsletter scrapper
+        if (
+            "https://www.rand.org/pubs/research_reports/" not in url
+        ):  # TODO fix: Error scraping https://www.rand.org/pubs/perspectives/PEA3886-1.html: Attempted to scrape invalid page for Rand Corporation newsletter scrapper
             raise WEForumError(
                 "Attempted to scrape invalid page for Rand Corporation newsletter scrapper"
             )
@@ -1103,9 +1105,7 @@ class WEForumScraper(AbstractScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element( # Esperar a que se carge 
-            By.TAG_NAME, "time"
-        ).text
+        time_elem = self.driver.find_element(By.TAG_NAME, "time").text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore # TODO fix: time data '' does not match format '%B %d, %Y'
 
         content_container = self.driver.find_elements(
@@ -1711,6 +1711,13 @@ class WEForumScraper(AbstractScraper):
         time.sleep(self.load_time)  # Reject cookies if visible
 
         # TODO fix: Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "span.dynamic-hover"
+        ):  # type: ignore
+            title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover")
+        else:
+            title = self.driver.find_element(By.TAG_NAME, "h1").text
+        # TODO fix: Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
         if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "span.dynamic-hover")): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover").text
         else:
@@ -2247,7 +2254,9 @@ class WEForumScraper(AbstractScraper):
         time_elem = self.driver.find_element( # TODO fix: Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
             By.CSS_SELECTOR, "div.mobile-post-main-image__date > h3:nth-of-type(4)"
         ).text
-        date_ft = TimeUtils.format_suffix_date(time_elem) # TODO fix: time data 'Sebaian Schwartz' does not match format '%B %d %Y'
+        date_ft = TimeUtils.format_suffix_date(
+            time_elem
+        )  # TODO fix: time data 'Sebaian Schwartz' does not match format '%B %d %Y'
         date_ft = date_ft.replace(",", "")
         date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore
 
@@ -2509,6 +2518,44 @@ class WEForumScraper(AbstractScraper):
         self._close()
         logger.info("WEForum scraping finished")
         return scraped_publications
+
+
+"""
+PAGES NOT SCRAPPING
+-Istituto Affari Internazionali
+-Institute for New Economic Thinking
+-Stanford Social Innovation Review
+-Austrian Institute for European and Security Policy
+-International Science Council (ISC)
+-Stockholm International Peace Research Institute
+-The Innovator
+-MIT Sloan Management Review
+-German Institute for International and Security Affairs
+"""
+
+"""
+ERRORS:
+
+2025-07-01 11:33:42.344 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.rand.org/pubs/working_papers/WRA3990-1.html:
+ Attempted to scrape invalid page for Rand Corporation newsletter scrapper
+
+2025-07-01 11:33:42.343 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://blogs.lse.ac.uk/europpblog/2025/06/26/europe-nato-eu-has-much-to-learn-from-ukraines-drone-warfare-ecosystem/:
+ time data 'Sebaian Schwartz' does not match format '%B %d %Y'
+
+2025-07-01 11:33:38.018 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.weforum.org/stories/2025/06/safer-gaming-digital-safety-movement/:
+ Message: no such element: Unable to locate element: {"method":"xpath","selector":"/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]"}
+
+2025-07-01 11:33:13.377 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.eco-business.com/news/ai-data-centre-boom-could-destroy-big-techs-net-zero-plans/:
+ time data '' does not match format '%B %d, %Y'
+
+2025-07-01 11:33:08.763 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://warontherocks.com/2025/06/the-double-power-law-how-american-innovation-really-works/:
+ Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
+
+
+2025-07-01 11:32:54.394 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://trendsresearch.org/insight/the-international-systems-challenges-and-the-future-of-the-middle-east/:
+ 'NoneType' object has no attribute 'strptime'
+"""
+
 
 
 '''
