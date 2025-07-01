@@ -8,6 +8,3 @@ class Person(StructuredNode):
     name = StringProperty(required=True, unique_index=True)
     email = StringProperty()
     description = StringProperty()
-
-    class Meta:
-        app_label = "digiliencia"

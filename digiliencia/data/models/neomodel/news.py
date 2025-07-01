@@ -31,9 +31,6 @@ class News(StructuredNode):
     written_by = RelationshipTo("Author", "WRITTEN_BY", cardinality=ZeroOrMore)
     covers = RelationshipTo("Topic", "COVERS", cardinality=ZeroOrMore)
 
-    class Meta:
-        app_label = "digiliencia"
-
     @classmethod
     def get_or_create_with_relationships(
         cls,
@@ -61,9 +58,11 @@ class News(StructuredNode):
             News: The created or existing news instance
         """
         # Check if news already exists (by header and date combination)
-        existing_news = cls.nodes.filter(header=header, date=date).first()
-        if existing_news:
+        try:
+            existing_news = cls.nodes.get(header=header, date=date)
             return existing_news
+        except cls.DoesNotExist:
+            pass  # Continue with creation
 
         # Create or get the news agency
         try:
@@ -90,8 +89,10 @@ class News(StructuredNode):
         if topic_names:
             for topic_name in topic_names:
                 # Only connect to existing topics, don't create new ones
-                topic = Topic.nodes.filter(name=topic_name).first()
-                if topic:
+                try:
+                    topic = Topic.nodes.get(name=topic_name)
                     news.covers.connect(topic)
+                except Topic.DoesNotExist:
+                    pass  # Skip if topic doesn't exist
 
         return news

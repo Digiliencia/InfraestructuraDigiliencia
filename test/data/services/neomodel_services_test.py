@@ -5,16 +5,14 @@ from typing import Generator
 
 import pytest
 
-from digiliencia.data.neomodel_manager import (
-    Author,
-    AuthorService,
-    News,
-    NewsService,
-    ScrapedNewsData,
-    Topic,
-    TopicService,
-    configure_neomodel,
-)
+from digiliencia.data.models.neomodel.news import News
+from digiliencia.data.models.neomodel.person.author import Author
+from digiliencia.data.models.neomodel.topic import Topic
+from digiliencia.data.schemas import ScrapedNewsData
+from digiliencia.data.services.neomodel.author_service import AuthorService
+from digiliencia.data.services.neomodel.config import configure_neomodel
+from digiliencia.data.services.neomodel.topic_service import TopicService
+from digiliencia.data.services.neomodel.news_service import NewsService
 
 
 @pytest.fixture(scope="session")

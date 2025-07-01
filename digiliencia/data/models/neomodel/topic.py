@@ -7,6 +7,3 @@ class Topic(StructuredNode):
     uid = UniqueIdProperty()
     name = StringProperty(required=True, unique_index=True)
     definition = StringProperty()
-
-    class Meta:
-        app_label = "digiliencia"
