@@ -1105,7 +1105,9 @@ class WEForumScraper(AbstractScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(By.TAG_NAME, "time").text
+        time_elem = self.driver.find_element(  # Esperar a que se carge
+            By.TAG_NAME, "time"
+        ).text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore # TODO fix: time data '' does not match format '%B %d, %Y'
 
         content_container = self.driver.find_elements(
@@ -1729,10 +1731,17 @@ class WEForumScraper(AbstractScraper):
         author = [authors.text for authors in authors_elem]
         author = "".join(author)
         # TODO fix: Message: no such element: Unable to locate element: {"method":"css selector","selector":"div[class='small-12 large-4 columns wotr_meta wotr_datetime']"}
-        if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, r"div.tw\:text-gray-500:nth-child(3)")): # type: ignore
-            time_elem = self.driver.find_element(By.CSS_SELECTOR, r"div.tw\:text-gray-500:nth-child(3)").text
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, r"div.tw\:text-gray-500:nth-child(3)"
+        ):  # type: ignore
+            time_elem = self.driver.find_element(
+                By.CSS_SELECTOR, r"div.tw\:text-gray-500:nth-child(3)"
+            ).text
         else:
-            time_elem = self.driver.find_element(By.CSS_SELECTOR, "div[class='small-12 large-4 columns wotr_meta wotr_datetime']").text
+            time_elem = self.driver.find_element(
+                By.CSS_SELECTOR,
+                "div[class='small-12 large-4 columns wotr_meta wotr_datetime']",
+            ).text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
         content_container = self.driver.find_elements(
@@ -2251,7 +2260,7 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div.container.container--small h1"
         ).text
 
-        time_elem = self.driver.find_element( # TODO fix: Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
+        time_elem = self.driver.find_element(
             By.CSS_SELECTOR, "div.mobile-post-main-image__date > h3:nth-of-type(4)"
         ).text
         date_ft = TimeUtils.format_suffix_date(
