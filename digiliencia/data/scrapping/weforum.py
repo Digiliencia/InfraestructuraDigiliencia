@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
@@ -306,7 +306,7 @@ class WEForumScraper(AbstractScraper):
                 accept_bttn.click()
                 time.sleep(self.load_time)
 
-    def _scrap_rand_corporation(self, url: str) -> ScrapedNewsModel:
+    def _scrap_rand_corporation(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Rand Corporation
 
@@ -318,7 +318,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Return:
-            ScrapedNewsModel: An object with the publication information.
+            ScrapedNews: An object with the publication information.
         """
         # Verify URL  # TODO fix: 'list' object has no attribute 'text'
         if "https://www.rand.org/pubs/research_reports/" not in url: # TODO fix: Error scraping https://www.rand.org/pubs/perspectives/PEA3886-1.html: Attempted to scrape invalid page for Rand Corporation newsletter scrapper
@@ -346,7 +346,7 @@ class WEForumScraper(AbstractScraper):
         sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore 
         content = introduction + " ".join([section.text for section in sections])
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=datetime.strptime(date, "%b %d, %Y"),   # ERROR se cambio la B en mayuscula por una b en minuscula
             source="Rand Corporation",
@@ -356,7 +356,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_sciencedaily(self, url: str) -> ScrapedNewsModel:
+    def _scrap_sciencedaily(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Science Daily
 
@@ -368,7 +368,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Return:
-            ScrapedNewsModel: An object with the publication information.
+            ScrapedNews: An object with the publication information.
         """
         # Verify URL
         if "https://www.sciencedaily.com/releases/" not in url:
@@ -388,7 +388,7 @@ class WEForumScraper(AbstractScraper):
         ).text  # Mirar el formato de la fecha
         authors = self.driver.find_element(By.ID, "source").text
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=datetime.strptime(date, "%B %d, %Y"),
             source="Science Daily",
@@ -398,7 +398,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_wired_story(self, url: str) -> ScrapedNewsModel:
+    def _scrap_wired_story(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -408,7 +408,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Wired story: {url}")
         # Disable JS
@@ -445,7 +445,7 @@ class WEForumScraper(AbstractScraper):
 
         content = content
         ScrapUtils.enable_js(self.driver)  # Enable JS again
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Wired",
@@ -455,7 +455,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_WEF_story_publication(self, url: str) -> ScrapedNewsModel:
+    def _scrap_WEF_story_publication(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -466,7 +466,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page
 
         Returns:
-            ScrapedNewsModel with the publication information.
+            ScrapedNews with the publication information.
         """
         logger.debug(f"Scraping WEForum story: {url}")
         if self.stories_url not in url:
@@ -500,7 +500,7 @@ class WEForumScraper(AbstractScraper):
         )
 
         content = content_container.text  # TODO: althoug this may contain the content, it may not be the best way to extract it, as it can also contain other elements like links, images, etc.
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=header,
             date=date,
             source="World Economic Forum",
@@ -510,7 +510,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_globaldata_newsletter(self, url: str) -> ScrapedNewsModel:
+    def _scrap_globaldata_newsletter(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -521,7 +521,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping GlobalData newsletter: {url}")
         # Verify URL
@@ -552,7 +552,7 @@ class WEForumScraper(AbstractScraper):
         content = content_container.text
         content = content.replace(title, "")  # Remove title from content
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="GlobalData",
@@ -563,7 +563,7 @@ class WEForumScraper(AbstractScraper):
         )
 
     # TODO ERROR: popup selector CloudFlare
-    def _scrap_the_quantum_insider(self, url: str) -> ScrapedNewsModel:
+    def _scrap_the_quantum_insider(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the post.
 
         Args:
@@ -574,7 +574,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping The Quantum Insider: {url}")
         if not url.startswith("https://thequantuminsider.com/"):
@@ -634,7 +634,7 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="The Quantum Insider",
@@ -646,7 +646,7 @@ class WEForumScraper(AbstractScraper):
 
     def _scrap_australian_strategic_policy_institute(
         self, url: str
-    ) -> ScrapedNewsModel:
+    ) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -657,7 +657,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Australian Strategic Policy Institute: {url}")
         if "https://www.aspistrategist.org.au/" not in url:
@@ -705,7 +705,7 @@ class WEForumScraper(AbstractScraper):
                 content += f"![{img_alt}]({img_link})\n"
 
         content = content
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Australian Strategic Policy Institute",
@@ -715,7 +715,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_propbublica_article(self, url: str) -> ScrapedNewsModel:
+    def _scrap_propbublica_article(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
 
         Args:
@@ -726,7 +726,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping ProPublica article: {url}")
         if "https://www.propublica.org/article/" not in url:
@@ -765,7 +765,7 @@ class WEForumScraper(AbstractScraper):
         for p in content_div.find_elements(By.TAG_NAME, "p"):
             content += p.text + "\n\n"
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="ProPublica",
@@ -775,7 +775,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_the_conversation(self, url: str) -> ScrapedNewsModel:
+    def _scrap_the_conversation(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes the publication.
 
@@ -787,7 +787,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping The Conversation article: {url}")
         if "https://theconversation.com/" not in url:
@@ -837,7 +837,7 @@ class WEForumScraper(AbstractScraper):
                         continue
                 content += element.text + "\n\n"
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="The Conversation",
@@ -847,7 +847,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_the_atlantic(self, url: str) -> ScrapedNewsModel:
+    def _scrap_the_atlantic(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes The Atlantic.
 
@@ -859,7 +859,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping The Atlantic article: {url}")
         if "https://www.theatlantic.com" not in url:
@@ -899,7 +899,7 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="The Atlantic",
@@ -909,7 +909,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_springeropen(self, url: str) -> ScrapedNewsModel:
+    def _scrap_springeropen(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes SpringerOpen.
 
@@ -921,7 +921,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping SpringerOpen article: {url}")
         if "springeropen.com/articles" not in url:
@@ -952,7 +952,7 @@ class WEForumScraper(AbstractScraper):
         content_elem = self.driver.find_element(By.CSS_SELECTOR, "main > article")
         content = content_elem.text  # TODO: improve content extraction
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="SpringerOpen",
@@ -964,7 +964,7 @@ class WEForumScraper(AbstractScraper):
 
     def _scrap_electronic_frontier_foundation_deeplink(
         self, url: str
-    ) -> ScrapedNewsModel:
+    ) -> ScrapedNews:
         """
         Access the given URL and scrapes Electronic Frontier Foundation deeplink.
 
@@ -976,7 +976,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Electronic Frontier Foundation deeplink: {url}")
         if "https://www.eff.org/deeplinks/" not in url:
@@ -1004,7 +1004,7 @@ class WEForumScraper(AbstractScraper):
         )
         content = content_container.text
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Electronic Frontier Foundation",
@@ -1016,7 +1016,7 @@ class WEForumScraper(AbstractScraper):
 
     def _scrap_australian_institute_international_affairs(
         self, url: str
-    ) -> ScrapedNewsModel:
+    ) -> ScrapedNews:
         """
         Access the given URL and scrapes Australian Institute Of International Affairs page.
 
@@ -1028,7 +1028,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Australian Institute Of International Affairs: {url}")
         if "https://www.internationalaffairs.org.au/" not in url:
@@ -1061,7 +1061,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Australian Institute Of International Affairs",
@@ -1073,7 +1073,7 @@ class WEForumScraper(AbstractScraper):
 
     """"""
 
-    def _scrap_eco_bussiness(self, url: str) -> ScrapedNewsModel:
+    def _scrap_eco_bussiness(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Eco-bussiness.
 
@@ -1085,7 +1085,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Eco-bussiness: {url}")
         if "https://www.eco-business.com" not in url:
@@ -1117,7 +1117,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Eco-bussiness",
@@ -1127,7 +1127,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_social_europe(self, url: str) -> ScrapedNewsModel:
+    def _scrap_social_europe(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Social Europe.
 
@@ -1139,7 +1139,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Social Europe article: {url}")
         if "https://www.socialeurope.eu/" not in url:
@@ -1169,7 +1169,7 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Australian Institute Of International Affairs",
@@ -1181,7 +1181,7 @@ class WEForumScraper(AbstractScraper):
 
     def _scrap_african_center_economic_transformation(
         self, url: str
-    ) -> ScrapedNewsModel:
+    ) -> ScrapedNews:
         """
         Access the given URL and scrapes African Center Economic Transformation.
 
@@ -1193,7 +1193,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping African Center Economic Transformation article: {url}")
         if "https://acetforafrica.org/" not in url:
@@ -1226,7 +1226,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Australian Institute Of International Affairs",
@@ -1236,7 +1236,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_oliver_wyman(self, url: str) -> ScrapedNewsModel:
+    def _scrap_oliver_wyman(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Oliver Wyman.
 
@@ -1248,7 +1248,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Oliver Wyman article: {url}")
         elems = {}
@@ -1285,7 +1285,7 @@ class WEForumScraper(AbstractScraper):
         contents_container = self.driver.find_element(By.CSS_SELECTOR, elems["content"])
         content = contents_container.text
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Oliver Wyman",
@@ -1295,7 +1295,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_iese(self, url: str) -> ScrapedNewsModel:
+    def _scrap_iese(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes IESE.
 
@@ -1307,7 +1307,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping IESE article: {url}")
         if "https://www.iese.edu/" not in url:
@@ -1340,7 +1340,7 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="IESE",
@@ -1350,7 +1350,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_harvard_business_review(self, url: str) -> ScrapedNewsModel:
+    def _scrap_harvard_business_review(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Harvard Business Review.
 
@@ -1362,7 +1362,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Harvard Business Review article: {url}")
         elems = {}
@@ -1419,7 +1419,7 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.enable_js(self.driver)  # Enable JS again
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Harvard Business Review",
@@ -1429,7 +1429,7 @@ class WEForumScraper(AbstractScraper):
             topics=[topic],
         )
 
-    def _scrap_coronell_university(self, url: str) -> ScrapedNewsModel:
+    def _scrap_coronell_university(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Cornell University.
 
@@ -1441,7 +1441,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Cornell University article: {url}")
         if "https://news.cornell.edu/" not in url:
@@ -1469,7 +1469,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Cornell University",
@@ -1479,7 +1479,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_govlab_living_library(self, url: str) -> ScrapedNewsModel:
+    def _scrap_govlab_living_library(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes GovLab - Living Library.
 
@@ -1491,7 +1491,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping GovLab - Living Library article: {url}")
         if "https://thelivinglib.org/" not in url:
@@ -1519,7 +1519,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="GovLab - Living Library",
@@ -1529,7 +1529,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_fronteirs(self, url: str) -> ScrapedNewsModel:
+    def _scrap_fronteirs(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Frontiers.
 
@@ -1541,7 +1541,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Frontiers article: {url}")
         if "https://www.frontiersin.org/" not in url:
@@ -1569,7 +1569,7 @@ class WEForumScraper(AbstractScraper):
         content_container = self.driver.find_element(By.CLASS_NAME, "JournalFullText")
         content = content_container.text
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="GovLab - Living Library",
@@ -1579,7 +1579,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_asian_developement_bank(self, url: str) -> ScrapedNewsModel:
+    def _scrap_asian_developement_bank(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Asian Development Bank.
 
@@ -1591,7 +1591,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Asian Development Bank article: {url}")
         elems = {}
@@ -1637,7 +1637,7 @@ class WEForumScraper(AbstractScraper):
         else:
             author = "Asian Development Bank"  # There is not author
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Asian Development Bank",
@@ -1647,7 +1647,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_diw_berlin(self, url: str) -> ScrapedNewsModel:
+    def _scrap_diw_berlin(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes DIW Berlin.
 
@@ -1659,7 +1659,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping DIW Berlin article: {url}")
         if "https://www.diw.de/" not in url:
@@ -1682,7 +1682,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="DIW Berlin",
@@ -1692,7 +1692,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_war_on_rocks(self, url: str) -> ScrapedNewsModel:
+    def _scrap_war_on_rocks(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes War on the Rocks.
 
@@ -1704,7 +1704,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping War on the Rocks article: {url}")
         if "https://warontherocks.com/" not in url:
@@ -1740,7 +1740,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="War on the Rocks",
@@ -1750,7 +1750,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_institut_montaigne(self, url: str) -> ScrapedNewsModel:
+    def _scrap_institut_montaigne(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Institut Montaigne.
 
@@ -1762,7 +1762,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Institut Montaigne article: {url}")
         if "https://www.institutmontaigne.org/" not in url:
@@ -1784,7 +1784,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Institut Montaigne",
@@ -1794,7 +1794,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_institut_relations_internationales(self, url: str) -> ScrapedNewsModel:
+    def _scrap_institut_relations_internationales(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Institut des Relations Internationales et Stratégiques.
 
@@ -1806,7 +1806,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(
             f"Scraping Institut des Relations Internationales et Stratégiques article: {url}"
@@ -1835,7 +1835,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Institut des Relations Internationales et Stratégiques",
@@ -1845,7 +1845,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_geneva_centre_security_sector_gov(self, url: str) -> ScrapedNewsModel:
+    def _scrap_geneva_centre_security_sector_gov(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Geneva Centre for Security Sector Governance (DCAF).
 
@@ -1857,7 +1857,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(
             f"Scraping Geneva Centre for Security Sector Governance (DCAF) article: {url}"
@@ -1885,7 +1885,7 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div[itemprop='description']"
         ).text
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Geneva Centre for Security Sector Governance (DCAF)",
@@ -1909,7 +1909,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
@@ -1948,7 +1948,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Nature",
@@ -1958,7 +1958,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_next_city(self, url: str) -> ScrapedNewsModel:
+    def _scrap_next_city(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Next City.
 
@@ -1970,7 +1970,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Next City article: {url}")
         if "https://nextcity.org/" not in url:
@@ -2000,7 +2000,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in contents_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Next City",
@@ -2010,7 +2010,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_findev_gateway(self, url: str) -> ScrapedNewsModel:
+    def _scrap_findev_gateway(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes FinDev Gateway.
 
@@ -2022,7 +2022,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping FinDev Gateway article: {url}")
         if "https://www.findevgateway.org/" not in url:
@@ -2051,7 +2051,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in contents_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="FinDev Gateway",
@@ -2061,7 +2061,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_unidir(self, url: str) -> ScrapedNewsModel:
+    def _scrap_unidir(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes UNIDIR.
 
@@ -2073,7 +2073,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping UNIDIR article: {url}")
         if "https://unidir.org/" not in url:
@@ -2101,7 +2101,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="UNIDIR",
@@ -2111,7 +2111,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_frontiers_digital_health(self, url: str) -> ScrapedNewsModel:
+    def _scrap_frontiers_digital_health(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Frontiers in Digital Health.
 
@@ -2123,7 +2123,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Frontiers in Digital Health article: {url}")
         if "https://www.frontiersin.org/" not in url:
@@ -2156,7 +2156,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Frontiers in Digital Health",
@@ -2166,7 +2166,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_trends_reach_advisory(self, url: str) -> ScrapedNewsModel:
+    def _scrap_trends_reach_advisory(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes TRENDS Research & Advisory.
 
@@ -2178,7 +2178,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping TRENDS Research & Advisory article: {url}")
         if "https://trendsresearch.org/" not in url:
@@ -2210,7 +2210,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in contents_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="TRENDS Research & Advisory",
@@ -2222,7 +2222,7 @@ class WEForumScraper(AbstractScraper):
 
     def _scrap_london_school_economics_political_science(
         self, url: str
-    ) -> ScrapedNewsModel:
+    ) -> ScrapedNews:
         """
         Access the given URL and scrapes London School of Economics and Political Science.
 
@@ -2234,7 +2234,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(
             f"Scraping London School of Economics and Political Science article: {url}"
@@ -2268,7 +2268,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in contents_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="London School of Economics and Political Science",
@@ -2278,7 +2278,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_southern_voice(self, url: str) -> ScrapedNewsModel:
+    def _scrap_southern_voice(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Southern Voice.
 
@@ -2290,7 +2290,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Southern Voice article: {url}")
         if "https://southernvoice.org/" not in url:
@@ -2318,7 +2318,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in contents_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Southern Voice",
@@ -2328,7 +2328,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_reliefweb(self, url: str) -> ScrapedNewsModel:
+    def _scrap_reliefweb(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes ReliefWeb.
 
@@ -2340,7 +2340,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping ReliefWeb article: {url}")
         if "https://reliefweb.int/" not in url:
@@ -2365,7 +2365,7 @@ class WEForumScraper(AbstractScraper):
 
         author = "ReliefWeb"  # There is not author
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="ReliefWeb",
@@ -2375,7 +2375,7 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
-    def _scrap_bank_england(self, url: str) -> ScrapedNewsModel:
+    def _scrap_bank_england(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Bank of England.
 
@@ -2387,7 +2387,7 @@ class WEForumScraper(AbstractScraper):
             NoSuchElementException: If any of the required elements (title, date, author, content) are not found on the page.
 
         Returns:
-            ScrapedNewsModel: an object with the publication information.
+            ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Bank of England article: {url}")
         if "https://blogs.lse.ac.uk/" not in url:
@@ -2412,7 +2412,7 @@ class WEForumScraper(AbstractScraper):
         content = [contents.text for contents in content_container]
         content = "".join(content)
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="Bank of England",
@@ -2424,7 +2424,7 @@ class WEForumScraper(AbstractScraper):
 
     """"""
 
-    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int) -> list[ScrapedNews]:
         logger.info("Scraping WEForum")
         self.driver.maximize_window()
         self.driver.get(self.cybersecturity_topic_url)
@@ -2485,7 +2485,7 @@ class WEForumScraper(AbstractScraper):
             "Bank of England": self._scrap_bank_england,
         }
 
-        scraped_publications: list[ScrapedNewsModel] = []
+        scraped_publications: list[ScrapedNews] = []
 
         for article in articles:
             if article["type"] == "publication":

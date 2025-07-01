@@ -13,7 +13,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.utils.scrap import ScrapUtils
-from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.ncsc_exec import NcscExec
 from digiliencia.configs.env import Env
 from digiliencia.utils.time import TimeUtils
@@ -25,7 +25,7 @@ class Ncsc(AbstractScraper):
         self.scrapUtils = ScrapUtils()
         self.load = Env()
         self.driver = ScrapUtils.get_driver()
-        self.articles: list[ScrapedNewsModel] = []
+        self.articles: list[ScrapedNews] = []
 
     def _show_articles_until_date(self, until_date: str = ""):
         """
@@ -60,15 +60,15 @@ class Ncsc(AbstractScraper):
                 else:
                     button_visible = False
 
-    def _get_article_from_date(self, until_date: str = "") -> ScrapedNewsModel | None:
+    def _get_article_from_date(self, until_date: str = "") -> ScrapedNews | None:
         """
-        Give an object ScrapedNewsModel is an articles of a topic until date param
+        Give an object ScrapedNews is an articles of a topic until date param
 
         Args:
             until_date (str), default without param
 
         Return:
-            An object of ScrapedNewsModel, containing the article information
+            An object of ScrapedNews, containing the article information
             if it is before the given date, otherwise None
         """
         try:
@@ -104,7 +104,7 @@ class Ncsc(AbstractScraper):
                 date = self.articles[-1].date.strftime("%d %B %Y")
             date_dt = datetime.strptime(date, "%d %B %Y")
 
-            return ScrapedNewsModel(
+            return ScrapedNews(
                 header=title,
                 date=date_dt,
                 source="NCSC",
@@ -154,7 +154,7 @@ class Ncsc(AbstractScraper):
 
         return {"concepts": concepts, "descriptions": descriptions}
 
-    def scrap_news(self, from_days_ago: int = 0) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int = 0) -> list[ScrapedNews]:
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc
 
@@ -193,7 +193,7 @@ class Ncsc(AbstractScraper):
                     By.XPATH, f'(//div[@class="search-results"]/div)[{i}]'
                 ).click()  # Selecionamos cada articulo aquí
                 time.sleep(self.load.webdriverwait_timeout)
-                article: ScrapedNewsModel | None = self._get_article_from_date(
+                article: ScrapedNews | None = self._get_article_from_date(
                     until_date
                 )
                 if article is None:
