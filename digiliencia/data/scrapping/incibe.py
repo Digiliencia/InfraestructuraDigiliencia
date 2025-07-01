@@ -13,6 +13,7 @@ import time
 from datetime import datetime
 
 from loguru import logger
+from pydantic import HttpUrl
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 
@@ -95,9 +96,7 @@ class IncibeScraper(AbstractScraper):
                 break
         return urls
 
-    def get_information_by_url(
-        self, url: str, classes: dict[str, str]
-    ) -> ScrapedNews:
+    def get_information_by_url(self, url: str, classes: dict[str, str]) -> ScrapedNews:
         """
         Get the information from the URL title, content, date and author
 
@@ -165,7 +164,7 @@ class IncibeScraper(AbstractScraper):
             date=date,
             source="INCIBE",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
