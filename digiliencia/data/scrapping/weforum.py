@@ -340,13 +340,12 @@ class WEForumScraper(AbstractScraper):
             By.CLASS_NAME, "published"
         ).text  # Mirar el formato de la fecha
         date = date[10:]
+        date = date[10:]
 
-        if(ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "abstract-first-letter")): # type: ignore
-            introduction = self.driver.find_element(By.CLASS_NAME, "abstract-first-letter").text
-        else:
-            introduction = "" # there is not introduction
-
-        sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore 
+        introduction = self.driver.find_element(
+            By.CLASS_NAME, "abstract-first-letter"
+        ).text
+        sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore
         content = introduction + " ".join([section.text for section in sections])
 
         return ScrapedNews(
@@ -1716,11 +1715,6 @@ class WEForumScraper(AbstractScraper):
         if ScrapUtils.if_element_exists(
             self.driver, By.CSS_SELECTOR, "span.dynamic-hover"
         ):  # type: ignore
-            title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover")
-        else:
-            title = self.driver.find_element(By.TAG_NAME, "h1").text
-        # TODO fix: Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
-        if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "span.dynamic-hover")): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover").text
         else:
             title = self.driver.find_element(By.TAG_NAME, "h1").text
@@ -2097,6 +2091,8 @@ class WEForumScraper(AbstractScraper):
 
         ScrapUtils.click_element(self.driver, "#cookiescript_reject")
 
+        ScrapUtils.click_element(self.driver, "#cookiescript_reject")
+
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
         time_elem = self.driver.find_element(
@@ -2204,14 +2200,15 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div[class='inner-text'] span"
         ).text
 
-        # TODO fix: time data '25 يونيو 2025' does not match format '%d %b %Y'
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text 
-        if(TimeUtils.is_format_date_arabe(time_elem)):
-            date_ft = dateparser.parse(time_elem, languages=["ar"]) 
-            date = date_ft.strptime(time_elem, "%d %b %Y")  # type: ignore   # ERROR con la B en mayuscula
-            locale.setlocale(locale.LC_TIME, "es_ES.UTF-8") 
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "div.inner-text p"
+        ).text  # TODO fix: 'NoneType' object has no attribute 'strptime'
+        if TimeUtils.is_format_date_arabe(time_elem):
+            date_ft = dateparser.parse(time_elem, languages=["ar"])
+            date = date_ft.strptime(time_elem, "%d %B %Y")  # type: ignore
+            locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
         else:
-            date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
