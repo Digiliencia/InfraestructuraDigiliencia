@@ -331,13 +331,13 @@ class WEForumScraper(AbstractScraper):
         date = self.driver.find_element(
             By.CLASS_NAME, "published"
         ).text  # Mirar el formato de la fecha
-        date = date[9:]
+        date = date[10:]
 
         introduction = self.driver.find_element(
             By.CLASS_NAME, "abstract-first-letter"
         ).text
-        sections = self.driver.find_elements(By.TAG_NAME, "li").text  # type: ignore
-        content = introduction + sections
+        sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore 
+        content = introduction + " ".join([section.text for section in sections])
 
         return ScrapedNewsModel(
             header=title,
@@ -1700,7 +1700,7 @@ class WEForumScraper(AbstractScraper):
 
         # TODO fix: Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
         if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "span.dynamic-hover")): # type: ignore
-            title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover")
+            title = self.driver.find_element(By.CSS_SELECTOR, "span.dynamic-hover").text
         else:
             title = self.driver.find_element(By.TAG_NAME, "h1").text
 
@@ -2065,6 +2065,8 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
+        ScrapUtils.click_element(self.driver, "#cookiescript_reject")
+
         title = self.driver.find_element(By.CLASS_NAME, "post-title__heading").text
 
         time_elem = self.driver.find_element(
@@ -2173,9 +2175,12 @@ class WEForumScraper(AbstractScraper):
         ).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text # TODO fix: 'NoneType' object has no attribute 'strptime'
-        date_ft = dateparser.parse(time_elem, languages=["ar"])
-        locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
-        date = date_ft.strptime("%d %B %Y")  # type: ignore
+        if(TimeUtils.is_format_date_arabe(time_elem)):
+            date_ft = dateparser.parse(time_elem, languages=["ar"]) 
+            date = date_ft.strptime(time_elem, "%d %B %Y")  # type: ignore
+            locale.setlocale(locale.LC_TIME, "es_ES.UTF-8") 
+        else:
+            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
@@ -2507,27 +2512,4 @@ PAGES NOT SCRAPPING
 -The Innovator
 -MIT Sloan Management Review
 -German Institute for International and Security Affairs
-'''
-
-'''
-ERRORS:
-
-2025-07-01 11:33:42.344 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.rand.org/pubs/working_papers/WRA3990-1.html:
- Attempted to scrape invalid page for Rand Corporation newsletter scrapper
-
-2025-07-01 11:33:42.343 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://blogs.lse.ac.uk/europpblog/2025/06/26/europe-nato-eu-has-much-to-learn-from-ukraines-drone-warfare-ecosystem/:
- time data 'Sebaian Schwartz' does not match format '%B %d %Y'
-
-2025-07-01 11:33:38.018 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.weforum.org/stories/2025/06/safer-gaming-digital-safety-movement/:
- Message: no such element: Unable to locate element: {"method":"xpath","selector":"/html/body/div[2]/div/section/div/div/article/div[2]/div[2]/div[2]"}
-
-2025-07-01 11:33:13.377 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://www.eco-business.com/news/ai-data-centre-boom-could-destroy-big-techs-net-zero-plans/:
- time data '' does not match format '%B %d, %Y'
-
-2025-07-01 11:33:08.763 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://warontherocks.com/2025/06/the-double-power-law-how-american-innovation-really-works/:
- Message: no such element: Unable to locate element: {"method":"tag name","selector":"h1"}
-
-
-2025-07-01 11:32:54.394 | ERROR    | digiliencia.data.scrapping.weforum:scrap_news:2483 - Error scraping https://trendsresearch.org/insight/the-international-systems-challenges-and-the-future-of-the-middle-east/:
- 'NoneType' object has no attribute 'strptime'
 '''
