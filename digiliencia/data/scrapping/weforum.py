@@ -1038,7 +1038,7 @@ class WEForumScraper(AbstractScraper):
         if(ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "post-title")): # type: ignore
             title = self.driver.find_element(By.CLASS_NAME, "post-title").text
         else:
-            title = self.driver.find_element(By.CSS_SELECTOR, ".entry-title")
+            title = self.driver.find_element(By.CSS_SELECTOR, ".entry-title").text
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "author-name").text
         authors_line = authors_line.replace("By ", "")
@@ -1270,7 +1270,7 @@ class WEForumScraper(AbstractScraper):
         if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"])): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
         else:
-            title = self.driver.find_element(By.CSS_SELECTOR, "div.heading > div:first-child")
+            title = self.driver.find_element(By.CSS_SELECTOR, "div.heading > div:first-child").text
 
         author_elem = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         author = "".join(author_elem.replace("By ", ""))
