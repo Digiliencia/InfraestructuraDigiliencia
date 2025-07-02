@@ -8,7 +8,7 @@ Class to contain time utility functions.
 
 from datetime import datetime, timedelta
 import platform
-
+import re
 
 class TimeUtils:
     @staticmethod
@@ -192,3 +192,14 @@ class TimeUtils:
                 date = date.replace(suffix, "")
 
         return date
+    
+    @staticmethod
+    def is_format_date_arabe(date: str = "") -> bool:
+        """
+        Give a boolean about format of a date. 
+        
+        Return:
+            True: format date is arabe
+            False: format date is not arabe
+        """
+        return bool(re.search(r'[٠-٩]', date))
