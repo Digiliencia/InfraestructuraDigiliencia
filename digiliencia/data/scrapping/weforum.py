@@ -342,15 +342,23 @@ class WEForumScraper(AbstractScraper):
         date = date[10:]
         date = date[10:]
 
-        introduction = self.driver.find_element(
-            By.CLASS_NAME, "abstract-first-letter"
-        ).text
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CLASS_NAME, "abstract-first-letter"
+        ):  # type: ignore
+            introduction = self.driver.find_element(
+                By.CLASS_NAME, "abstract-first-letter"
+            ).text
+        else:
+            introduction = ""  # there is not introduction
+
         sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore
         content = introduction + " ".join([section.text for section in sections])
 
         return ScrapedNews(
             header=title,
-            date=datetime.strptime(date, "%b %d, %Y"),   # ERROR se cambio la B en mayuscula por una b en minuscula
+            date=datetime.strptime(
+                date, "%b %d, %Y"
+            ),  # ERROR se cambio la B en mayuscula por una b en minuscula
             source="Rand Corporation",
             content=content,
             url=HttpUrl(url),
@@ -598,10 +606,12 @@ class WEForumScraper(AbstractScraper):
         ).text
 
         # Get the date
-        if(ScrapUtils.if_element_exists(By.CSS_SELECTOR, "span time")): # type: ignore
+        if ScrapUtils.if_element_exists(By.CSS_SELECTOR, "span time"):  # type: ignore
             date_element = self.driver.find_element(By.CSS_SELECTOR, "span time")
         else:
-            date_element = self.driver.find_element(By.CSS_SELECTOR, ".elementor-post-info__item--type-custom")
+            date_element = self.driver.find_element(
+                By.CSS_SELECTOR, ".elementor-post-info__item--type-custom"
+            )
         date = datetime.strptime(date_element.text, "%B %d, %Y")
 
         # Get the author
@@ -1038,10 +1048,10 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if(ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "post-title")): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "post-title"):  # type: ignore
             title = self.driver.find_element(By.CLASS_NAME, "post-title").text
         else:
-            title = self.driver.find_element(By.CSS_SELECTOR, ".entry-title").text
+            title = self.driver.find_element(By.CSS_SELECTOR, ".entry-title")
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "author-name").text
         authors_line = authors_line.replace("By ", "")
@@ -1268,10 +1278,12 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"])): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"]):  # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
         else:
-            title = self.driver.find_element(By.CSS_SELECTOR, "div.heading > div:first-child").text
+            title = self.driver.find_element(
+                By.CSS_SELECTOR, "div.heading > div:first-child"
+            )
 
         author_elem = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         author = "".join(author_elem.replace("By ", ""))
@@ -1400,8 +1412,9 @@ class WEForumScraper(AbstractScraper):
         # TODO hacer metodo para saber si el mes tendría que ser b o B
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
-        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore # ERROR se ha cambiado la b minuscula a una B en mayuscula
- 
+
+        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [contents.text for contents in content_container]
         content = "".join(content)
@@ -2208,7 +2221,7 @@ class WEForumScraper(AbstractScraper):
             date = date_ft.strptime(time_elem, "%d %B %Y")  # type: ignore
             locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
         else:
-            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+            date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
@@ -2257,7 +2270,7 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div.container.container--small h1"
         ).text
 
-        time_elem = self.driver.find_element(
+        time_elem = self.driver.find_element(  # TODO fix: Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
             By.CSS_SELECTOR, "div.mobile-post-main-image__date > h3:nth-of-type(4)"
         ).text
         date_ft = TimeUtils.format_suffix_date(
@@ -2317,7 +2330,9 @@ class WEForumScraper(AbstractScraper):
         author = [authors.text for authors in authors_line]
         author = "".join(author)
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard + span + span").text
+        time_elem = self.driver.find_element(
+            By.CSS_SELECTOR, "span.vcard + span + span"
+        ).text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
         contents_container = self.driver.find_elements(
@@ -2450,7 +2465,7 @@ class WEForumScraper(AbstractScraper):
         articles = self._get_websites_to_scrap(from_days_ago)
 
         publicaion_scrappers = {
-            #"World Economic Forum": self._scrap_WEF_story_publication,  # TODO MIRRAR CON ALGUN COMPI DEL CURRO
+            # "World Economic Forum": self._scrap_WEF_story_publication,  # TODO MIRRAR CON ALGUN COMPI DEL CURRO
             "Wired": self._scrap_wired_story,
             "GlobalData": self._scrap_globaldata_newsletter,
             "The Quantum Insider": self._scrap_the_quantum_insider,
