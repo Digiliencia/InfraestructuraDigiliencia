@@ -333,15 +333,17 @@ class WEForumScraper(AbstractScraper):
         ).text  # Mirar el formato de la fecha
         date = date[10:]
 
-        introduction = self.driver.find_element(
-            By.CLASS_NAME, "abstract-first-letter"
-        ).text
+        if(ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "abstract-first-letter")): # type: ignore
+            introduction = self.driver.find_element(By.CLASS_NAME, "abstract-first-letter").text
+        else:
+            introduction = "" # there is not introduction
+
         sections = self.driver.find_elements(By.TAG_NAME, "li")  # type: ignore 
         content = introduction + " ".join([section.text for section in sections])
 
         return ScrapedNewsModel(
             header=title,
-            date=datetime.strptime(date, "%B %d, %Y"),
+            date=datetime.strptime(date, "%b %d, %Y"),   # ERROR se cambio la B en mayuscula por una b en minuscula
             source="Rand Corporation",
             content=content,
             url=url,
@@ -589,7 +591,10 @@ class WEForumScraper(AbstractScraper):
         ).text
 
         # Get the date
-        date_element = self.driver.find_element(By.CSS_SELECTOR, "span time")
+        if(ScrapUtils.if_element_exists(By.CSS_SELECTOR, "span time")): # type: ignore
+            date_element = self.driver.find_element(By.CSS_SELECTOR, "span time")
+        else:
+            date_element = self.driver.find_element(By.CSS_SELECTOR, ".elementor-post-info__item--type-custom")
         date = datetime.strptime(date_element.text, "%B %d, %Y")
 
         # Get the author
@@ -1030,7 +1035,10 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CLASS_NAME, "post-title").text
+        if(ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "post-title")): # type: ignore
+            title = self.driver.find_element(By.CLASS_NAME, "post-title").text
+        else:
+            title = self.driver.find_element(By.CSS_SELECTOR, ".entry-title")
 
         authors_line = self.driver.find_element(By.CLASS_NAME, "author-name").text
         authors_line = authors_line.replace("By ", "")
@@ -1259,7 +1267,10 @@ class WEForumScraper(AbstractScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
+        if(ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"])): # type: ignore
+            title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
+        else:
+            title = self.driver.find_element(By.CSS_SELECTOR, "div.heading > div:first-child")
 
         author_elem = self.driver.find_element(By.CSS_SELECTOR, elems["author"]).text
         author = "".join(author_elem.replace("By ", ""))
@@ -1387,6 +1398,8 @@ class WEForumScraper(AbstractScraper):
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
+
+
         date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
@@ -1878,6 +1891,8 @@ class WEForumScraper(AbstractScraper):
             topics=None,
         )
 
+    # TODO fix: Error scraping https://www.nature.com/articles/d41586-025-01965-5?error=cookies_not_supported&code=ed590212-0c9c-4f44-8ef8-7cd93141c4ca:
+    # Message: no such element: Unable to locate element: {"method":"css selector","selector":"h1.c-article-title"}
     def _scrap_nature(self, url: str) -> ScrapedNewsModel:
         """
         Access the given URL and scrapes Nature.
@@ -2174,13 +2189,13 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div[class='inner-text'] span"
         ).text
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text # TODO fix: 'NoneType' object has no attribute 'strptime'
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text 
         if(TimeUtils.is_format_date_arabe(time_elem)):
             date_ft = dateparser.parse(time_elem, languages=["ar"]) 
-            date = date_ft.strptime(time_elem, "%d %B %Y")  # type: ignore
+            date = date_ft.strptime(time_elem, "%d %b %Y")  # type: ignore   # ERROR con la B en mayuscula
             locale.setlocale(locale.LC_TIME, "es_ES.UTF-8") 
         else:
-            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+            date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
 
         author = self.driver.find_element(By.CSS_SELECTOR, "div.auth-pos h3").text
 
@@ -2231,7 +2246,7 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div.container.container--small h1"
         ).text
 
-        time_elem = self.driver.find_element(
+        time_elem = self.driver.find_element( # TODO fix: Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
             By.CSS_SELECTOR, "div.mobile-post-main-image__date > h3:nth-of-type(4)"
         ).text
         date_ft = TimeUtils.format_suffix_date(time_elem) # TODO fix: time data 'Sebaian Schwartz' does not match format '%B %d %Y'
@@ -2289,7 +2304,7 @@ class WEForumScraper(AbstractScraper):
         author = [authors.text for authors in authors_line]
         author = "".join(author)
 
-        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard span").text
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "span.vcard + span + span").text
         date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore
 
         contents_container = self.driver.find_elements(
@@ -2422,7 +2437,7 @@ class WEForumScraper(AbstractScraper):
         articles = self._get_websites_to_scrap(from_days_ago)
 
         publicaion_scrappers = {
-            "World Economic Forum": self._scrap_WEF_story_publication,
+            #"World Economic Forum": self._scrap_WEF_story_publication,  # TODO MIRRAR CON ALGUN COMPI DEL CURRO
             "Wired": self._scrap_wired_story,
             "GlobalData": self._scrap_globaldata_newsletter,
             "The Quantum Insider": self._scrap_the_quantum_insider,
