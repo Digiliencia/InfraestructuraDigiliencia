@@ -1253,7 +1253,7 @@ class WEForumScraper(AbstractScraper):
             )
         else:
             if "our-expertise" == url:
-                elems["title"] = "h1.page-banner__title"
+                elems["title"] = ".page-banner__title"
                 elems["author"] = "p.page-banner__authors"
                 elems["content"] = "div.main-content p"
             else:
@@ -1396,12 +1396,11 @@ class WEForumScraper(AbstractScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
+        # TODO hacer metodo para saber si el mes tendría que ser b o B
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
-
-
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
-
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore # ERROR se ha cambiado la b minuscula a una B en mayuscula
+ 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [contents.text for contents in content_container]
         content = "".join(content)
@@ -2189,6 +2188,7 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div[class='inner-text'] span"
         ).text
 
+        # TODO fix: time data '25 يونيو 2025' does not match format '%d %b %Y'
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text 
         if(TimeUtils.is_format_date_arabe(time_elem)):
             date_ft = dateparser.parse(time_elem, languages=["ar"]) 
