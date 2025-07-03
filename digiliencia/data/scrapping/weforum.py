@@ -131,7 +131,6 @@ class WEForumScraper(AbstractScraper):
         # Configuración inicial
         aside_div = self.driver.find_element(
             By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-f9692827-0"
-            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-f9692827-0"
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
@@ -156,7 +155,6 @@ class WEForumScraper(AbstractScraper):
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
                 By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
-                By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
             )
 
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
@@ -171,7 +169,6 @@ class WEForumScraper(AbstractScraper):
                     try:
                         # Check article date
                         age_element = article.find_element(
-                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
                             By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
                         )
                         age = age_element.text
@@ -189,22 +186,18 @@ class WEForumScraper(AbstractScraper):
 
                         type_element = article.find_element(
                             By.CLASS_NAME, "shared__StyledType-sc-16a1486f-0"
-                            By.CLASS_NAME, "shared__StyledType-sc-16a1486f-0"
                         )
                         article_type = type_element.text.lower()
 
                         if article_type == "publication":
                             publisher = article.find_element(
                                 By.CLASS_NAME, "SourceLabel__StyledText-sc-dca16eb8-2"
-                                By.CLASS_NAME, "SourceLabel__StyledText-sc-dca16eb8-2"
                             ).text
                             title = article.find_element(
-                                By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                                 By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                             ).text
                             link_element = article.find_element(
                                 By.CLASS_NAME,
-                                "UIActionButton__StyledButton-sc-bc4b16c4-2",
                                 "UIActionButton__StyledButton-sc-bc4b16c4-2",
                             )
                             title_attr = link_element.get_attribute("title")
@@ -2575,8 +2568,7 @@ ERRORS:
 """
 
 
-
-'''
+"""
 PAGES NOT SCRAPPING
 -Istituto Affari Internazionali
 -Institute for New Economic Thinking
@@ -2587,4 +2579,4 @@ PAGES NOT SCRAPPING
 -The Innovator
 -MIT Sloan Management Review
 -German Institute for International and Security Affairs
-'''
+"""
