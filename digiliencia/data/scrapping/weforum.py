@@ -1914,7 +1914,7 @@ class WEForumScraper(AbstractScraper):
 
     # TODO fix: Error scraping https://www.nature.com/articles/d41586-025-01965-5?error=cookies_not_supported&code=ed590212-0c9c-4f44-8ef8-7cd93141c4ca:
     # Message: no such element: Unable to locate element: {"method":"css selector","selector":"h1.c-article-title"}
-    def _scrap_nature(self, url: str) -> ScrapedNewsModel:
+    def _scrap_nature(self, url: str) -> ScrapedNews:
         """
         Access the given URL and scrapes Nature.
 
