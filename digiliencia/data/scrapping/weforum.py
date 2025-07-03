@@ -1412,8 +1412,7 @@ class WEForumScraper(AbstractScraper):
         # TODO hacer metodo para saber si el mes tendría que ser b o B
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace(",", "")
-
-        date = datetime.strptime(date_ft, "%b %d %Y")  # type: ignore
+        date = datetime.strptime(date_ft, "%B %d %Y")  # type: ignore # ERROR se ha cambiado la b minuscula a una B en mayuscula
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [contents.text for contents in content_container]
@@ -2213,12 +2212,10 @@ class WEForumScraper(AbstractScraper):
             By.CSS_SELECTOR, "div[class='inner-text'] span"
         ).text
 
-        time_elem = self.driver.find_element(
-            By.CSS_SELECTOR, "div.inner-text p"
-        ).text  # TODO fix: 'NoneType' object has no attribute 'strptime'
+        time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.inner-text p").text
         if TimeUtils.is_format_date_arabe(time_elem):
             date_ft = dateparser.parse(time_elem, languages=["ar"])
-            date = date_ft.strptime(time_elem, "%d %B %Y")  # type: ignore
+            date = date_ft.strptime(time_elem, "%d %b %Y")  # type: ignore   # ERROR con la B en mayuscula
             locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
         else:
             date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
