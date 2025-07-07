@@ -21,6 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from digiliencia.data.scrapping.weforum.abc_news_scraper import AbstractNewsScraper
 from digiliencia.data.scrapping.weforum.acet_scraper import ACETScraper
 from digiliencia.data.scrapping.weforum.asian_development_bank_scraper import (
     AsianDevelopmentBankScraper,
@@ -477,61 +478,62 @@ class WEForumScraper(AbstractScraper):
 
         publication_scrappers = {
             # "World Economic Forum": self._scrap_WEF_story_publication,  # TODO
-            "Wired": WiredScraper.scrap,
-            "GlobalData": GlobalDataScraper.scrap,
-            "The Quantum Insider": QuantumInsiderScraper.scrap,
-            "Australian Strategic Policy Institute": AuStrategicInstituteScraper.scrap,
-            "ProPublica": ProPublicaScraper.scrap,
-            "The Conversation (French)": TheConversationScraper.scrap,
-            "The Conversation (Spanish)": TheConversationScraper.scrap,
-            "The Conversation": TheConversationScraper.scrap,
-            "SpringerOpen": self._scrap_springeropen,
-            "Electronic Frontier Foundation": EFFScraper.scrap,
-            "Australian Institute of International Affairs": AuInternationalAffairsScraper.scrap,
-            "Science Daily": SienceDailyScraper.scrap,
-            "Rand Corporation": RandScraper.scrap,
-            "RAND Corporation": RandScraper.scrap,
-            "Eco-Business": EcoBusinessScraper.scrap,
-            "Social Europe": SocialEuropeScraper.scrap,
-            "African Center for Economic Transformation": ACETScraper.scrap,
-            "Oliver Wyman": OliverWymanScraper.scrap,
-            "IESE": IESEScraper.scrap,
-            "Harvard Business Review": HarvardBusinessReviewScraper.scrap,
-            "Cornell University": CoronellUniversityScraper.scrap,
-            "GovLab - Living Library": GovlabLivingLibraryScraper.scrap,
-            "Frontiers": FrontiersScraper.scrap,
-            "Asian Development Bank": AsianDevelopmentBankScraper.scrap,
-            "DIW Berlin": DIWBerlinScraper.scrap,
-            "War on the Rocks": WarOnTheRocksScraper.scrap,
-            "Institut Montaigne": InstitutMontaigneScraper.scrap,
-            "Institut des Relations Internationales et Stratégiques": IRISScraper.scrap,
-            "Geneva Centre for Security Sector Governance (DCAF)": DCAFScraper.scrap,
-            "Nature": NatureScraper.scrap,
-            "Next City": NextCityScraper.scrap,
-            "FinDev Gateway": FindevGatewayScraper.scrap,
-            "UNIDIR": UnidirScraper.scrap,
-            "Frontiers in Digital Health": FrontiersDigitalHealthScraper.scrap,
-            "TRENDS Research & Advisory": TrendsResearchAdvisoryScraper.scrap,
-            "London School of Economics and Political Science": LondonSchoolEconomicsScraper.scrap,
-            "Southern Voice": SouthernVoiceScraper.scrap,
-            "ReliefWeb": ReliefwebScraper.scrap,
-            "Bank of England": BankEnglandScraper.scrap,
+            "Wired": WiredScraper,
+            "GlobalData": GlobalDataScraper,
+            "The Quantum Insider": QuantumInsiderScraper,
+            "Australian Strategic Policy Institute": AuStrategicInstituteScraper,
+            "ProPublica": ProPublicaScraper,
+            "The Conversation (French)": TheConversationScraper,
+            "The Conversation (Spanish)": TheConversationScraper,
+            "The Conversation": TheConversationScraper,
+            #"SpringerOpen": self._scrap_springeropen,
+            "Electronic Frontier Foundation": EFFScraper,
+            "Australian Institute of International Affairs": AuInternationalAffairsScraper,
+            "Science Daily": SienceDailyScraper,
+            "Rand Corporation": RandScraper,
+            "RAND Corporation": RandScraper,
+            "Eco-Business": EcoBusinessScraper,
+            "Social Europe": SocialEuropeScraper,
+            "African Center for Economic Transformation": ACETScraper,
+            "Oliver Wyman": OliverWymanScraper,
+            "IESE": IESEScraper,
+            "Harvard Business Review": HarvardBusinessReviewScraper,
+            "Cornell University": CoronellUniversityScraper,
+            "GovLab - Living Library": GovlabLivingLibraryScraper,
+            "Frontiers": FrontiersScraper,
+            "Asian Development Bank": AsianDevelopmentBankScraper,
+            "DIW Berlin": DIWBerlinScraper,
+            "War on the Rocks": WarOnTheRocksScraper,
+            "Institut Montaigne": InstitutMontaigneScraper,
+            "Institut des Relations Internationales et Stratégiques": IRISScraper,
+            "Geneva Centre for Security Sector Governance (DCAF)": DCAFScraper,
+            "Nature": NatureScraper,
+            "Next City": NextCityScraper,
+            "FinDev Gateway": FindevGatewayScraper,
+            "UNIDIR": UnidirScraper,
+            "Frontiers in Digital Health": FrontiersDigitalHealthScraper,
+            "TRENDS Research & Advisory": TrendsResearchAdvisoryScraper,
+            "London School of Economics and Political Science": LondonSchoolEconomicsScraper,
+            "Southern Voice": SouthernVoiceScraper,
+            "ReliefWeb": ReliefwebScraper,
+            "Bank of England": BankEnglandScraper,
         }
 
         scraped_publications: list[ScrapedNews] = []
 
         for article in articles:
             if article["type"] == "publication":
-                scrapper_function: Optional[Callable] = publication_scrappers.get(
+                scrapper_class = publication_scrappers.get(
                     article["publisher"]
                 )
-                if scrapper_function:
+                if scrapper_class:
                     try:
                         locale.setlocale(
                             locale.LC_TIME, "en_US.UTF-8"
                         )  # Change language to english
 
-                        publication_data = scrapper_function(article["url"])
+                        scrapper_instance: AbstractNewsScraper = scrapper_class(self.driver)
+                        publication_data = scrapper_instance.scrap(article["url"])
                         scraped_publications.append(publication_data)
 
                         locale.setlocale(
