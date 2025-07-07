@@ -23,6 +23,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
+from digiliencia.data.scrapping.weforum.bank_england_scraper import BankEnglandScraper
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
@@ -2446,7 +2447,7 @@ class WEForumScraper(AbstractScraper):
             "London School of Economics and Political Science": self._scrap_london_school_economics_political_science,
             "Southern Voice": self._scrap_southern_voice,
             "ReliefWeb": self._scrap_reliefweb,
-            "Bank of England": self._scrap_bank_england,
+            "Bank of England": BankEnglandScraper.scrap,
         }
 
         scraped_publications: list[ScrapedNews] = []
