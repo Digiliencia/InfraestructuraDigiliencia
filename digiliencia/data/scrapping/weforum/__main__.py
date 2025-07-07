@@ -10,7 +10,6 @@ import locale
 import random
 import time
 from datetime import datetime
-from typing import Callable, Optional
 
 from loguru import logger
 from pydantic import HttpUrl
@@ -486,7 +485,7 @@ class WEForumScraper(AbstractScraper):
             "The Conversation (French)": TheConversationScraper,
             "The Conversation (Spanish)": TheConversationScraper,
             "The Conversation": TheConversationScraper,
-            #"SpringerOpen": self._scrap_springeropen,
+            # "SpringerOpen": self._scrap_springeropen,
             "Electronic Frontier Foundation": EFFScraper,
             "Australian Institute of International Affairs": AuInternationalAffairsScraper,
             "Science Daily": SienceDailyScraper,
@@ -523,16 +522,16 @@ class WEForumScraper(AbstractScraper):
 
         for article in articles:
             if article["type"] == "publication":
-                scrapper_class = publication_scrappers.get(
-                    article["publisher"]
-                )
+                scrapper_class = publication_scrappers.get(article["publisher"])
                 if scrapper_class:
                     try:
                         locale.setlocale(
                             locale.LC_TIME, "en_US.UTF-8"
                         )  # Change language to english
 
-                        scrapper_instance: AbstractNewsScraper = scrapper_class(self.driver)
+                        scrapper_instance: AbstractNewsScraper = scrapper_class(
+                            self.driver
+                        )
                         publication_data = scrapper_instance.scrap(article["url"])
                         scraped_publications.append(publication_data)
 
