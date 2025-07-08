@@ -5,7 +5,7 @@ import pytest
 from digiliencia.data.services.neomodel.author_service import AuthorService
 from digiliencia.data.services.neomodel.config import configure_neomodel
 from digiliencia.data.services.neomodel.news_service import NewsService
-from digiliencia.data.services.neomodel.topic_service import TopicService
+from digiliencia.data.services.neomodel.topic.topic_service import TopicService
 
 
 @pytest.fixture(scope="session")

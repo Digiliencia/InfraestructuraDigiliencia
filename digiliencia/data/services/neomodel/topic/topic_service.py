@@ -3,7 +3,7 @@
 from typing import List, Optional
 
 from digiliencia.data.models.neomodel.topic import Topic
-from .config import configure_neomodel
+from digiliencia.data.services.neomodel.config import configure_neomodel
 
 
 class TopicService:
@@ -13,13 +13,14 @@ class TopicService:
         """Initialize the topic service."""
         configure_neomodel()
 
-    def create_topic(self, name: str, definition: str = "") -> Topic:
+    def create_topic(self, name: str, definition: str = "", url: str = "") -> Topic:
         """
         Create a topic.
 
         Args:
             name: Topic name
             definition: Topic definition
+            url: Topic URL
 
         Returns:
             Topic: The created topic instance
@@ -27,7 +28,7 @@ class TopicService:
         try:
             return Topic.nodes.get(name=name)
         except Topic.DoesNotExist:
-            return Topic(name=name, definition=definition).save()
+            return Topic(name=name, definition=definition, url=url).save()
 
     def get_topic_by_name(self, name: str) -> Optional[Topic]:
         """

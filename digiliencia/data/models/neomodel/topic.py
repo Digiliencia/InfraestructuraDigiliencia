@@ -6,6 +6,8 @@ from neomodel import (
     UniqueIdProperty,
 )
 
+from digiliencia.data.models.neomodel.organization.organization import Organization  # noqa: F401
+
 
 class Topic(StructuredNode):
     """Topic node model."""
@@ -15,4 +17,4 @@ class Topic(StructuredNode):
     definition = StringProperty()
     url = StringProperty(required=True, unique_index=True)
 
-    source = RelationshipTo("Organization", "SOURCE", cardinality=One)
+    source_organization = RelationshipTo("Organization", "SOURCE", cardinality=One)

@@ -8,7 +8,7 @@ from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.author_service import AuthorService
 from digiliencia.data.services.neomodel.news_service import NewsService
-from digiliencia.data.services.neomodel.topic_service import TopicService
+from digiliencia.data.services.neomodel.topic.topic_service import TopicService
 
 
 @pytest.fixture
@@ -116,8 +116,8 @@ def test_create_news_with_relationships(
 ):
     """Test creating news with topics and authors."""
     # Create some topics first
-    topic_service.create_topic("Cybersecurity", "Security-related topics")
-    topic_service.create_topic("Privacy", "Privacy-related topics")
+    topic_service.create_topic("Cybersecurity", "Security-related topics", "https://example.com/cybersecurity")
+    topic_service.create_topic("Privacy", "Privacy-related topics", "https://example.com/privacy")
 
     # Create news with existing topics
     news = news_service.create_news(
@@ -204,8 +204,8 @@ def test_create_from_scraped_data_comprehensive(
 ):
     """Test creating news from scraped data with comprehensive validation."""
     # Pre-create topics
-    topic_service.create_topic("Cybersecurity", "Cybersecurity topics")
-    topic_service.create_topic("AI Security", "AI Security topics")
+    topic_service.create_topic("Cybersecurity", "Cybersecurity topics", "https://example.com/cybersecurity-2")
+    topic_service.create_topic("AI Security", "AI Security topics", "https://example.com/ai-security")
 
     scraped_data = ScrapedNews(
         header="Comprehensive Scraped News",

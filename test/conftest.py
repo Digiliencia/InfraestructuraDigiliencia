@@ -9,6 +9,11 @@ from neo4j import GraphDatabase
 TEST_DB_CONFIG = {
     "DDBB_URI": "bolt://neo4j:testpassword@neo4j-test:7687",
     "TESTING": "true",
+    "WEFORUM_EMAIL": "test@example.com",
+    "WEFORUM_PASSWD": "testpassword",
+    "WEBDRIVERWAIT_TIMEOUT": "5",
+    "IMPLICIT_WAIT": "2",
+    "LLM_URL": "http://localhost:11434",
 }
 
 
