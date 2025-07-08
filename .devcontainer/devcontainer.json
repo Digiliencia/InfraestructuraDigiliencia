@@ -4,7 +4,7 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspaces/InfraestructuraDiligencia",
 
-  "postCreateCommand": "uv venv && uv sync",
+  "postCreateCommand": "uv sync",
 
   "customizations": {
     "vscode": {
