@@ -61,38 +61,6 @@ class TopicClassificationService:
             logger.error(f"Error classifying news topics: {e}")
             return []
 
-    def classify_and_create_relationships(
-        self, news: News, max_topics: int = 5
-    ) -> List[Topic]:
-        """
-        Classify a news article and create relationships in the database.
-
-        Args:
-            news: The news article to classify
-            max_topics: Maximum number of topics to assign (default: 5)
-
-        Returns:
-            List[Topic]: List of topics the news belongs to
-        """
-        try:
-            # Classify the news
-            classified_topics = self.classify_news_topics(news, max_topics)
-
-            # Create relationships in the database
-            for topic in classified_topics:
-                # Check if relationship already exists
-                if topic not in news.covers.all():  # type: ignore
-                    news.covers.connect(topic)  # type: ignore
-                    logger.info(
-                        f"Created relationship: News '{news.header}' covers Topic '{topic.name}'"
-                    )
-
-            return classified_topics
-
-        except Exception as e:
-            logger.error(f"Error classifying and creating relationships: {e}")
-            return []
-
     def _build_classification_prompt(
         self, headline: str, content: str, topics_info: List[dict], max_topics: int
     ) -> str:
@@ -108,9 +76,7 @@ class TopicClassificationService:
         Returns:
             str: The formatted prompt
         """
-        topics_text = "\n".join(
-            [f"- {topic['name']}: {topic['definition']}" for topic in topics_info]
-        )
+        topics_text = "\n".join([f"- {topic['name']}" for topic in topics_info])
 
         prompt = f"""
 You are a cybersecurity expert. Analyze the following news article and classify it into the most relevant cybersecurity topics from the provided list.
@@ -118,21 +84,23 @@ You are a cybersecurity expert. Analyze the following news article and classify 
 AVAILABLE TOPICS:
 {topics_text}
 
-NEWS ARTICLE:
-Headline: {headline}
-Content: {content}
-
 INSTRUCTIONS:
 1. Analyze the news content carefully
 2. Select the most relevant topics (maximum {max_topics}) that best describe the article
 3. Return ONLY a JSON array with the topic names
 4. If no topics are clearly relevant, return an empty array
+5. Do not include any explanations or additional text - ONLY the JSON array
 
 RESPONSE FORMAT:
 ["topic1", "topic2", "topic3"]
 
-RESPONSE:
+NEWS ARTICLE:
+Headline: {headline}
+Content: {content}
+
+JSON ARRAY:
 """
+        print(prompt)  # Debugging: print the prompt to console
         return prompt
 
     def _call_llm_api(self, prompt: str) -> List[str]:
@@ -148,10 +116,10 @@ RESPONSE:
         try:
             # Prepare the request payload for Ollama API
             payload = {
-                "model": "qwen2.5:14b-instruct-q6_K",
+                "model": "qwen3:14b",
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": 0.1, "top_p": 0.9, "max_tokens": 200},
+                "options": {"temperature": 0.1, "top_p": 0.9, "max_tokens": 2000},
             }
 
             # Make API call
@@ -159,7 +127,7 @@ RESPONSE:
                 f"{self.env.llm_url}/api/generate",
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                timeout=60,
+                timeout=60000,
             )
 
             if response.status_code != 200:
@@ -179,8 +147,34 @@ RESPONSE:
                     logger.warning(f"LLM response is not a list: {llm_response}")
                     return []
             except json.JSONDecodeError:
-                logger.error(f"Failed to parse LLM response as JSON: {llm_response}")
-                return []
+                # Try to extract JSON array from the response
+                try:
+                    # Look for JSON array pattern in the response
+                    import re
+
+                    json_pattern = r"\[.*?\]"
+                    matches = re.findall(json_pattern, llm_response, re.DOTALL)
+
+                    if matches:
+                        # Try to parse the last JSON-like match (most likely the final result)
+                        for match in reversed(matches):
+                            try:
+                                topics = json.loads(match)
+                                if isinstance(topics, list):
+                                    logger.info(
+                                        f"Extracted JSON from LLM response: {match}"
+                                    )
+                                    return topics
+                            except json.JSONDecodeError:
+                                continue
+
+                    logger.error(
+                        f"Failed to extract JSON array from LLM response: {llm_response}"
+                    )
+                    return []
+                except Exception as e:
+                    logger.error(f"Error extracting JSON from LLM response: {e}")
+                    return []
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error calling LLM API: {e}")

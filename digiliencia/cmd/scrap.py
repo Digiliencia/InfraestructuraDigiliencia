@@ -8,12 +8,16 @@ from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
 from digiliencia.data.services.neomodel.news_service import NewsService
+from digiliencia.data.services.neomodel.topic.topic_classification_service import (
+    TopicClassificationService,
+)
 
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     Env()
     news_service = NewsService()
+    topics_class_service = TopicClassificationService()
     scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
@@ -30,7 +34,10 @@ def scrap(from_days_ago: int = 5):
                         authors=news.authors,
                         topics=news.topics,
                     )
-                    news_service.create_from_scraped_data(validated_data)
+                    created_news = news_service.create_from_scraped_data(validated_data)
+                    topics = topics_class_service.classify_news_topics(created_news)
+                    news_service.set_topics_relations(created_news, topics)
+
                 except Exception as create_error:
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
