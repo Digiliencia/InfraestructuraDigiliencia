@@ -19,16 +19,6 @@ def scrap(from_days_ago: int = 5):
     news_service = NewsService()
     topics_class_service = TopicClassificationService()
 
-    # Check if classification service is healthy before proceeding
-    if not topics_class_service.check_service_health():
-        logger.warning(
-            "Classification service is not healthy. Proceeding without topic classification."
-        )
-        use_classification = False
-    else:
-        logger.info("Classification service is healthy and ready.")
-        use_classification = True
-
     scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
@@ -48,15 +38,15 @@ def scrap(from_days_ago: int = 5):
                     created_news = news_service.create_from_scraped_data(validated_data)
 
                     # Only classify if service is healthy
-                    if use_classification:
+                    if True:
                         topics = topics_class_service.classify_news_topics(created_news)
                         news_service.set_topics_relations(created_news, topics)
                         logger.info(
                             f"Classified news '{created_news.header}' into {len(topics)} topics"
                         )
                     else:
-                        logger.info(
-                            f"Skipped topic classification for news '{created_news.header}'"
+                        logger.warning(
+                            f"Classification service is not healthy, skipping topic classification for news '{created_news.header}'"
                         )
 
                 except Exception as create_error:

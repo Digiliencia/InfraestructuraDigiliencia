@@ -116,8 +116,12 @@ def test_create_news_with_relationships(
 ):
     """Test creating news with topics and authors."""
     # Create some topics first
-    topic_service.create_topic("Cybersecurity", "Security-related topics", "https://example.com/cybersecurity")
-    topic_service.create_topic("Privacy", "Privacy-related topics", "https://example.com/privacy")
+    topic_service.create_topic(
+        "Cybersecurity", "Security-related topics", "https://example.com/cybersecurity"
+    )
+    topic_service.create_topic(
+        "Privacy", "Privacy-related topics", "https://example.com/privacy"
+    )
 
     # Create news with existing topics
     news = news_service.create_news(
@@ -144,7 +148,7 @@ def test_create_news_with_relationships(
     assert "Alice Johnson" in author_names
     assert "Bob Wilson" in author_names
 
-    connected_topics = news.covers.all()  # type: ignore
+    connected_topics = news.topics.all()  # type: ignore
     assert len(connected_topics) == 2
     topic_names = [topic.name for topic in connected_topics]
     assert "Cybersecurity" in topic_names
@@ -171,7 +175,7 @@ def test_create_news_minimal(news_service: NewsService):
 
     # Should have no authors or topics
     assert len(news.written_by.all()) == 0  # type: ignore
-    assert len(news.covers.all()) == 0  # type: ignore
+    assert len(news.topics.all()) == 0  # type: ignore
 
 
 def test_create_duplicate_news(news_service: NewsService):
@@ -204,8 +208,12 @@ def test_create_from_scraped_data_comprehensive(
 ):
     """Test creating news from scraped data with comprehensive validation."""
     # Pre-create topics
-    topic_service.create_topic("Cybersecurity", "Cybersecurity topics", "https://example.com/cybersecurity-2")
-    topic_service.create_topic("AI Security", "AI Security topics", "https://example.com/ai-security")
+    topic_service.create_topic(
+        "Cybersecurity", "Cybersecurity topics", "https://example.com/cybersecurity-2"
+    )
+    topic_service.create_topic(
+        "AI Security", "AI Security topics", "https://example.com/ai-security"
+    )
 
     scraped_data = ScrapedNews(
         header="Comprehensive Scraped News",
@@ -235,7 +243,7 @@ def test_create_from_scraped_data_comprehensive(
     assert "Scraped Author 1" in author_names
     assert "Scraped Author 2" in author_names
 
-    topics = news.covers.all()  # type: ignore
+    topics = news.topics.all()  # type: ignore
     assert len(topics) == 2
     topic_names = [topic.name for topic in topics]
     assert "Cybersecurity" in topic_names
