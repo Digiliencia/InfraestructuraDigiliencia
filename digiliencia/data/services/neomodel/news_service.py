@@ -158,6 +158,5 @@ class NewsService:
             topics: List of Topic instances to relate to news
         """
         for topic in topics:
-            for news in News.nodes.all():
-                news.topics.connect(topic)
-                logger.info(f"Connected topic {topic.name} to news {news.header}")
+            news.topics.connect(topic)
+            logger.info(f"Connected topic {topic.name} to news {news.header}")
