@@ -28,6 +28,7 @@ class Env:
     _webdriverwait_timeout: int = 5
     _implicit_wait: int = 2
     _llm_url: str = ""
+    _classification_service_url: str = ""
 
     def __new__(cls):
         logger.debug("Loading environment variables")
@@ -44,6 +45,9 @@ class Env:
                 cls._instance.get_env_var("IMPLICIT_WAIT", 2)
             )
             cls._instance._llm_url = cls._instance.get_env_var("LLM_URL")
+            cls._instance._classification_service_url = cls._instance.get_env_var(
+                "CLASSIFICATION_SERVICE_URL", "http://localhost:8080"
+            )
         return cls._instance
 
     @classmethod
@@ -74,6 +78,10 @@ class Env:
     @property
     def llm_url(self) -> str:
         return self._llm_url
+
+    @property
+    def classification_service_url(self) -> str:
+        return self._classification_service_url
 
     @staticmethod
     def load_env_vars():

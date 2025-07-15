@@ -1,6 +1,5 @@
-"""Topic classification service using LLM for cybersecurity news."""
+"""Topic classification service using microservice with RoBERTa-large-mnli for cybersecurity news."""
 
-import json
 from typing import List
 
 import requests
@@ -14,21 +13,25 @@ from digiliencia.data.services.neomodel.topic.topic_service import TopicService
 
 
 class TopicClassificationService:
-    """Service for classifying news into cybersecurity topics using LLM."""
+    """Service for classifying news into cybersecurity topics using RoBERTa-large-mnli microservice."""
 
     def __init__(self) -> None:
         """Initialize the topic classification service."""
         configure_neomodel()
         self.env = Env()
         self.topic_service = TopicService()
+        self._request_timeout = 120  # 2 minutes timeout for classification requests
 
-    def classify_news_topics(self, news: News, max_topics: int = 5) -> List[Topic]:
+    def classify_news_topics(
+        self, news: News, max_topics: int = 5, confidence_threshold: float = 0.1
+    ) -> List[Topic]:
         """
-        Classify a news article into cybersecurity topics using LLM.
+        Classify a news article into cybersecurity topics using RoBERTa-large-mnli microservice.
 
         Args:
             news: The news article to classify
             max_topics: Maximum number of topics to assign (default: 5)
+            confidence_threshold: Minimum confidence score for topic inclusion (default: 0.1)
 
         Returns:
             List[Topic]: List of topics the news belongs to
@@ -41,147 +44,130 @@ class TopicClassificationService:
                 logger.warning("No topics found in database")
                 return []
 
-            # Prepare topics information for LLM
-            topics_info = []
+            # Prepare topics information for the microservice
+            topic_candidates = []
             for topic in all_topics:
-                topics_info.append({"name": topic.name, "definition": topic.definition})
+                topic_candidates.append(
+                    {"name": topic.name, "definition": topic.definition or ""}
+                )
 
-            # Prepare the prompt for LLM
-            prompt = self._build_classification_prompt(
-                str(news.header), str(news.content), topics_info, max_topics
+            # Call the classification microservice
+            classified_topic_names = self._call_classification_service(
+                headline=str(news.header),
+                content=str(news.content),
+                topic_candidates=topic_candidates,
+                max_topics=max_topics,
+                confidence_threshold=confidence_threshold,
             )
 
-            # Call LLM API
-            classified_topics = self._call_llm_api(prompt)
-
             # Filter and return valid topics
-            return self._filter_valid_topics(classified_topics, all_topics)
+            return self._filter_valid_topics(classified_topic_names, all_topics)
 
         except Exception as e:
             logger.error(f"Error classifying news topics: {e}")
             return []
 
-    def _build_classification_prompt(
-        self, headline: str, content: str, topics_info: List[dict], max_topics: int
-    ) -> str:
+    def _call_classification_service(
+        self,
+        headline: str,
+        content: str,
+        topic_candidates: List[dict],
+        max_topics: int = 5,
+        confidence_threshold: float = 0.1,
+    ) -> List[str]:
         """
-        Build the classification prompt for the LLM.
+        Call the classification microservice to classify the news.
 
         Args:
-            headline: News headline
-            content: News content
-            topics_info: List of available topics with their definitions
-            max_topics: Maximum number of topics to assign
-
-        Returns:
-            str: The formatted prompt
-        """
-        topics_text = "\n".join([f"- {topic['name']}" for topic in topics_info])
-
-        prompt = f"""
-You are a cybersecurity expert. Analyze the following news article and classify it into the most relevant cybersecurity topics from the provided list.
-
-AVAILABLE TOPICS:
-{topics_text}
-
-INSTRUCTIONS:
-1. Analyze the news content carefully
-2. Select the most relevant topics (maximum {max_topics}) that best describe the article
-3. Return ONLY a JSON array with the topic names
-4. If no topics are clearly relevant, return an empty array
-5. Do not include any explanations or additional text - ONLY the JSON array
-
-RESPONSE FORMAT:
-["topic1", "topic2", "topic3"]
-
-NEWS ARTICLE:
-Headline: {headline}
-Content: {content}
-
-JSON ARRAY:
-"""
-        print(prompt)  # Debugging: print the prompt to console
-        return prompt
-
-    def _call_llm_api(self, prompt: str) -> List[str]:
-        """
-        Call the LLM API to classify the news.
-
-        Args:
-            prompt: The classification prompt
+            headline: The news headline
+            content: The news content
+            topic_candidates: List of topic candidates with name and definition
+            max_topics: Maximum number of topics to return
+            confidence_threshold: Minimum confidence score for topic inclusion
 
         Returns:
             List[str]: List of classified topic names
         """
         try:
-            # Prepare the request payload for Ollama API
+            # Prepare the request payload
             payload = {
-                "model": "qwen3:14b",
-                "prompt": prompt,
-                "stream": False,
-                "options": {"temperature": 0.1, "top_p": 0.9, "max_tokens": 2000},
+                "text": content,
+                "headline": headline,
+                "topic_candidates": topic_candidates,
+                "max_topics": max_topics,
+                "confidence_threshold": confidence_threshold,
             }
 
-            # Make API call
+            # Make API call to the classification microservice
             response = requests.post(
-                f"{self.env.llm_url}/api/generate",
+                f"{self.env.classification_service_url}/classify",
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                timeout=60000,
+                timeout=self._request_timeout,
             )
 
             if response.status_code != 200:
-                logger.error(f"LLM API error: {response.status_code} - {response.text}")
+                logger.error(
+                    f"Classification service error: {response.status_code} - {response.text}"
+                )
                 return []
 
             # Parse response
             response_data = response.json()
-            llm_response = response_data.get("response", "").strip()
 
-            # Try to parse as JSON
-            try:
-                topics = json.loads(llm_response)
-                if isinstance(topics, list):
-                    return topics
-                else:
-                    logger.warning(f"LLM response is not a list: {llm_response}")
-                    return []
-            except json.JSONDecodeError:
-                # Try to extract JSON array from the response
-                try:
-                    # Look for JSON array pattern in the response
-                    import re
+            # Extract topic names from the response
+            topics = response_data.get("topics", [])
+            topic_names = [topic["name"] for topic in topics]
 
-                    json_pattern = r"\[.*?\]"
-                    matches = re.findall(json_pattern, llm_response, re.DOTALL)
+            processing_time = response_data.get("processing_time_ms", 0)
+            logger.info(
+                f"Classification completed in {processing_time:.2f}ms. "
+                f"Found {len(topic_names)} topics: {topic_names}"
+            )
 
-                    if matches:
-                        # Try to parse the last JSON-like match (most likely the final result)
-                        for match in reversed(matches):
-                            try:
-                                topics = json.loads(match)
-                                if isinstance(topics, list):
-                                    logger.info(
-                                        f"Extracted JSON from LLM response: {match}"
-                                    )
-                                    return topics
-                            except json.JSONDecodeError:
-                                continue
+            return topic_names
 
-                    logger.error(
-                        f"Failed to extract JSON array from LLM response: {llm_response}"
-                    )
-                    return []
-                except Exception as e:
-                    logger.error(f"Error extracting JSON from LLM response: {e}")
-                    return []
-
+        except requests.exceptions.Timeout:
+            logger.error("Classification service request timed out")
+            return []
+        except requests.exceptions.ConnectionError:
+            logger.error("Failed to connect to classification service")
+            return []
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling LLM API: {e}")
+            logger.error(f"Request error calling classification service: {e}")
             return []
         except Exception as e:
-            logger.error(f"Unexpected error calling LLM API: {e}")
+            logger.error(f"Unexpected error calling classification service: {e}")
             return []
+
+    def check_service_health(self) -> bool:
+        """
+        Check if the classification microservice is healthy and ready.
+
+        Returns:
+            bool: True if service is healthy, False otherwise
+        """
+        try:
+            response = requests.get(
+                f"{self.env.classification_service_url}/health", timeout=10
+            )
+
+            if response.status_code == 200:
+                health_data = response.json()
+                is_healthy = health_data.get("status") == "healthy" and health_data.get(
+                    "model_loaded", False
+                )
+                logger.info(f"Classification service health check: {health_data}")
+                return is_healthy
+            else:
+                logger.warning(
+                    f"Classification service health check failed: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to check classification service health: {e}")
+            return False
 
     def _filter_valid_topics(
         self, classified_topics: List[str], all_topics: List[Topic]
@@ -190,7 +176,7 @@ JSON ARRAY:
         Filter and return only valid topics that exist in the database.
 
         Args:
-            classified_topics: List of topic names returned by LLM
+            classified_topics: List of topic names returned by classification service
             all_topics: List of all available topics from database
 
         Returns:
