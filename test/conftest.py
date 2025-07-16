@@ -14,6 +14,7 @@ TEST_DB_CONFIG = {
     "WEBDRIVERWAIT_TIMEOUT": "5",
     "IMPLICIT_WAIT": "2",
     "LLM_URL": "http://localhost:11434",
+    "CLASSIFICATION_MODEL": "gemma3:12b"
 }
 
 
