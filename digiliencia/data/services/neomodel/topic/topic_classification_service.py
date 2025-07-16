@@ -4,8 +4,11 @@ from typing import List
 import requests
 from loguru import logger
 
+from digiliencia.configs.env import Env
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.services.neomodel.topic.topic_service import TopicService
+from digiliencia.models.prompts.topic_classification_prompt import \
+    TopicClassificationPrompt
 
 
 class TopicClassificationService:
@@ -17,15 +20,13 @@ class TopicClassificationService:
 
     def classify_news_topics(self, news, max_topics: int = 5) -> List[Topic]:
         text = str(news.content)
-        prompt = f"""Classify the following news article into these categories: {', '.join(self.topics)}.
-Text: "{text}"
-
-Return ONLY a JSON list with the most relevant category names (maximum {max_topics}).
-Expected format: ["category1", "category2", "category3"]
-Do not include additional explanations, only valid JSON.
-"""
+        prompt = TopicClassificationPrompt.generate_news_classification_prompt(
+            topics=self.topics,
+            text=text,
+            max_topics=max_topics
+        )
         payload = {
-            "model": "gemma3:12b",
+            "model": Env().classification_model,
             "prompt": prompt,
             "stream": False,
             "options": {
@@ -33,7 +34,7 @@ Do not include additional explanations, only valid JSON.
             }
         }
         try:
-            response = requests.post(self.ollama_url, json=payload, timeout=30)
+            response = requests.post(self.ollama_url, json=payload, timeout=60000)
             response.raise_for_status()
             
             response_data = response.json()
