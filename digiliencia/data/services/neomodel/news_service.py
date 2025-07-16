@@ -101,6 +101,15 @@ class NewsService:
         """
         return list(News.nodes.all())
 
+    def get_all_news_without_topics(self) -> List[News]:
+        """
+        Get all news items without topics.
+
+        Returns:
+            List[News]: List of news items without topics
+        """
+        return list(News.nodes.filter(topics=None))
+
     def update_news(
         self,
         uid: str,
