@@ -8,43 +8,37 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
 )
 
 
-@pytest.fixture
-def mock_topics():
-    """Create mock Topic objects for testing."""
-    topics = []
-    topic_names = [
-        "Cybersecurity",
-        "Artificial Intelligence",
-        "Data Privacy",
-        "Cloud Computing",
-    ]
-
-    for i, name in enumerate(topic_names):
-        # Create a simple object with the required attributes
-        topic = type(
-            "MockTopic",
-            (),
-            {
-                "uid": f"uid_{i}",
-                "name": name,
-                "definition": f"Definition for {name}",
-                "url": f"https://example.com/{name.lower().replace(' ', '-')}",
-            },
-        )()
-        topics.append(topic)
-
-    return topics
+# =============================================================================
+# Helper Functions
+# =============================================================================
 
 
-@pytest.fixture
-def mock_topic_service(mock_topics):
-    """Create a mock TopicService."""
+def create_mock_response(
+    json_return_value=None, raise_for_status_effect=None, json_side_effect=None
+):
+    """Helper function to create mock response objects."""
 
-    class MockTopicService:
-        def get_all_topics(self):
-            return mock_topics
+    class MockResponse:
+        def __init__(self, json_val, status_effect, json_effect):
+            self._json_return_value = json_val
+            self._raise_for_status_effect = status_effect
+            self._json_side_effect = json_effect
 
-    return MockTopicService()
+        def json(self):
+            if self._json_side_effect:
+                raise self._json_side_effect
+            return self._json_return_value
+
+        def raise_for_status(self):
+            if self._raise_for_status_effect:
+                raise self._raise_for_status_effect
+
+    return MockResponse(json_return_value, raise_for_status_effect, json_side_effect)
+
+
+# =============================================================================
+# Fixtures
+# =============================================================================
 
 
 @pytest.fixture
@@ -62,15 +56,9 @@ def topic_classification_service(mock_topic_service, monkeypatch):
     return service
 
 
-@pytest.fixture
-def mock_news():
-    """Create a mock news object."""
-
-    class MockNews:
-        def __init__(self):
-            self.content = "This article discusses the latest developments in artificial intelligence and cybersecurity measures for protecting sensitive data."
-
-    return MockNews()
+# =============================================================================
+# Tests
+# =============================================================================
 
 
 def test_init(mock_topic_service, monkeypatch):
@@ -91,29 +79,6 @@ def test_init(mock_topic_service, monkeypatch):
     assert len(service.topics) == 4
     assert "Cybersecurity" in service.topics
     assert "Artificial Intelligence" in service.topics
-
-
-def create_mock_response(
-    json_return_value=None, raise_for_status_effect=None, json_side_effect=None
-):
-    """Helper function to create mock response objects."""
-
-    class MockResponse:
-        def __init__(self):
-            self._json_return_value = json_return_value
-            self._raise_for_status_effect = raise_for_status_effect
-            self._json_side_effect = json_side_effect
-
-        def json(self):
-            if self._json_side_effect:
-                raise self._json_side_effect
-            return self._json_return_value
-
-        def raise_for_status(self):
-            if self._raise_for_status_effect:
-                raise self._raise_for_status_effect
-
-    return MockResponse()
 
 
 def test_classify_news_topics_success(
