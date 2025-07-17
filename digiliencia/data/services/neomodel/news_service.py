@@ -108,7 +108,7 @@ class NewsService:
         Returns:
             List[News]: List of news items without topics
         """
-        return list(News.nodes.filter(topics=None))
+        return [news for news in News.nodes.all() if not news.topics]
 
     def update_news(
         self,

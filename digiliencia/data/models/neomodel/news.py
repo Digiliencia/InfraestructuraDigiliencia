@@ -47,7 +47,7 @@ class News(StructuredNode):
 
         Args:
             header: News headline
-            date: Publication date
+            date: Publication date (must be a datetime object)
             content: News content
             url: News URL
             source_name: Name of the news agency
@@ -57,7 +57,16 @@ class News(StructuredNode):
         Returns:
             News: The created or existing news instance
         """
-        # Check if news already exists (by header and date combination)
+        # Ensure 'date' is a datetime object
+        if isinstance(date, str):
+            try:
+                date = datetime.fromisoformat(date)
+            except ValueError as e:
+                raise ValueError(f"'date' must be a datetime object or a valid ISO 8601 string. Error: {e}")
+        elif not isinstance(date, datetime):
+            raise TypeError(f"'date' must be a datetime object, got {type(date)}")
+
+        # Check if news already exists
         try:
             existing_news = cls.nodes.get(header=header, date=date)
             return existing_news
@@ -88,11 +97,10 @@ class News(StructuredNode):
         # Connect to topics
         if topic_names:
             for topic_name in topic_names:
-                # Only connect to existing topics, don't create new ones
                 try:
                     topic = Topic.nodes.get(name=topic_name)
                     news.topics.connect(topic)
                 except Topic.DoesNotExist:
-                    pass  # Skip if topic doesn't exist
+                    pass
 
         return news
