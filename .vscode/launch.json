@@ -1,0 +1,79 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Classification Microservice",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/services/classification/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/services/classification",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/services/classification"
+      },
+      "python": "${workspaceFolder}/services/classification/.venv/bin/python",
+      "args": [],
+      "justMyCode": false,
+      "django": false,
+      "autoReload": {
+        "enable": true
+      }
+    },
+    {
+      "name": "Debug Classification Microservice (Uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/services/classification",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/services/classification"
+      },
+      "python": "${workspaceFolder}/services/classification/.venv/bin/python",
+      "justMyCode": false,
+      "django": false,
+      "autoReload": {
+        "enable": true
+      }
+    },
+    {
+      "name": "Debug Classification Service (Production Mode)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080",
+        "--workers",
+        "1"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/services/classification",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/services/classification"
+      },
+      "python": "${workspaceFolder}/services/classification/.venv/bin/python",
+      "justMyCode": false,
+      "django": false
+    },
+    {
+      "name": "Debug Digiliencia Main Package",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/digiliencia.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": [],
+      "justMyCode": false,
+      "django": false
+    }
+  ]
+}

@@ -27,6 +27,8 @@ class Env:
     _weforum_passwd: str = ""
     _webdriverwait_timeout: int = 5
     _implicit_wait: int = 2
+    _llm_url: str = ""
+    _classification_model: str = ""
 
     def __new__(cls):
         logger.debug("Loading environment variables")
@@ -41,6 +43,10 @@ class Env:
             )
             cls._instance._implicit_wait = int(
                 cls._instance.get_env_var("IMPLICIT_WAIT", 2)
+            )
+            cls._instance._llm_url = cls._instance.get_env_var("LLM_URL")
+            cls._instance._classification_model = cls._instance.get_env_var(
+                "CLASSIFICATION_MODEL"
             )
         return cls._instance
 
@@ -68,6 +74,14 @@ class Env:
     @property
     def implicit_wait(self) -> int:
         return self._implicit_wait
+
+    @property
+    def llm_url(self) -> str:
+        return self._llm_url
+
+    @property
+    def classification_model(self) -> str:
+        return self._classification_model
 
     @staticmethod
     def load_env_vars():

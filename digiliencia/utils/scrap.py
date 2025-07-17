@@ -9,7 +9,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from digiliencia.configs.env import Env
-import platform
 
 
 class ScrapUtils:
@@ -32,8 +31,6 @@ class ScrapUtils:
         )
         options.add_argument("--disable-blink-features=AutomationControlled")
         # Recommended options for containers/headless
-        #if platform.system() != "Windows":
-        #    options.add_argument("--headless=new")  # Use modern headless mode
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")

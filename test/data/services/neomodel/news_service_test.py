@@ -8,26 +8,35 @@ from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.author_service import AuthorService
 from digiliencia.data.services.neomodel.news_service import NewsService
-from digiliencia.data.services.neomodel.topic_service import TopicService
+from digiliencia.data.services.neomodel.topic.topic_service import TopicService
 
 
-@pytest.fixture
-def sample_scraped_data() -> ScrapedNews:
-    """Sample scraped news data for testing."""
-    return ScrapedNews(
-        header="Test Cybersecurity News",
-        date=datetime(2023, 1, 1, 12, 0),
-        source="Test News Agency",
-        content="This is test cybersecurity news content.",
-        url=HttpUrl("https://example.com/test-news"),
-        authors=["John Doe", "Jane Smith"],
-        topics=["Cybersecurity", "AI Security"],
-    )
+# =============================================================================
+# Helper Functions
+# =============================================================================
 
 
-def test_create_from_scraped_data(
-    news_service: NewsService, sample_scraped_data: ScrapedNews
-):
+def create_scraped_news_data(**kwargs) -> ScrapedNews:
+    """Helper to create ScrapedNews with custom parameters."""
+    defaults = {
+        "header": "Test News",
+        "date": datetime(2023, 1, 1, 12, 0),
+        "source": "Test Source",
+        "content": "Test content",
+        "url": HttpUrl("https://example.com/test"),
+        "authors": ["Test Author"],
+        "topics": ["Test Topic"],
+    }
+    defaults.update(kwargs)
+    return ScrapedNews(**defaults)
+
+
+# =============================================================================
+# Tests
+# =============================================================================
+
+
+def test_create_from_scraped_data(news_service: NewsService, sample_scraped_data):
     """Test creating news from scraped data."""
     news = news_service.create_from_scraped_data(sample_scraped_data)
 
@@ -52,7 +61,7 @@ def test_create_news_direct(news_service: NewsService):
     assert news.header == "Direct Test News"
 
 
-def test_get_news_by_id(news_service: NewsService, sample_scraped_data: ScrapedNews):
+def test_get_news_by_id(news_service: NewsService, sample_scraped_data):
     """Test retrieving news by ID."""
     created_news = news_service.create_from_scraped_data(sample_scraped_data)
     retrieved_news = news_service.get_news_by_id(str(created_news.uid))
@@ -68,7 +77,7 @@ def test_get_news_by_nonexistent_id(news_service: NewsService):
     assert news is None
 
 
-def test_update_news(news_service: NewsService, sample_scraped_data: ScrapedNews):
+def test_update_news(news_service: NewsService, sample_scraped_data):
     """Test updating news."""
     created_news = news_service.create_from_scraped_data(sample_scraped_data)
 
@@ -90,7 +99,7 @@ def test_update_news_nonexistent_id(news_service: NewsService):
     assert result is None
 
 
-def test_delete_news(news_service: NewsService, sample_scraped_data: ScrapedNews):
+def test_delete_news(news_service: NewsService, sample_scraped_data):
     """Test deleting news."""
     created_news = news_service.create_from_scraped_data(sample_scraped_data)
 
@@ -116,8 +125,12 @@ def test_create_news_with_relationships(
 ):
     """Test creating news with topics and authors."""
     # Create some topics first
-    topic_service.create_topic("Cybersecurity", "Security-related topics")
-    topic_service.create_topic("Privacy", "Privacy-related topics")
+    topic_service.create_topic(
+        "Cybersecurity", "Security-related topics", "https://example.com/cybersecurity"
+    )
+    topic_service.create_topic(
+        "Privacy", "Privacy-related topics", "https://example.com/privacy"
+    )
 
     # Create news with existing topics
     news = news_service.create_news(
@@ -144,7 +157,7 @@ def test_create_news_with_relationships(
     assert "Alice Johnson" in author_names
     assert "Bob Wilson" in author_names
 
-    connected_topics = news.covers.all()  # type: ignore
+    connected_topics = news.topics.all()  # type: ignore
     assert len(connected_topics) == 2
     topic_names = [topic.name for topic in connected_topics]
     assert "Cybersecurity" in topic_names
@@ -171,7 +184,7 @@ def test_create_news_minimal(news_service: NewsService):
 
     # Should have no authors or topics
     assert len(news.written_by.all()) == 0  # type: ignore
-    assert len(news.covers.all()) == 0  # type: ignore
+    assert len(news.topics.all()) == 0  # type: ignore
 
 
 def test_create_duplicate_news(news_service: NewsService):
@@ -204,15 +217,19 @@ def test_create_from_scraped_data_comprehensive(
 ):
     """Test creating news from scraped data with comprehensive validation."""
     # Pre-create topics
-    topic_service.create_topic("Cybersecurity", "Cybersecurity topics")
-    topic_service.create_topic("AI Security", "AI Security topics")
+    topic_service.create_topic(
+        "Cybersecurity", "Cybersecurity topics", "https://example.com/cybersecurity-2"
+    )
+    topic_service.create_topic(
+        "AI Security", "AI Security topics", "https://example.com/ai-security"
+    )
 
-    scraped_data = ScrapedNews(
+    scraped_data = create_scraped_news_data(
         header="Comprehensive Scraped News",
         date=datetime(2023, 4, 20, 16, 45),
         source="Scraped News Agency",
         content="This is comprehensive scraped news content with validation.",
-        url=HttpUrl("https://example.com/scraped-comprehensive"),
+        url="https://example.com/scraped-comprehensive",
         authors=["Scraped Author 1", "Scraped Author 2"],
         topics=["Cybersecurity", "AI Security"],
     )
@@ -235,7 +252,7 @@ def test_create_from_scraped_data_comprehensive(
     assert "Scraped Author 1" in author_names
     assert "Scraped Author 2" in author_names
 
-    topics = news.covers.all()  # type: ignore
+    topics = news.topics.all()  # type: ignore
     assert len(topics) == 2
     topic_names = [topic.name for topic in topics]
     assert "Cybersecurity" in topic_names
@@ -290,15 +307,7 @@ def test_news_crud_operations(news_service: NewsService):
 
 def test_create_from_scraped_data_exception_handling(news_service: NewsService):
     """Test exception handling in create_from_scraped_data."""
-    sample_data = ScrapedNews(
-        header="Test News",
-        date=datetime(2023, 1, 1, 12, 0),
-        source="Test Source",
-        content="Test content",
-        url=HttpUrl("https://example.com/test"),
-        authors=["Test Author"],
-        topics=["Test Topic"],
-    )
+    sample_data = create_scraped_news_data()
 
     # Mock News.get_or_create_with_relationships to raise an exception
     with patch(
@@ -319,9 +328,7 @@ def test_get_all_news_empty_database(news_service: NewsService):
     assert isinstance(all_news, list)
 
 
-def test_update_news_all_parameters(
-    news_service: NewsService, sample_scraped_data: ScrapedNews
-):
+def test_update_news_all_parameters(news_service: NewsService, sample_scraped_data):
     """Test updating news with all possible parameters."""
     created_news = news_service.create_from_scraped_data(sample_scraped_data)
 
@@ -339,9 +346,7 @@ def test_update_news_all_parameters(
     assert updated_news.url == "https://new-url.com"
 
 
-def test_update_news_partial_parameters(
-    news_service: NewsService, sample_scraped_data: ScrapedNews
-):
+def test_update_news_partial_parameters(news_service: NewsService, sample_scraped_data):
     """Test updating news with only some parameters."""
     created_news = news_service.create_from_scraped_data(sample_scraped_data)
     original_content = created_news.content

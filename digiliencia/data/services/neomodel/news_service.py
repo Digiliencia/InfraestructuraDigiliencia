@@ -6,6 +6,7 @@ from typing import List, Optional
 from loguru import logger
 
 from digiliencia.data.models.neomodel.news import News
+from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.config import configure_neomodel
 
@@ -100,6 +101,15 @@ class NewsService:
         """
         return list(News.nodes.all())
 
+    def get_all_news_without_topics(self) -> List[News]:
+        """
+        Get all news items without topics.
+
+        Returns:
+            List[News]: List of news items without topics
+        """
+        return [news for news in News.nodes.all() if not news.topics]
+
     def update_news(
         self,
         uid: str,
@@ -148,3 +158,14 @@ class NewsService:
             return True
         except News.DoesNotExist:
             return False
+
+    def set_topics_relations(self, news: News, topics: List[Topic]):
+        """
+        Set topics relationships for all news items.
+
+        Args:
+            topics: List of Topic instances to relate to news
+        """
+        for topic in topics:
+            news.topics.connect(topic)
+            logger.info(f"Connected topic {topic.name} to news {news.header}")
