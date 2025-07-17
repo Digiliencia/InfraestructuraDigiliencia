@@ -62,7 +62,9 @@ class News(StructuredNode):
             try:
                 date = datetime.fromisoformat(date)
             except ValueError as e:
-                raise ValueError(f"'date' must be a datetime object or a valid ISO 8601 string. Error: {e}")
+                raise ValueError(
+                    f"'date' must be a datetime object or a valid ISO 8601 string. Error: {e}"
+                )
         elif not isinstance(date, datetime):
             raise TypeError(f"'date' must be a datetime object, got {type(date)}")
 
