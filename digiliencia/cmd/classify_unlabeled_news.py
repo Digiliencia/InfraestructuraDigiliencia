@@ -8,14 +8,11 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
 
 def main():
     try:
-        # Configurar neomodel
         configure_neomodel()
 
-        # Instanciar servicios
         news_service = NewsService()
         topic_class_service = TopicClassificationService()
 
-        # Obtener noticias que no tienen topics
         unlabeled_news = news_service.get_all_news_without_topics()
         logger.info(f"Found {len(unlabeled_news)} news without topics")
 
