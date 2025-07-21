@@ -84,21 +84,49 @@ class TopicClassificationService:
             return []
 
     def _extract_json_from_response(self, response_text: str) -> List[str]:
-        """Extracts a JSON list from Ollama's response, handling additional text."""
+        """Extracts the last valid JSON list from Ollama's response, handling reasoning text with multiple JSONs."""
         response_text = response_text.strip()
 
-        # Find the first [ and the last ]
-        start_idx = response_text.find("[")
-        end_idx = response_text.rfind("]")
+        # Find all potential JSON arrays by looking for [ and ] pairs
+        potential_jsons = []
 
-        if start_idx == -1 or end_idx == -1 or start_idx >= end_idx:
-            logger.error(f"No valid JSON found in response: {response_text}")
+        # Find all occurrences of [ and ]
+        bracket_positions = []
+        for i, char in enumerate(response_text):
+            if char in ["[", "]"]:
+                bracket_positions.append((i, char))
+
+        # Find all valid JSON array candidates (matching [ and ] pairs)
+        stack = []
+        for pos, bracket in bracket_positions:
+            if bracket == "[":
+                stack.append(pos)
+            elif bracket == "]" and stack:
+                start_pos = stack.pop()
+                potential_jsons.append((start_pos, pos))
+
+        if not potential_jsons:
+            logger.error(f"No JSON arrays found in response: {response_text}")
             return []
 
-        json_str = response_text[start_idx : end_idx + 1]
+        # Try to parse JSONs from the last to the first until we find a valid one
+        potential_jsons.sort(
+            key=lambda x: x[1], reverse=True
+        )  # Sort by end position, descending
 
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing extracted JSON '{json_str}': {e}")
-            return []
+        for start_idx, end_idx in potential_jsons:
+            json_str = response_text[start_idx : end_idx + 1]
+            try:
+                parsed = json.loads(json_str)
+                if isinstance(parsed, list):
+                    logger.debug(f"Successfully parsed last JSON: {json_str}")
+                    return parsed
+                else:
+                    logger.debug(f"JSON is not a list, trying previous: {json_str}")
+                    continue
+            except json.JSONDecodeError:
+                logger.debug(f"Failed to parse JSON, trying previous: {json_str}")
+                continue
+
+        logger.error(f"No valid JSON list found in response: {response_text}")
+        return []
