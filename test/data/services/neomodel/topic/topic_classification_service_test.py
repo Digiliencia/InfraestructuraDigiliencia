@@ -425,7 +425,9 @@ def test_classify_news_topics_non_string_topic_in_response(
 
     # Should only return valid string topics
     assert len(result) == 2
-    assert all(topic.name in ["Cybersecurity", "Artificial Intelligence"] for topic in result)
+    assert all(
+        topic.name in ["Cybersecurity", "Artificial Intelligence"] for topic in result
+    )
 
 
 def test_extract_json_from_response_json_is_not_list(topic_classification_service):
@@ -437,7 +439,9 @@ def test_extract_json_from_response_json_is_not_list(topic_classification_servic
     assert result == []
 
 
-def test_extract_json_from_response_multiple_arrays_with_invalid_json(topic_classification_service):
+def test_extract_json_from_response_multiple_arrays_with_invalid_json(
+    topic_classification_service,
+):
     """Test handling multiple JSON candidates where some are invalid (covers lines 124-126)."""
     response_text = 'First: [invalid json] Second: ["Valid", "Topics"]'
 
@@ -448,7 +452,7 @@ def test_extract_json_from_response_multiple_arrays_with_invalid_json(topic_clas
 
 def test_extract_json_from_response_all_invalid_json(topic_classification_service):
     """Test when all potential JSONs are invalid (covers lines 127-129)."""
-    response_text = 'First: [invalid] Second: [also invalid'
+    response_text = "First: [invalid] Second: [also invalid"
 
     result = topic_classification_service._extract_json_from_response(response_text)
 
@@ -459,14 +463,13 @@ def test_classify_news_topics_empty_selected_list(
     topic_classification_service, mock_news, monkeypatch
 ):
     """Test handling when extract_json_from_response returns empty list (covers lines 59-60)."""
+
     # Mock the _extract_json_from_response method directly to return empty list
     def mock_extract_json(*args, **kwargs):
         return []
 
     monkeypatch.setattr(
-        topic_classification_service,
-        "_extract_json_from_response",
-        mock_extract_json
+        topic_classification_service, "_extract_json_from_response", mock_extract_json
     )
 
     # Mock successful Ollama response
@@ -493,9 +496,13 @@ def test_extract_json_from_response_valid_non_list_json(topic_classification_ser
     assert result == []
 
 
-def test_extract_json_from_response_multiple_jsons_first_not_list(topic_classification_service):
+def test_extract_json_from_response_multiple_jsons_first_not_list(
+    topic_classification_service,
+):
     """Test with multiple JSONs where first is valid but not a list (covers lines 122-123)."""
-    response_text = 'First result: {"single": "object"} and then the list: ["Cybersecurity", "AI"]'
+    response_text = (
+        'First result: {"single": "object"} and then the list: ["Cybersecurity", "AI"]'
+    )
 
     result = topic_classification_service._extract_json_from_response(response_text)
 

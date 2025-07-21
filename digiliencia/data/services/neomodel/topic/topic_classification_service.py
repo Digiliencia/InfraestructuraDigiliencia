@@ -7,8 +7,9 @@ from loguru import logger
 from digiliencia.configs.env import Env
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.services.neomodel.topic.topic_service import TopicService
-from digiliencia.models.prompts.topic_classification_prompt import \
-    TopicClassificationPrompt
+from digiliencia.models.prompts.topic_classification_prompt import (
+    TopicClassificationPrompt,
+)
 
 
 class TopicClassificationService:
@@ -88,29 +89,31 @@ class TopicClassificationService:
 
         # Find all potential JSON arrays by looking for [ and ] pairs
         potential_jsons = []
-        
+
         # Find all occurrences of [ and ]
         bracket_positions = []
         for i, char in enumerate(response_text):
-            if char in ['[', ']']:
+            if char in ["[", "]"]:
                 bracket_positions.append((i, char))
-        
+
         # Find all valid JSON array candidates (matching [ and ] pairs)
         stack = []
         for pos, bracket in bracket_positions:
-            if bracket == '[':
+            if bracket == "[":
                 stack.append(pos)
-            elif bracket == ']' and stack:
+            elif bracket == "]" and stack:
                 start_pos = stack.pop()
                 potential_jsons.append((start_pos, pos))
-        
+
         if not potential_jsons:
             logger.error(f"No JSON arrays found in response: {response_text}")
             return []
-        
+
         # Try to parse JSONs from the last to the first until we find a valid one
-        potential_jsons.sort(key=lambda x: x[1], reverse=True)  # Sort by end position, descending
-        
+        potential_jsons.sort(
+            key=lambda x: x[1], reverse=True
+        )  # Sort by end position, descending
+
         for start_idx, end_idx in potential_jsons:
             json_str = response_text[start_idx : end_idx + 1]
             try:
@@ -124,6 +127,6 @@ class TopicClassificationService:
             except json.JSONDecodeError:
                 logger.debug(f"Failed to parse JSON, trying previous: {json_str}")
                 continue
-        
+
         logger.error(f"No valid JSON list found in response: {response_text}")
         return []
