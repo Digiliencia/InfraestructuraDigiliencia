@@ -6,7 +6,7 @@ from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.services.neomodel.config import configure_neomodel
 
 
-class TopicService:
+class FieldService:
     """Service for managing fields using neomodel."""
 
     def __init__(self) -> None:
