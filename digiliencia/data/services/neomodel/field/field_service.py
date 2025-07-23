@@ -118,7 +118,7 @@ class FieldService:
         Returns:
             List[Field]: List of parent fields
         """
-        
+
         # Get all parent fields (fields that have subfields) in one query
         query = """
         MATCH (parent:Field)<-[:SUBFIELD_OF]-(subfield:Field)
@@ -139,7 +139,7 @@ class FieldService:
 
         Returns:
             str: A string representation of the fields hierarchy
-            
+
         Example:
             "Field1:
                 - Subfield1
@@ -155,9 +155,10 @@ class FieldService:
             subfields = self.get_subfields(field)
             subfield_names = [str(subfield.name) for subfield in subfields]
             if subfield_names:
-                hierarchy.append(f"{field.name}:\n    - " + "\n    - ".join(subfield_names))
+                hierarchy.append(
+                    f"{field.name}:\n    - " + "\n    - ".join(subfield_names)
+                )
             else:
                 hierarchy.append(f"{field.name}:")
 
         return "\n".join(hierarchy)
-        
