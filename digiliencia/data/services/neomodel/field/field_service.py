@@ -50,7 +50,7 @@ class FieldService:
         except Field.DoesNotExist:
             return None
 
-    def get_all_fields(self) -> List[Field]:
+    def get_all(self) -> List[Field]:
         """
         Get all fields.
 
@@ -59,7 +59,7 @@ class FieldService:
         """
         return list(Field.nodes.all())
 
-    def get_subfields(self, field: str | Field | None) -> List[Field]:
+    def get_subfields(self, field: str | Field | None = None) -> List[Field]:
         """
         Get all subfields. Optional filter by field name or Field instance.
 
@@ -107,3 +107,57 @@ class FieldService:
                 subfields.append(subfield)
 
         return subfields
+
+    def get_fields(self) -> List[Field]:
+        """
+        Get all parent fields. Optional filter by field name or Field instance.
+
+        Args:
+            field: Field name or Field instance to get parent fields from
+
+        Returns:
+            List[Field]: List of parent fields
+        """
+        
+        # Get all parent fields (fields that have subfields) in one query
+        query = """
+        MATCH (parent:Field)<-[:SUBFIELD_OF]-(subfield:Field)
+        RETURN DISTINCT parent
+        """
+        results, _ = db.cypher_query(query)
+
+        parent_fields = []
+        for row in results:
+            parent_field = Field.inflate(row[0])
+            parent_fields.append(parent_field)
+
+        return parent_fields
+
+    def get_fields_hierarchy(self) -> str:
+        """
+        Get the hierarchy of fields.
+
+        Returns:
+            str: A string representation of the fields hierarchy
+            
+        Example:
+            "Field1:
+                - Subfield1
+                - Subfield2
+            Field2:
+                - Subfield3
+            "
+        """
+        fields = self.get_fields()
+        hierarchy = []
+
+        for field in fields:
+            subfields = self.get_subfields(field)
+            subfield_names = [str(subfield.name) for subfield in subfields]
+            if subfield_names:
+                hierarchy.append(f"{field.name}:\n    - " + "\n    - ".join(subfield_names))
+            else:
+                hierarchy.append(f"{field.name}:")
+
+        return "\n".join(hierarchy)
+        

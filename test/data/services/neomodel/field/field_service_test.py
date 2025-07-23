@@ -61,18 +61,18 @@ class TestFieldService:
 
     def test_get_all_fields_empty(self, field_service: FieldService):
         """Test retrieving all fields when database is empty."""
-        all_fields = field_service.get_all_fields()
+        all_fields = field_service.get_all()
         assert isinstance(all_fields, list)
         assert len(all_fields) == 0
 
     def test_get_all_fields_with_data(self, field_service: FieldService):
         """Test retrieving all fields with existing data."""
-        initial_count = len(field_service.get_all_fields())
+        initial_count = len(field_service.get_all())
 
         field_service.create_field("Computer Science", "CS description")
         field_service.create_field("Software Engineering", "SE description")
 
-        all_fields = field_service.get_all_fields()
+        all_fields = field_service.get_all()
         assert len(all_fields) >= initial_count + 2
 
         # Verify our fields are in the results
@@ -109,14 +109,14 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "AI", "parent_name": "Technology"}
+            {"child_name": "AI", "parent_name": "Technology"},
         )
         db.cypher_query(
             """
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Blockchain", "parent_name": "Technology"}
+            {"child_name": "Blockchain", "parent_name": "Technology"},
         )
 
         subfields = field_service.get_subfields(None)
@@ -137,7 +137,7 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Statistics", "parent_name": "Mathematics"}
+            {"child_name": "Statistics", "parent_name": "Mathematics"},
         )
 
         subfields = field_service.get_subfields("Mathematics")
@@ -162,7 +162,7 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Quantum Physics", "parent_name": "Physics"}
+            {"child_name": "Quantum Physics", "parent_name": "Physics"},
         )
 
         subfields = field_service.get_subfields(parent_field)
@@ -190,14 +190,14 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Biology", "parent_name": "Science"}
+            {"child_name": "Biology", "parent_name": "Science"},
         )
         db.cypher_query(
             """
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Genetics", "parent_name": "Biology"}
+            {"child_name": "Genetics", "parent_name": "Biology"},
         )
 
         # Test getting subfields of grandparent (should only return direct children)
@@ -222,26 +222,36 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Software Engineering", "parent_name": "Engineering"}
+            {"child_name": "Software Engineering", "parent_name": "Engineering"},
         )
 
         # Test with Field instance
         subfields_by_instance = field_service.get_subfields(parent_field)
-        
+
         # Test with string name
         subfields_by_name = field_service.get_subfields("Engineering")
 
         # Both should return the same results
         assert len(subfields_by_instance) == len(subfields_by_name) == 1
-        assert subfields_by_instance[0].name == subfields_by_name[0].name == "Software Engineering"
+        assert (
+            subfields_by_instance[0].name
+            == subfields_by_name[0].name
+            == "Software Engineering"
+        )
 
-    def test_get_subfields_database_error_handling(self, field_service: FieldService, monkeypatch):
+    def test_get_subfields_database_error_handling(
+        self, field_service: FieldService, monkeypatch
+    ):
         """Test error handling in get_subfields method."""
+
         # Mock database error using monkeypatch
         def mock_cypher_query(*args, **kwargs):
             raise Exception("Database connection error")
-        
-        monkeypatch.setattr("digiliencia.data.services.neomodel.field.field_service.db.cypher_query", mock_cypher_query)
+
+        monkeypatch.setattr(
+            "digiliencia.data.services.neomodel.field.field_service.db.cypher_query",
+            mock_cypher_query,
+        )
 
         # Should propagate the exception
         with pytest.raises(Exception, match="Database connection error"):
@@ -250,13 +260,16 @@ class TestFieldService:
     def test_field_service_initialization(self, monkeypatch):
         """Test FieldService initialization."""
         mock_config_called = False
-        
+
         def mock_configure_neomodel():
             nonlocal mock_config_called
             mock_config_called = True
-        
-        monkeypatch.setattr("digiliencia.data.services.neomodel.field.field_service.configure_neomodel", mock_configure_neomodel)
-        
+
+        monkeypatch.setattr(
+            "digiliencia.data.services.neomodel.field.field_service.configure_neomodel",
+            mock_configure_neomodel,
+        )
+
         service = FieldService()
         assert mock_config_called
         assert isinstance(service, FieldService)
@@ -265,11 +278,11 @@ class TestFieldService:
         """Test that creating a field with empty name raises an error."""
         with pytest.raises(ValueError, match="Field name cannot be empty"):
             field_service.create_field("", "Some description")
-        
+
         # Test with whitespace-only name
         with pytest.raises(ValueError, match="Field name cannot be empty"):
             field_service.create_field("   ", "Some description")
-        
+
         # Test with None name (though type hints suggest this shouldn't happen)
         with pytest.raises(ValueError, match="Field name cannot be empty"):
             field_service.create_field(None, "Some description")  # type: ignore
@@ -301,7 +314,7 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
             CREATE (child)-[:SUBFIELD_OF]->(parent)
             """,
-            {"child_name": "Child Field", "parent_name": "Parent Field"}
+            {"child_name": "Child Field", "parent_name": "Parent Field"},
         )
 
         # Verify relationship exists
@@ -315,57 +328,63 @@ class TestFieldService:
             MATCH (child:Field {name: $child_name})-[:SUBFIELD_OF]->(parent:Field {name: $parent_name})
             RETURN count(*) as count
             """,
-            {"child_name": "Child Field", "parent_name": "Parent Field"}
+            {"child_name": "Child Field", "parent_name": "Parent Field"},
         )
         assert result[0][0] == 1  # Should find exactly one relationship
 
-    def test_get_subfields_performance_with_large_dataset(self, field_service: FieldService):
+    def test_get_subfields_performance_with_large_dataset(
+        self, field_service: FieldService
+    ):
         """Test performance and correctness with multiple fields and relationships."""
         # Create multiple parent fields
         parent1 = field_service.create_field("Technology", "Technology field")
         parent2 = field_service.create_field("Science", "Science field")
-        
+
         # Create multiple child fields for each parent
         children_tech = []
         children_science = []
-        
+
         for i in range(3):
-            tech_child = field_service.create_field(f"Tech Subfield {i}", f"Tech description {i}")
-            science_child = field_service.create_field(f"Science Subfield {i}", f"Science description {i}")
+            tech_child = field_service.create_field(
+                f"Tech Subfield {i}", f"Tech description {i}"
+            )
+            science_child = field_service.create_field(
+                f"Science Subfield {i}", f"Science description {i}"
+            )
             children_tech.append(tech_child)
             children_science.append(science_child)
-            
+
             # Create relationships
             db.cypher_query(
                 """
                 MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
                 CREATE (child)-[:SUBFIELD_OF]->(parent)
                 """,
-                {"child_name": f"Tech Subfield {i}", "parent_name": "Technology"}
+                {"child_name": f"Tech Subfield {i}", "parent_name": "Technology"},
             )
             db.cypher_query(
                 """
                 MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
                 CREATE (child)-[:SUBFIELD_OF]->(parent)
                 """,
-                {"child_name": f"Science Subfield {i}", "parent_name": "Science"}
+                {"child_name": f"Science Subfield {i}", "parent_name": "Science"},
             )
 
         # Test getting subfields for specific parents
         tech_subfields = field_service.get_subfields("Technology")
         science_subfields = field_service.get_subfields("Science")
-        
+
         assert len(tech_subfields) == 3
         assert len(science_subfields) == 3
-        
+
         # Test getting all subfields
         all_subfields = field_service.get_subfields(None)
         assert len(all_subfields) >= 6  # At least our 6 subfields
-        
+
         # Verify field names
         tech_names = [field.name for field in tech_subfields]
         science_names = [field.name for field in science_subfields]
-        
+
         for i in range(3):
             assert f"Tech Subfield {i}" in tech_names
             assert f"Science Subfield {i}" in science_names
@@ -373,14 +392,14 @@ class TestFieldService:
     def test_create_field_with_special_characters(self, field_service: FieldService):
         """Test creating fields with special characters in name and description."""
         field = field_service.create_field(
-            "AI & Machine Learning", 
-            "Field covering AI, ML, and related technologies (including NLP, CV, etc.)"
+            "AI & Machine Learning",
+            "Field covering AI, ML, and related technologies (including NLP, CV, etc.)",
         )
-        
+
         assert field.name == "AI & Machine Learning"
         assert "AI, ML" in str(field.description)
         assert field.uid is not None
-        
+
         # Verify retrieval works with special characters
         retrieved = field_service.get_field_by_name("AI & Machine Learning")
         assert retrieved is not None
@@ -391,12 +410,12 @@ class TestFieldService:
         # Simulate concurrent creation of the same field
         field1 = field_service.create_field("Concurrent Test", "First call")
         field2 = field_service.create_field("Concurrent Test", "Second call")
-        
+
         # Should return the same field instance
         assert field1.uid == field2.uid
         assert field1.description == "First call"  # Original description preserved
-        
+
         # Verify only one field exists in database
-        all_fields = field_service.get_all_fields()
+        all_fields = field_service.get_all()
         concurrent_fields = [f for f in all_fields if f.name == "Concurrent Test"]
         assert len(concurrent_fields) == 1
