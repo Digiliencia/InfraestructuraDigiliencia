@@ -4,6 +4,7 @@ import pytest
 
 from digiliencia.data.services.neomodel.author_service import AuthorService
 from digiliencia.data.services.neomodel.config import configure_neomodel
+from digiliencia.data.services.neomodel.field.field_service import FieldService
 from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_service import TopicService
 
@@ -25,6 +26,12 @@ def news_service(setup_neomodel) -> NewsService:
 def topic_service(setup_neomodel) -> TopicService:
     """Create a topic service instance."""
     return TopicService()
+
+
+@pytest.fixture
+def field_service(setup_neomodel) -> FieldService:
+    """Create a field service instance."""
+    return FieldService()
 
 
 @pytest.fixture

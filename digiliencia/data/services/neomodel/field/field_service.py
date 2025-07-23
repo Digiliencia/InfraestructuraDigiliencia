@@ -23,7 +23,13 @@ class FieldService:
 
         Returns:
             Field: The created field instance
+
+        Raises:
+            ValueError: If name is empty or None
         """
+        if not name or not name.strip():
+            raise ValueError("Field name cannot be empty")
+
         try:
             return Field.nodes.get(name=name)
         except Field.DoesNotExist:
@@ -52,7 +58,7 @@ class FieldService:
             List[Field]: List of all fields
         """
         return list(Field.nodes.all())
-    
+
     def get_subfields(self, field: str | Field | None) -> List[Field]:
         """
         Get all subfields. Optional filter by field name or Field instance.
@@ -72,7 +78,7 @@ class FieldService:
                 field_instance = self.get_field_by_name(field)
                 if not field_instance:
                     return []  # Field not found
-        
+
         # Single query to get all fields and filter in one pass
         if field_instance is None:
             # Get all subfields (fields that have a parent field) in one query
@@ -81,7 +87,7 @@ class FieldService:
             RETURN subfield
             """
             results, _ = db.cypher_query(query)
-            
+
             subfields = []
             for row in results:
                 subfield = Field.inflate(row[0])
@@ -94,11 +100,10 @@ class FieldService:
             RETURN subfield
             """
             results, _ = db.cypher_query(query, {"parent_uid": field_instance.uid})
-            
+
             subfields = []
             for row in results:
                 subfield = Field.inflate(row[0])
                 subfields.append(subfield)
-        
+
         return subfields
-            
