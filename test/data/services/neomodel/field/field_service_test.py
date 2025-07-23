@@ -419,3 +419,293 @@ class TestFieldService:
         all_fields = field_service.get_all()
         concurrent_fields = [f for f in all_fields if f.name == "Concurrent Test"]
         assert len(concurrent_fields) == 1
+
+    def test_get_fields_empty_database(self, field_service: FieldService):
+        """Test getting all parent fields when database is empty."""
+        parent_fields = field_service.get_fields()
+        assert isinstance(parent_fields, list)
+        assert len(parent_fields) == 0
+
+    def test_get_fields_no_relationships(self, field_service: FieldService):
+        """Test getting parent fields when no subfield relationships exist."""
+        # Create fields but no relationships
+        field_service.create_field("Standalone Field A", "Description A")
+        field_service.create_field("Standalone Field B", "Description B")
+
+        parent_fields = field_service.get_fields()
+        assert isinstance(parent_fields, list)
+        assert len(parent_fields) == 0
+
+    def test_get_fields_with_relationships(self, field_service: FieldService):
+        """Test getting parent fields when subfield relationships exist."""
+        # Create parent and child fields
+        parent_field1 = field_service.create_field("Computer Science", "CS parent")
+        parent_field2 = field_service.create_field("Mathematics", "Math parent")
+        child_field1 = field_service.create_field("Algorithms", "Algorithms subfield")
+        child_field2 = field_service.create_field("Statistics", "Stats subfield")
+        child_field3 = field_service.create_field("Data Structures", "DS subfield")
+
+        # Create subfield relationships using cypher query
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Algorithms", "parent_name": "Computer Science"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Data Structures", "parent_name": "Computer Science"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Statistics", "parent_name": "Mathematics"},
+        )
+
+        parent_fields = field_service.get_fields()
+        assert len(parent_fields) == 2
+        parent_names = [field.name for field in parent_fields]
+        assert "Computer Science" in parent_names
+        assert "Mathematics" in parent_names
+
+    def test_get_fields_multiple_levels_hierarchy(self, field_service: FieldService):
+        """Test getting parent fields with multiple hierarchy levels."""
+        # Create a three-level hierarchy
+        grandparent = field_service.create_field("Science", "Science field")
+        parent = field_service.create_field("Biology", "Biology field")
+        child = field_service.create_field("Genetics", "Genetics field")
+
+        # Create relationships using cypher queries
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Biology", "parent_name": "Science"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Genetics", "parent_name": "Biology"},
+        )
+
+        parent_fields = field_service.get_fields()
+        parent_names = [field.name for field in parent_fields]
+        
+        # Should include both Science and Biology as they both have subfields
+        assert "Science" in parent_names
+        assert "Biology" in parent_names
+        assert len(parent_fields) >= 2
+
+    def test_get_fields_database_error_handling(
+        self, field_service: FieldService, monkeypatch
+    ):
+        """Test error handling in get_fields method."""
+
+        # Mock database error using monkeypatch
+        def mock_cypher_query(*args, **kwargs):
+            raise Exception("Database connection error")
+
+        monkeypatch.setattr(
+            "digiliencia.data.services.neomodel.field.field_service.db.cypher_query",
+            mock_cypher_query,
+        )
+
+        # Should propagate the exception
+        with pytest.raises(Exception, match="Database connection error"):
+            field_service.get_fields()
+
+    def test_get_fields_hierarchy_empty_database(self, field_service: FieldService):
+        """Test getting fields hierarchy when database is empty."""
+        hierarchy = field_service.get_fields_hierarchy()
+        assert isinstance(hierarchy, str)
+        assert hierarchy == ""
+
+    def test_get_fields_hierarchy_no_relationships(self, field_service: FieldService):
+        """Test getting fields hierarchy when no subfield relationships exist."""
+        # Create fields but no relationships
+        field_service.create_field("Standalone Field", "Description")
+
+        hierarchy = field_service.get_fields_hierarchy()
+        assert isinstance(hierarchy, str)
+        assert hierarchy == ""
+
+    def test_get_fields_hierarchy_with_relationships(self, field_service: FieldService):
+        """Test getting fields hierarchy with subfield relationships."""
+        # Create parent and child fields
+        parent_field = field_service.create_field("Technology", "Tech parent")
+        child_field1 = field_service.create_field("AI", "AI subfield")
+        child_field2 = field_service.create_field("Blockchain", "Blockchain subfield")
+
+        # Create subfield relationships using cypher query
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "AI", "parent_name": "Technology"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Blockchain", "parent_name": "Technology"},
+        )
+
+        hierarchy = field_service.get_fields_hierarchy()
+        assert isinstance(hierarchy, str)
+        assert "Technology:" in hierarchy
+        assert "AI" in hierarchy
+        assert "Blockchain" in hierarchy
+        # Should contain the subfield formatting
+        assert "    - " in hierarchy
+
+    def test_get_fields_hierarchy_multiple_parents(self, field_service: FieldService):
+        """Test getting fields hierarchy with multiple parent fields."""
+        # Create multiple parent-child relationships
+        parent1 = field_service.create_field("Engineering", "Engineering field")
+        parent2 = field_service.create_field("Mathematics", "Math field")
+        child1 = field_service.create_field("Software Engineering", "SE field")
+        child2 = field_service.create_field("Statistics", "Stats field")
+        child3 = field_service.create_field("Calculus", "Calculus field")
+
+        # Create relationships
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Software Engineering", "parent_name": "Engineering"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Statistics", "parent_name": "Mathematics"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Calculus", "parent_name": "Mathematics"},
+        )
+
+        hierarchy = field_service.get_fields_hierarchy()
+        assert isinstance(hierarchy, str)
+        
+        # Should contain both parent fields
+        assert "Engineering:" in hierarchy
+        assert "Mathematics:" in hierarchy
+        
+        # Should contain their respective subfields
+        assert "Software Engineering" in hierarchy
+        assert "Statistics" in hierarchy
+        assert "Calculus" in hierarchy
+
+    def test_get_fields_hierarchy_mixed_with_and_without_subfields(self, field_service: FieldService):
+        """Test hierarchy generation when some parent fields have no subfields."""
+        # Create parent field with subfields
+        parent_with_children = field_service.create_field("Technology", "Tech field")
+        child = field_service.create_field("AI", "AI field")
+
+        # Create subfield relationship
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "AI", "parent_name": "Technology"},
+        )
+
+        hierarchy = field_service.get_fields_hierarchy()
+        assert isinstance(hierarchy, str)
+        assert "Technology:" in hierarchy
+        assert "AI" in hierarchy
+        # Should handle the case where some fields might not have subfields properly
+
+    def test_get_fields_hierarchy_format_consistency(self, field_service: FieldService):
+        """Test that hierarchy format is consistent and properly formatted."""
+        # Create a simple hierarchy
+        parent = field_service.create_field("Science", "Science field")
+        child1 = field_service.create_field("Physics", "Physics field")
+        child2 = field_service.create_field("Chemistry", "Chemistry field")
+
+        # Create relationships
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Physics", "parent_name": "Science"},
+        )
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Chemistry", "parent_name": "Science"},
+        )
+
+        hierarchy = field_service.get_fields_hierarchy()
+        
+        # Should have proper formatting
+        lines = hierarchy.split('\n')
+        assert any("Science:" in line for line in lines)
+        
+        # Check for proper indentation in subfields
+        subfield_lines = [line for line in lines if "    - " in line]
+        assert len(subfield_lines) >= 2
+        
+        # Verify actual subfield names are present
+        subfield_text = '\n'.join(subfield_lines)
+        assert "Physics" in subfield_text
+        assert "Chemistry" in subfield_text
+
+    def test_get_fields_hierarchy_parent_without_subfields_edge_case(self, field_service: FieldService, monkeypatch):
+        """Test hierarchy generation when get_fields returns a field but get_subfields returns empty (edge case)."""
+        # Create a normal hierarchy first
+        parent = field_service.create_field("Test Parent", "Test field")
+        child = field_service.create_field("Test Child", "Test child")
+
+        # Create relationship
+        db.cypher_query(
+            """
+            MATCH (child:Field {name: $child_name}), (parent:Field {name: $parent_name})
+            CREATE (child)-[:SUBFIELD_OF]->(parent)
+            """,
+            {"child_name": "Test Child", "parent_name": "Test Parent"},
+        )
+
+        # Mock get_subfields to return empty list for specific field to trigger else clause
+        original_get_subfields = field_service.get_subfields
+        
+        def mock_get_subfields(field):
+            if hasattr(field, 'name') and field.name == "Test Parent":
+                return []  # Force empty subfields for this parent
+            return original_get_subfields(field)
+        
+        monkeypatch.setattr(field_service, "get_subfields", mock_get_subfields)
+
+        hierarchy = field_service.get_fields_hierarchy()
+        
+        # Should contain the parent field name with colon but no subfields
+        assert "Test Parent:" in hierarchy
+        # Should not contain the subfield indentation for this field
+        lines = hierarchy.split('\n')
+        parent_line_found = False
+        for line in lines:
+            if "Test Parent:" in line and line.strip() == "Test Parent:":
+                parent_line_found = True
+                break
+        assert parent_line_found
