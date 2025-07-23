@@ -4,28 +4,24 @@ from typing import List
 import requests
 from loguru import logger
 
+from data.models.neomodel.field import Field
+from data.services.neomodel.field.field_service import FieldService
 from digiliencia.configs.env import Env
-from digiliencia.data.models.neomodel.topic import Topic
-from digiliencia.data.services.neomodel.topic.topic_service import TopicService
-from digiliencia.models.prompts.topic_classification_prompt import (
-    TopicClassificationPrompt,
-)
+from models.prompts.field_classification_prompt import FieldClassificationPrompt
 from digiliencia.utils.llm import LLMUtils
 
 
-class TopicClassificationService:
+class FieldClassificationService:
     def __init__(self, ollama_url="http://localhost:11434/api/generate"):
-        self.topic_service = TopicService()
-        self.db_topics = self.topic_service.get_all_topics()
-        self.topics = [
-            str(t.name) for t in self.db_topics
-        ]  # Convert to string explicitly
+        self.field_service = FieldService()
+        self.fields = self.field_service.get_all()
+        self.fields_hierarchy = self.field_service.get_fields_hierarchy()
         self.ollama_url = ollama_url
 
-    def classify_news_topics(self, news, max_topics: int = 5) -> List[Topic]:
+    def classify_news_fields(self, news, max_fields: int = 10) -> List[Field]:
         text = str(news.content)
-        prompt = TopicClassificationPrompt.generate_news_classification_prompt(
-            topics=self.topics, text=text, max_topics=max_topics
+        prompt = FieldClassificationPrompt.generate_news_classification_prompt(
+            fields=self.fields_hierarchy, text=text, max_fields=max_fields
         )
         payload = {
             "model": Env().classification_model,
@@ -63,16 +59,16 @@ class TopicClassificationService:
 
             # Map names to Topic objects
             name_to_obj = {
-                str(t.name): t for t in self.db_topics
+                str(t.name): t for t in self.fields
             }  # Convert to string explicitly
-            valid_topics = []
-            for topic_name in selected:
-                if isinstance(topic_name, str) and topic_name in name_to_obj:
-                    valid_topics.append(name_to_obj[topic_name])
+            valid_fields = []
+            for field_name in selected:
+                if isinstance(field_name, str) and field_name in name_to_obj:
+                    valid_fields.append(name_to_obj[field_name])
                 else:
-                    logger.warning(f"Invalid or not found topic: {topic_name}")
+                    logger.warning(f"Invalid or not found field: {field_name}")
 
-            return valid_topics[:max_topics]  # Ensure it doesn't exceed the maximum
+            return valid_fields[:max_fields]  # Ensure it doesn't exceed the maximum
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Connection error with Ollama: {e}")
@@ -83,3 +79,5 @@ class TopicClassificationService:
         except Exception as e:
             logger.error(f"Unexpected error classifying topics: {e}")
             return []
+
+    
