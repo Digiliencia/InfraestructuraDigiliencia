@@ -14,7 +14,7 @@ TEST_DB_CONFIG = {
     "WEBDRIVERWAIT_TIMEOUT": "5",
     "IMPLICIT_WAIT": "2",
     "LLM_URL": "http://localhost:11434",
-    "CLASSIFICATION_MODEL": "gemma3:12b",
+    "CLASSIFICATION_MODEL": "test_model",
 }
 
 
@@ -144,7 +144,9 @@ def _initialize_database(driver) -> None:
 def sample_scraped_data():
     """Sample scraped news data for testing."""
     from datetime import datetime
+
     from pydantic import HttpUrl
+
     from digiliencia.data.models.news_model import ScrapedNews
 
     return ScrapedNews(
@@ -162,7 +164,9 @@ def sample_scraped_data():
 def minimal_scraped_data():
     """Minimal scraped news data for testing edge cases."""
     from datetime import datetime
+
     from pydantic import HttpUrl
+
     from digiliencia.data.models.news_model import ScrapedNews
 
     return ScrapedNews(
