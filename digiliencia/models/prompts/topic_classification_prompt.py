@@ -1,7 +1,3 @@
-"""
-Prompt for topic classification using LLM models.
-"""
-
 from typing import List
 
 

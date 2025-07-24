@@ -2,6 +2,9 @@ from typing import List
 
 from loguru import logger
 
+from data.services.neomodel.field.field_classification_service import (
+    FieldClassificationService,
+)
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.incibe import IncibeScraper
@@ -18,6 +21,7 @@ def scrap(from_days_ago: int = 5):
     Env()
     news_service = NewsService()
     topics_class_service = TopicClassificationService()
+    fields_class_service = FieldClassificationService()
 
     scrapers = [WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
@@ -37,17 +41,19 @@ def scrap(from_days_ago: int = 5):
                     )
                     created_news = news_service.create_from_scraped_data(validated_data)
 
-                    # Only classify if service is healthy
-                    if True:
-                        topics = topics_class_service.classify_news_topics(created_news)
-                        news_service.set_topics_relations(created_news, topics)
-                        logger.info(
-                            f"Classified news '{created_news.header}' into {len(topics)} topics"
-                        )
-                    else:
-                        logger.warning(
-                            f"Classification service is not healthy, skipping topic classification for news '{created_news.header}'"
-                        )
+                    # Classify news into topics
+                    topics = topics_class_service.classify_news_topics(created_news)
+                    news_service.set_topics_relations(created_news, topics)
+                    logger.info(
+                        f"Classified news '{created_news.header}' into {len(topics)} topics"
+                    )
+
+                    # Classify news into fields
+                    fields = fields_class_service.classify_news_fields(created_news)
+                    news_service.set_fields_relations(created_news, fields)
+                    logger.info(
+                        f"Classified news '{created_news.header}' into {len(fields)} fields"
+                    )
 
                 except Exception as create_error:
                     logger.error(f"Error creating news: {create_error}")

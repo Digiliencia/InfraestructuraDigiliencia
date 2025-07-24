@@ -7,9 +7,9 @@ from pydantic import HttpUrl
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.author_service import AuthorService
+from digiliencia.data.services.neomodel.field.field_service import FieldService
 from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_service import TopicService
-
 
 # =============================================================================
 # Helper Functions
@@ -361,3 +361,396 @@ def test_update_news_partial_parameters(news_service: NewsService, sample_scrape
     assert updated_news.header == "Only Header Changed"
     assert updated_news.content == original_content  # Unchanged
     assert updated_news.url == original_url  # Unchanged
+
+
+def test_get_all_news_without_topics(
+    news_service: NewsService, topic_service: TopicService
+):
+    """Test retrieving all news items without topics."""
+    # Create news with topics
+    topic_service.create_topic("Tech", "Technology news", "https://example.com/tech")
+    news_service.create_news(
+        header="News with Topics",
+        date=datetime(2023, 1, 1),
+        content="Content with topics",
+        url="https://example.com/with-topics",
+        source_name="Source 1",
+        topic_names=["Tech"],
+    )
+
+    # Create news without topics
+    news_without_topics = news_service.create_news(
+        header="News without Topics",
+        date=datetime(2023, 1, 2),
+        content="Content without topics",
+        url="https://example.com/without-topics",
+        source_name="Source 2",
+    )
+
+    # Get news without topics
+    news_list = news_service.get_all_news_without_topics()
+
+    # Should only return news without topics
+    assert len(news_list) == 1
+    assert news_list[0].uid == news_without_topics.uid
+    assert news_list[0].header == "News without Topics"
+
+
+def test_get_all_news_without_topics_empty_database(news_service: NewsService):
+    """Test get_all_news_without_topics when database is empty."""
+    news_list = news_service.get_all_news_without_topics()
+    assert isinstance(news_list, list)
+    assert len(news_list) == 0
+
+
+def test_get_all_news_without_topics_all_have_topics(
+    news_service: NewsService, topic_service: TopicService
+):
+    """Test get_all_news_without_topics when all news have topics."""
+    # Create topic
+    topic_service.create_topic("General", "General news", "https://example.com/general")
+
+    # Create multiple news items, all with topics
+    news_service.create_news(
+        header="News 1",
+        date=datetime(2023, 1, 1),
+        content="Content 1",
+        url="https://example.com/news1",
+        source_name="Source 1",
+        topic_names=["General"],
+    )
+
+    news_service.create_news(
+        header="News 2",
+        date=datetime(2023, 1, 2),
+        content="Content 2",
+        url="https://example.com/news2",
+        source_name="Source 2",
+        topic_names=["General"],
+    )
+
+    # Should return empty list
+    news_list = news_service.get_all_news_without_topics()
+    assert isinstance(news_list, list)
+    assert len(news_list) == 0
+
+
+def test_set_topics_relations(news_service: NewsService, topic_service: TopicService):
+    """Test setting topic relationships for news."""
+    # Create news without topics initially
+    news = news_service.create_news(
+        header="Test News for Topics",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/test-topics",
+        source_name="Test Source",
+    )
+
+    # Create topics
+    topic1 = topic_service.create_topic(
+        "Topic 1", "Description 1", "https://example.com/topic1"
+    )
+    topic2 = topic_service.create_topic(
+        "Topic 2", "Description 2", "https://example.com/topic2"
+    )
+
+    # Initially should have no topics
+    assert len(news.topics.all()) == 0  # type: ignore
+
+    # Set topic relationships
+    news_service.set_topics_relations(news, [topic1, topic2])
+
+    # Verify relationships were created
+    connected_topics = news.topics.all()  # type: ignore
+    assert len(connected_topics) == 2
+
+    topic_names = [topic.name for topic in connected_topics]
+    assert "Topic 1" in topic_names
+    assert "Topic 2" in topic_names
+
+
+def test_set_topics_relations_empty_list(news_service: NewsService):
+    """Test setting empty topic relationships list."""
+    # Create news
+    news = news_service.create_news(
+        header="Test News Empty Topics",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/empty-topics",
+        source_name="Test Source",
+    )
+
+    # Set empty topics list
+    news_service.set_topics_relations(news, [])
+
+    # Should still have no topics
+    assert len(news.topics.all()) == 0  # type: ignore
+
+
+def test_set_fields_relations(news_service: NewsService):
+    """Test setting field relationships for news."""
+    field_service = FieldService()
+
+    # Create news without fields initially
+    news = news_service.create_news(
+        header="Test News for Fields",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/test-fields",
+        source_name="Test Source",
+    )
+
+    # Create fields
+    field1 = field_service.create_field("Field 1", "Description 1")
+    field2 = field_service.create_field("Field 2", "Description 2")
+
+    # Initially should have no fields
+    assert len(news.fields.all()) == 0  # type: ignore
+
+    # Set field relationships
+    news_service.set_fields_relations(news, [field1, field2])
+
+    # Verify relationships were created
+    connected_fields = news.fields.all()  # type: ignore
+    assert len(connected_fields) == 2
+
+    field_names = [field.name for field in connected_fields]
+    assert "Field 1" in field_names
+    assert "Field 2" in field_names
+
+
+def test_set_fields_relations_empty_list(news_service: NewsService):
+    """Test setting empty field relationships list."""
+    # Create news
+    news = news_service.create_news(
+        header="Test News Empty Fields",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/empty-fields",
+        source_name="Test Source",
+    )
+
+    # Set empty fields list
+    news_service.set_fields_relations(news, [])
+
+    # Should still have no fields
+    assert len(news.fields.all()) == 0  # type: ignore
+
+
+def test_set_fields_relations_duplicate_fields(news_service: NewsService):
+    """Test setting field relationships with duplicate fields."""
+    field_service = FieldService()
+
+    # Create news
+    news = news_service.create_news(
+        header="Test News Duplicate Fields",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/duplicate-fields",
+        source_name="Test Source",
+    )
+
+    # Create field
+    field1 = field_service.create_field("Duplicate Field", "Description")
+
+    # Set same field twice
+    news_service.set_fields_relations(news, [field1])
+    news_service.set_fields_relations(news, [field1])
+
+    # Should still only have one relationship (neomodel handles duplicates)
+    connected_fields = news.fields.all()  # type: ignore
+    assert len(connected_fields) == 1
+    assert connected_fields[0].name == "Duplicate Field"
+
+
+def test_create_news_error_handling_database_connection(news_service: NewsService):
+    """Test error handling when database connection fails during news creation."""
+    with patch(
+        "digiliencia.data.models.neomodel.news.News.get_or_create_with_relationships"
+    ) as mock_create:
+        mock_create.side_effect = Exception("Database connection failed")
+
+        with pytest.raises(Exception) as exc_info:
+            news_service.create_news(
+                header="Test News",
+                date=datetime(2023, 1, 1),
+                content="Test content",
+                url="https://example.com/test",
+                source_name="Test Source",
+            )
+
+        assert "Database connection failed" in str(exc_info.value)
+
+
+def test_get_news_by_id_does_not_exist_exception(news_service: NewsService):
+    """Test handling when News.DoesNotExist is raised during retrieval."""
+    with patch("digiliencia.data.models.neomodel.news.News.nodes.get") as mock_get:
+        mock_get.side_effect = News.DoesNotExist("News not found")
+
+        # Should return None when DoesNotExist is raised
+        result = news_service.get_news_by_id("test-id")
+        assert result is None
+
+
+def test_update_news_does_not_exist_exception(news_service: NewsService):
+    """Test handling when News.DoesNotExist is raised during update."""
+    with patch("digiliencia.data.models.neomodel.news.News.nodes.get") as mock_get:
+        mock_get.side_effect = News.DoesNotExist("News not found")
+
+        # Should return None when DoesNotExist is raised
+        result = news_service.update_news("test-id", header="Updated Header")
+        assert result is None
+
+
+def test_delete_news_does_not_exist_exception(news_service: NewsService):
+    """Test handling when News.DoesNotExist is raised during deletion."""
+    with patch("digiliencia.data.models.neomodel.news.News.nodes.get") as mock_get:
+        mock_get.side_effect = News.DoesNotExist("News not found")
+
+        # Should return False when DoesNotExist is raised
+        result = news_service.delete_news("test-id")
+        assert result is False
+
+
+def test_news_service_initialization():
+    """Test NewsService initialization."""
+    service = NewsService()
+    assert isinstance(service, NewsService)
+
+
+def test_create_news_with_none_optional_parameters(news_service: NewsService):
+    """Test creating news with explicitly None optional parameters."""
+    news = news_service.create_news(
+        header="Test News None Params",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/none-params",
+        source_name="Test Source",
+        author_names=None,
+        topic_names=None,
+    )
+
+    assert isinstance(news, News)
+    assert news.header == "Test News None Params"
+    assert len(news.written_by.all()) == 0  # type: ignore
+    assert len(news.topics.all()) == 0  # type: ignore
+
+
+def test_get_all_news_multiple_items(news_service: NewsService):
+    """Test retrieving multiple news items."""
+    # Create multiple news items
+    news_service.create_news(
+        header="News 1",
+        date=datetime(2023, 1, 1),
+        content="Content 1",
+        url="https://example.com/news1",
+        source_name="Source 1",
+    )
+    news_service.create_news(
+        header="News 2",
+        date=datetime(2023, 1, 2),
+        content="Content 2",
+        url="https://example.com/news2",
+        source_name="Source 2",
+    )
+
+    all_news = news_service.get_all_news()
+
+    assert len(all_news) >= 2  # May have other news from other tests
+    news_headers = [news.header for news in all_news]
+    assert "News 1" in news_headers
+    assert "News 2" in news_headers
+
+
+def test_set_topics_relations_existing_connections(
+    news_service: NewsService, topic_service: TopicService
+):
+    """Test setting topic relationships when connections already exist."""
+    # Create news and topics
+    news = news_service.create_news(
+        header="Test News Existing Topics",
+        date=datetime(2023, 1, 1),
+        content="Test content",
+        url="https://example.com/existing-topics",
+        source_name="Test Source",
+    )
+
+    topic1 = topic_service.create_topic(
+        "Existing Topic 1", "Description 1", "https://example.com/topic1"
+    )
+    topic2 = topic_service.create_topic(
+        "Existing Topic 2", "Description 2", "https://example.com/topic2"
+    )
+
+    # Set topics twice - should handle existing connections gracefully
+    news_service.set_topics_relations(news, [topic1])
+    news_service.set_topics_relations(news, [topic1, topic2])
+
+    # Should have both topics connected
+    connected_topics = news.topics.all()  # type: ignore
+    assert len(connected_topics) == 2
+
+    topic_names = [topic.name for topic in connected_topics]
+    assert "Existing Topic 1" in topic_names
+    assert "Existing Topic 2" in topic_names
+
+
+def test_create_from_scraped_data_with_empty_lists(news_service: NewsService):
+    """Test creating news from scraped data with empty authors and topics lists."""
+    scraped_data = create_scraped_news_data(
+        authors=[],
+        topics=[],
+    )
+
+    news = news_service.create_from_scraped_data(scraped_data)
+
+    assert isinstance(news, News)
+    assert news.header == scraped_data.header
+    assert len(news.written_by.all()) == 0  # type: ignore
+    assert len(news.topics.all()) == 0  # type: ignore
+
+
+def test_get_all_news_without_topics_mixed_scenarios(
+    news_service: NewsService, topic_service: TopicService
+):
+    """Test get_all_news_without_topics with mixed scenarios."""
+    # Create topic
+    topic_service.create_topic(
+        "Mixed Topic", "Mixed description", "https://example.com/mixed"
+    )
+
+    # Create news with different topic configurations
+    news_service.create_news(
+        header="News With Topic",
+        date=datetime(2023, 1, 1),
+        content="Content with topic",
+        url="https://example.com/with-topic",
+        source_name="Source 1",
+        topic_names=["Mixed Topic"],
+    )
+
+    news_service.create_news(
+        header="First News Without Topic",
+        date=datetime(2023, 1, 2),
+        content="First content without topic",
+        url="https://example.com/without-topic1",
+        source_name="Source 2",
+    )
+
+    news_service.create_news(
+        header="Second News Without Topic",
+        date=datetime(2023, 1, 3),
+        content="Second content without topic",
+        url="https://example.com/without-topic2",
+        source_name="Source 3",
+    )
+
+    # Get news without topics
+    news_without_topics = news_service.get_all_news_without_topics()
+
+    # Should return only the news without topics
+    assert len(news_without_topics) >= 2  # At least our 2 news items
+    news_headers = [news.header for news in news_without_topics]
+    assert "First News Without Topic" in news_headers
+    assert "Second News Without Topic" in news_headers
+    assert "News With Topic" not in news_headers
