@@ -1,4 +1,5 @@
-// 1. Create constraintsCREATE CONSTRAINT unique_topic_name
+// 1. Create constraints
+CREATE CONSTRAINT unique_topic_name
 FOR (t:Topic)
 REQUIRE t.name IS UNIQUE;
 

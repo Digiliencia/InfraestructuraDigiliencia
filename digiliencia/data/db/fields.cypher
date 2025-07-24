@@ -1597,7 +1597,7 @@ MERGE (f31:Field {name: "Fourth Industrial Revolution", description: ""})
 MERGE
   (s189:Field
     {
-      name: "Technology Innovation",
+      name: "Industry Technology Innovation",
       description:
         "Convergence of AI, robotics, IoT, and biotech driving unprecedented change."
     })
@@ -2061,14 +2061,6 @@ MERGE
         "Prioritizing domestic production and data storage to reduce foreign dependencies."
     })
 MERGE (s244)-[:SUBFIELD_OF]->(f38)
-MERGE
-  (s245:Field
-    {
-      name: "Economic and Technological Power Transition",
-      description:
-        "Redefining global economic hierarchies through innovation and market shifts."
-    })
-MERGE (s245)-[:SUBFIELD_OF]->(f38)
 
 // Space
 MERGE (f39:Field {name: "Space", description: ""})
