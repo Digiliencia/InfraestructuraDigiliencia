@@ -1,38 +1,38 @@
 class FieldClassificationPrompt:
-    """Handles prompt generation for field classification tasks."""
+    """Generates hallucination-resistant prompts for subfield classification."""
 
     @staticmethod
     def generate_news_classification_prompt(
-        fields: str, text: str, max_fields: int = 10
+        fields: str, text: str, max_fields: int = 5
     ) -> str:
-        """
-        Builds a system prompt that explains the task, provides a field-subfield hierarchy,
-        and requests a clean JSON list of matching subtopics based on the article content.
+        return f"""
+You are a careful classification assistant.
 
-        Args:
-            fields: Field-subfield hierarchy as a string
-            text: The news article content to classify
-            max_fields: Maximum number of fields to return
+Your task is to identify which specific **topics** the following news article directly and clearly relates to.
+Topics are classified under specific fields. You must only choose from the provided list of topics, not general fields.
 
-        Returns:
-            Formatted prompt string for the LLM
-        """
-        return f"""You are a topic classification assistant.
+🛑 You MUST choose only from the topics listed below.
+🛑 Do NOT guess or invent new fields or topics.
+🛑 If the article is not clearly relevant to any, return an empty list: `[]`.
+🛑 There is a maximum of {max_fields} topics to choose from.
 
-Your task is to classify a news article into a maximum of {max_fields} relevant **subtopics**, based on the provided hierarchy of topics and subtopics.
-
-Do NOT include main topics. Only return subtopics (leaves of the hierarchy).
-
-Available topics and subtopics:
+🧩 Topics (choose from this exact list):
 {fields}
 
-News content:
+📰 News Article:
 \"\"\"{text}\"\"\"
 
-Output format:
-Return only a valid JSON list (array) of subtopics, like this:
-["Online Surveillance", "Data Protection", "Victims and Harms"]
+📤 Output rules:
+- Return a JSON array with **only the exact names** of matching topics.
+- Do not include explanations or summaries.
+- Do not include any topic not in the list above.
+- If no topic clearly applies, return: []
 
-Do not explain your answer.
-Do not return anything other than the JSON list.
+✅ Example (valid):
+["Data Protection", "Identity Management"]
+
+❌ Example (invalid):
+["Security", "General Tech"] ← Not in list
+
+Remember: no explanation, no formatting — just a JSON list of topics from the list above.
 """

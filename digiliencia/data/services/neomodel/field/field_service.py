@@ -156,9 +156,9 @@ class FieldService:
             subfield_names = [str(subfield.name) for subfield in subfields]
             if subfield_names:
                 hierarchy.append(
-                    f"{field.name}:\n    - " + "\n    - ".join(subfield_names)
+                    f"{field.name}: (field)\n    - " + "\n    - ".join(subfield_names)
                 )
             else:
-                hierarchy.append(f"{field.name}:")
+                hierarchy.append(f"{field.name}: (field)")
 
         return "\n".join(hierarchy)

@@ -181,3 +181,12 @@ class NewsService:
         for field in fields:
             news.fields.connect(field)
             logger.info(f"Connected field {field.name} to news {news.header}")
+
+    def get_all_news_without_fields(self) -> List[News]:
+        """
+        Get all news items without fields.
+
+        Returns:
+            List[News]: List of news items without fields
+        """
+        return [news for news in News.nodes.all() if not news.fields]
