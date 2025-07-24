@@ -42,161 +42,169 @@ class MockClassificationService(BaseClassificationService[Topic]):
         return "mock_topic"
 
 
-class TestBaseClassificationService:
-    """Test cases for BaseClassificationService."""
+@pytest.fixture
+def service(mocker):
+    """Set up test fixtures."""
+    return MockClassificationService(mocker=mocker)
 
-    @pytest.fixture
-    def service(self, mocker):
-        """Set up test fixtures."""
-        return MockClassificationService(mocker=mocker)
 
-    @pytest.fixture
-    def mock_news(self, mocker):
-        """Set up mock news fixture."""
-        mock_news = mocker.Mock()
-        mock_news.content = "This is a test news content for classification."
-        return mock_news
+@pytest.fixture
+def mock_news(mocker):
+    """Set up mock news fixture."""
+    mock_news = mocker.Mock()
+    mock_news.content = "This is a test news content for classification."
+    return mock_news
 
-    def test_initialization(self, service):
-        """Test service initialization."""
-        assert service.ollama_url == "http://localhost:11434/api/generate"
-        assert service.mock_objects is not None
 
-    def test_create_ollama_payload(self, service, mocker):
-        """Test Ollama payload creation."""
-        mock_env = mocker.patch("digiliencia.configs.env.Env")
-        mock_env_instance = mocker.Mock()
-        mock_env_instance.classification_model = "test_model"
-        mock_env.return_value = mock_env_instance
+def test_initialization(service):
+    """Test service initialization."""
+    assert service.ollama_url == "http://localhost:11434/api/generate"
+    assert service.mock_objects is not None
 
-        payload = service._create_ollama_payload("test prompt")
 
-        expected = {
-            "model": "test_model",
-            "prompt": "test prompt",
-            "stream": False,
-            "options": {
-                "temperature": 0,
-            },
-        }
-        assert payload == expected
+def test_create_ollama_payload(service, mocker):
+    """Test Ollama payload creation."""
+    mock_env = mocker.patch("digiliencia.configs.env.Env")
+    mock_env_instance = mocker.Mock()
+    mock_env_instance.classification_model = "test_model"
+    mock_env.return_value = mock_env_instance
 
-    def test_send_ollama_request_success(self, service, mocker):
-        """Test successful Ollama request."""
-        mock_post = mocker.patch(
-            "digiliencia.data.services.neomodel.base_classification_service.requests.post"
-        )
-        # Mock response
-        mock_response = mocker.Mock()
-        mock_response.json.return_value = {"response": "test response"}
-        mock_response.raise_for_status = mocker.Mock()
-        mock_post.return_value = mock_response
+    payload = service._create_ollama_payload("test prompt")
 
-        payload = {"test": "payload"}
-        result = service._send_ollama_request(payload)
+    expected = {
+        "model": "test_model",
+        "prompt": "test prompt",
+        "stream": False,
+        "options": {
+            "temperature": 0,
+        },
+    }
+    assert payload == expected
 
-        assert result == "test response"
-        mock_post.assert_called_once_with(
-            "http://localhost:11434/api/generate", json=payload, timeout=60000
-        )
 
-    def test_send_ollama_request_no_response_field(self, service, mocker):
-        """Test Ollama request with missing response field."""
-        mock_post = mocker.patch(
-            "digiliencia.data.services.neomodel.base_classification_service.requests.post"
-        )
-        # Mock response without 'response' field
-        mock_response = mocker.Mock()
-        mock_response.json.return_value = {"error": "no response"}
-        mock_response.raise_for_status = mocker.Mock()
-        mock_post.return_value = mock_response
+def test_send_ollama_request_success(service, mocker):
+    """Test successful Ollama request."""
+    mock_post = mocker.patch(
+        "digiliencia.data.services.neomodel.base_classification_service.requests.post"
+    )
+    # Mock response
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {"response": "test response"}
+    mock_response.raise_for_status = mocker.Mock()
+    mock_post.return_value = mock_response
 
-        payload = {"test": "payload"}
+    payload = {"test": "payload"}
+    result = service._send_ollama_request(payload)
 
-        with pytest.raises(ValueError) as exc_info:
-            service._send_ollama_request(payload)
+    assert result == "test response"
+    mock_post.assert_called_once_with(
+        "http://localhost:11434/api/generate", json=payload, timeout=60000
+    )
 
-        assert "does not contain 'response' field" in str(exc_info.value)
 
-    def test_extract_and_validate_json_success(self, service, mocker):
-        """Test successful JSON extraction and validation."""
-        mock_extract = mocker.patch(
-            "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
-        )
-        mock_extract.return_value = ["topic1", "topic2"]
+def test_send_ollama_request_no_response_field(service, mocker):
+    """Test Ollama request with missing response field."""
+    mock_post = mocker.patch(
+        "digiliencia.data.services.neomodel.base_classification_service.requests.post"
+    )
+    # Mock response without 'response' field
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {"error": "no response"}
+    mock_response.raise_for_status = mocker.Mock()
+    mock_post.return_value = mock_response
 
-        result = service._extract_and_validate_json("mock response")
+    payload = {"test": "payload"}
 
-        assert result == ["topic1", "topic2"]
-        mock_extract.assert_called_once_with("mock response")
+    with pytest.raises(ValueError) as exc_info:
+        service._send_ollama_request(payload)
 
-    def test_extract_and_validate_json_not_list(self, service, mocker):
-        """Test JSON extraction when result is not a list."""
-        mock_extract = mocker.patch(
-            "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
-        )
-        mock_extract.return_value = {"not": "a list"}
+    assert "does not contain 'response' field" in str(exc_info.value)
 
-        with pytest.raises(ValueError) as exc_info:
-            service._extract_and_validate_json("mock response")
 
-        assert "Response is not a list" in str(exc_info.value)
+def test_extract_and_validate_json_success(service, mocker):
+    """Test successful JSON extraction and validation."""
+    mock_extract = mocker.patch(
+        "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
+    )
+    mock_extract.return_value = ["topic1", "topic2"]
 
-    def test_map_names_to_objects_success(self, service):
-        """Test successful mapping of names to objects."""
-        selected_names = ["topic1", "topic2"]
+    result = service._extract_and_validate_json("mock response")
 
-        result = service._map_names_to_objects(selected_names, 5)
+    assert result == ["topic1", "topic2"]
+    mock_extract.assert_called_once_with("mock response")
 
-        assert len(result) == 2
-        assert result[0].name == "topic1"
-        assert result[1].name == "topic2"
 
-    def test_map_names_to_objects_with_invalid_names(self, service, mocker):
-        """Test mapping when some names are invalid."""
-        selected_names = ["topic1", "invalid_topic", "topic2"]
+def test_extract_and_validate_json_not_list(service, mocker):
+    """Test JSON extraction when result is not a list."""
+    mock_extract = mocker.patch(
+        "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
+    )
+    mock_extract.return_value = {"not": "a list"}
 
-        mock_logger = mocker.patch(
-            "digiliencia.data.services.neomodel.base_classification_service.logger"
-        )
-        result = service._map_names_to_objects(selected_names, 5)
+    with pytest.raises(ValueError) as exc_info:
+        service._extract_and_validate_json("mock response")
 
-        assert len(result) == 2  # Only valid topics
-        mock_logger.warning.assert_called_once()
+    assert "Response is not a list" in str(exc_info.value)
 
-    def test_map_names_to_objects_max_items_limit(self, service):
-        """Test that max_items limit is respected."""
-        selected_names = ["topic1", "topic2", "topic3"]
 
-        result = service._map_names_to_objects(selected_names, 2)
+def test_map_names_to_objects_success(service):
+    """Test successful mapping of names to objects."""
+    selected_names = ["topic1", "topic2"]
 
-        assert len(result) == 2  # Limited to max_items
+    result = service._map_names_to_objects(selected_names, 5)
 
-    def test_classify_news_integration(self, service, mock_news, mocker):
-        """Test full classification flow integration."""
-        # Setup mocks
-        mock_env = mocker.patch("digiliencia.configs.env.Env")
-        mock_extract = mocker.patch(
-            "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
-        )
-        mock_post = mocker.patch(
-            "digiliencia.data.services.neomodel.base_classification_service.requests.post"
-        )
+    assert len(result) == 2
+    assert result[0].name == "topic1"
+    assert result[1].name == "topic2"
 
-        mock_env_instance = mocker.Mock()
-        mock_env_instance.classification_model = "test_model"
-        mock_env.return_value = mock_env_instance
 
-        mock_response = mocker.Mock()
-        mock_response.json.return_value = {"response": "mock llm response"}
-        mock_response.raise_for_status = mocker.Mock()
-        mock_post.return_value = mock_response
-        mock_extract.return_value = ["topic1", "topic2"]
+def test_map_names_to_objects_with_invalid_names(service, mocker):
+    """Test mapping when some names are invalid."""
+    selected_names = ["topic1", "invalid_topic", "topic2"]
 
-        # Execute
-        result = service.classify_news(mock_news, 3)
+    mock_logger = mocker.patch(
+        "digiliencia.data.services.neomodel.base_classification_service.logger"
+    )
+    result = service._map_names_to_objects(selected_names, 5)
 
-        # Verify
-        assert len(result) == 2
-        assert result[0].name == "topic1"
-        assert result[1].name == "topic2"
+    assert len(result) == 2  # Only valid topics
+    mock_logger.warning.assert_called_once()
+
+
+def test_map_names_to_objects_max_items_limit(service):
+    """Test that max_items limit is respected."""
+    selected_names = ["topic1", "topic2", "topic3"]
+
+    result = service._map_names_to_objects(selected_names, 2)
+
+    assert len(result) == 2  # Limited to max_items
+
+
+def test_classify_news_integration(service, mock_news, mocker):
+    """Test full classification flow integration."""
+    # Setup mocks
+    mock_env = mocker.patch("digiliencia.configs.env.Env")
+    mock_extract = mocker.patch(
+        "digiliencia.utils.llm.LLMUtils.extract_json_from_response"
+    )
+    mock_post = mocker.patch(
+        "digiliencia.data.services.neomodel.base_classification_service.requests.post"
+    )
+
+    mock_env_instance = mocker.Mock()
+    mock_env_instance.classification_model = "test_model"
+    mock_env.return_value = mock_env_instance
+
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {"response": "mock llm response"}
+    mock_response.raise_for_status = mocker.Mock()
+    mock_post.return_value = mock_response
+    mock_extract.return_value = ["topic1", "topic2"]
+
+    # Execute
+    result = service.classify_news(mock_news, 3)
+
+    # Verify
+    assert len(result) == 2
+    assert result[0].name == "topic1"
+    assert result[1].name == "topic2"
