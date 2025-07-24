@@ -12,6 +12,7 @@ from neomodel import (
     ZeroOrMore,
 )
 
+from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
 from digiliencia.data.models.neomodel.topic import Topic
@@ -30,6 +31,7 @@ class News(StructuredNode):
     published_by = RelationshipTo("NewsAgency", "PUBLISHED_BY", cardinality=One)
     written_by = RelationshipTo("Author", "WRITTEN_BY", cardinality=ZeroOrMore)
     topics = RelationshipTo("Topic", "COVERS", cardinality=ZeroOrMore)
+    fields = RelationshipTo("Field", "RELATED_TO", cardinality=ZeroOrMore)
 
     @classmethod
     def get_or_create_with_relationships(
@@ -41,6 +43,7 @@ class News(StructuredNode):
         source_name: str,
         author_names: list[str] | None = None,
         topic_names: list[str] | None = None,
+        field_names: list[str] | None = None,
     ) -> "News":
         """
         Create or get a news item with all its relationships.
@@ -103,6 +106,15 @@ class News(StructuredNode):
                     topic = Topic.nodes.get(name=topic_name)
                     news.topics.connect(topic)
                 except Topic.DoesNotExist:
+                    pass
+
+        # Connect to fields if provided
+        if field_names:
+            for field_name in field_names:
+                try:
+                    field = Field.nodes.get(name=field_name)
+                    news.fields.connect(field)
+                except Field.DoesNotExist:
                     pass
 
         return news

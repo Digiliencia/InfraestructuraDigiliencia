@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from loguru import logger
 
+from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
@@ -161,11 +162,22 @@ class NewsService:
 
     def set_topics_relations(self, news: News, topics: List[Topic]):
         """
-        Set topics relationships for all news items.
+        Set topics relationships for the given news.
 
         Args:
             topics: List of Topic instances to relate to news
         """
         for topic in topics:
-            news.topics.connect(topic)
+            news.topics.connect(topic)  # type: ignore
             logger.info(f"Connected topic {topic.name} to news {news.header}")
+
+    def set_fields_relations(self, news: News, fields: List[Field]):
+        """
+        Set fields relationships for the given news.
+
+        Args:
+            fields: List of Field instances to relate to news
+        """
+        for field in fields:
+            news.fields.connect(field)
+            logger.info(f"Connected field {field.name} to news {news.header}")
