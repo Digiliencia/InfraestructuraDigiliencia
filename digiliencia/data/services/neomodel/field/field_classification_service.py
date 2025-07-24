@@ -79,5 +79,3 @@ class FieldClassificationService:
         except Exception as e:
             logger.error(f"Unexpected error classifying topics: {e}")
             return []
-
-    

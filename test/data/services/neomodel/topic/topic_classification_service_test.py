@@ -373,9 +373,6 @@ def test_classify_news_topics_non_string_topic_in_response(
     )
 
 
-
-
-
 def test_classify_news_topics_empty_selected_list(
     topic_classification_service, mock_news, monkeypatch
 ):
@@ -402,6 +399,3 @@ def test_classify_news_topics_empty_selected_list(
     result = topic_classification_service.classify_news_topics(mock_news)
 
     assert result == []
-
-
-

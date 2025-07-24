@@ -2,9 +2,10 @@ import json
 from typing import List
 from loguru import logger
 
+
 class LLMUtils:
     """Has utilities for handling LLM responses."""
-    
+
     @staticmethod
     def extract_json_from_response(response_text: str) -> List[str]:
         """Extracts the last valid JSON list from Ollama's response, handling reasoning text with multiple JSONs."""
