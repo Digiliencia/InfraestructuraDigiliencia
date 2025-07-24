@@ -21,7 +21,9 @@ def main():
 
         for news in unlabeled_news:
             try:
-                logger.info(f"Processing news {processed_count+1}/{len(unlabeled_news)}: {news.header}")
+                logger.info(
+                    f"Processing news {processed_count + 1}/{len(unlabeled_news)}: {news.header}"
+                )
                 fields = field_class_service.classify_news_fields(news)
                 if fields:
                     news_service.set_fields_relations(news, fields)

@@ -2,7 +2,9 @@ from typing import List
 
 from loguru import logger
 
-from data.services.neomodel.field.field_classification_service import FieldClassificationService
+from data.services.neomodel.field.field_classification_service import (
+    FieldClassificationService,
+)
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.incibe import IncibeScraper
@@ -52,7 +54,6 @@ def scrap(from_days_ago: int = 5):
                     logger.info(
                         f"Classified news '{created_news.header}' into {len(fields)} fields"
                     )
-
 
                 except Exception as create_error:
                     logger.error(f"Error creating news: {create_error}")
