@@ -124,7 +124,7 @@ class BaseClassificationService(ABC, Generic[T]):
             ValueError: If JSON extraction or validation fails
         """
         selected = LLMUtils.extract_json_from_response(response_text)
-        if not selected:
+        if selected is None:
             raise ValueError("Could not extract JSON from response")
 
         if not isinstance(selected, list):
