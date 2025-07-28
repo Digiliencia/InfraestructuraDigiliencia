@@ -1,14 +1,22 @@
--- scripts/04-grant-permissions.sql.template
--- This template will be processed by 04-grant-permissions.sh
+-- scripts/10-grant-permissions.sql.template
+-- This template will be processed to grant the final permissions.
 
--- Grant permissions on existing tables to the application user_login
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.USERS TO ${- **APP_USER_LOGIN**: The user your application will connect as for the account management
-};
+-- Grant permissions on the USERS table to the user management role.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE USERS TO "${APP_USER_LOGIN}";
 
--- Grant permissions on existing tables to the application user
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.MESSAGES TO ${APP_USER};
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE $APP_DB_NAME.CHATS TO ${APP_USER};
-GRANT SELECT ON TABLE $APP_DB_NAME.IA_PROMPTS TO ${APP_USER};
-GRANT SELECT ON TABLE $APP_DB_NAME.MODELS TO ${APP_USER};
+-- Grant permissions on the sequences for the USERS table
+GRANT USAGE, SELECT ON SEQUENCE users_id_seq TO "${APP_USER_LOGIN}";
 
-GRANT EXECUTE ON FUNCTION get_user_id_by_email(VARCHAR) TO ${APP_USER};
+-- Grant permissions to the main application user
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE MESSAGES TO "${APP_USER}";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE CHATS TO "${APP_USER}";
+GRANT SELECT ON TABLE IA_PROMPTS TO "${APP_USER}";
+GRANT SELECT ON TABLE MODELS TO "${APP_USER}";
+GRANT SELECT ON users_id_email_view TO "${APP_USER}";
+
+-- Grant permissions on the sequences for the main application user
+GRANT USAGE, SELECT ON SEQUENCE messages_id_seq TO "${APP_USER}";
+GRANT USAGE, SELECT ON SEQUENCE chats_id_seq TO "${APP_USER}";
+
+-- Grant execute permission on the function
+GRANT EXECUTE ON FUNCTION get_user_id_by_email(VARCHAR) TO "${APP_USER}";

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_user_id_by_email(user_email VARCHAR)
+CREATE OR REPLACE FUNCTION get_user_id_by_email(user_email VARCHAR(255))
 RETURNS INTEGER AS $$
 DECLARE
     user_id INTEGER;

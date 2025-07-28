@@ -34,12 +34,12 @@ CREATE TABLE MODELS (
     IA_name VARCHAR(255) UNIQUE NOT NULL -- Assuming model names should be unique
 );
 
--- Create the CREATE TABLE MESSAGES (
+-- Create the MESSAGES table
 CREATE TABLE MESSAGES (
     ID SERIAL PRIMARY KEY,
     order_number INTEGER NOT NULL, -- Message number within a chat
     content TEXT NOT NULL,
-    stadistics TEXT, -- Use TEXT for potential JSON or other string data for stats
+    statistics TEXT, -- Use TEXT for potential JSON use JSONB
     chat_id INTEGER NOT NULL REFERENCES CHATS(ID) ON DELETE CASCADE ON UPDATE CASCADE, -- Foreign key linking messages to chats, cascade on delete/update
     model_id INTEGER REFERENCES MODELS(ID) ON DELETE RESTRICT ON UPDATE RESTRICT, -- Foreign key linking message to a model, restrict delete/update if messages exist
     ia_prompt_id INTEGER REFERENCES IA_PROMPTS(ID) ON DELETE RESTRICT ON UPDATE RESTRICT, -- Foreign key linking message to a prompt, restrict delete/update if messages exist
