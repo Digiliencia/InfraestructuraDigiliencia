@@ -127,7 +127,7 @@ def populated_db(get_db_connection_for_role):
         for _ in range(num_users):
             username = fake.user_name()
             email = fake.unique.email()
-            cursor.execute("INSERT INTO public.users (username, email) VALUES (%s, %s) RETURNING id;", (username, email))
+            cursor.execute("INSERT INTO public.users (email,password) VALUES (%s, %s) RETURNING id;", (email,username))
             user_ids.append(cursor.fetchone()[0])
         conn.commit()
         print("Users inserted.")

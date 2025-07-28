@@ -4,7 +4,9 @@ This directory contains the configuration files for a PostgreSQL database used i
 
 ## Set up
 
-The dockerfile is used to set up the database. It will create a database with the name specified in the `.env` file and run the SQL scripts to create the schema, views, and stored procedures.
+The dockerfile is used to set up the database. It will create a database with the nam
+export APP_DB_NAME
+export DB_OWNER_USERe specified in the `.env` file and run the SQL scripts to create the schema, views, and stored procedures.
 
 ## Postgres Database Configuration
 
@@ -43,7 +45,7 @@ MESSAGE
 ## .env variables
 
 - **POSTGRES_PASSWORD**: Password for the default 'postgres' superuser.
-- **POSTGRES_USER**=User for the default superuser (default is postgres). Optional to set unless you want a different name.
+- **POSTGRES_USER**: User for the default superuser (default is postgres). Optional to set unless you want a different name.
 - **POSTGRES_DB**: Name of the default database to create (default is postgres).
 
 ### Custom

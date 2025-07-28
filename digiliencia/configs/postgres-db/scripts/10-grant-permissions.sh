@@ -1,9 +1,27 @@
 #!/bin/bash
-set -e # If somethinf goes wrong, exit immedietely
+set -e # If something goes wrong, exit immedietely
 
-echo "Processing permissions SQL template and granting privileges..."
+POSTGRES_USER="postgres"
 
-export APP_USER DB_OWNER_USER APP_DB_NAME # Not needed, but good practice to export the variables
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-envsubst < /docker-entrypoint-initdb.d/03-grant-permissions.sql.template | \
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$APP_DB_NAME"
+echo "Processing SQL template and initializing database/users..."
+
+. $SCRIPT_DIR/../.env
+export PGPASSWORD=$POSTGRES_PASSWORD
+
+# Sets the enviroment variables for the database
+VARIABLES_TO_SUBSTITUTE='$APP_DB_NAME $DB_OWNER_USER $DB_OWNER_PASSWORD $APP_USER $APP_USER_PASSWORD $APP_USER_LOGIN $APP_USER_LOGIN_PASSWORD'
+
+# Export the variables explicitly to ensure they're available
+export POSTGRES_PASSWORD
+export POSTGRES_USER
+export APP_DB_NAME
+export DB_OWNER_USER
+export DB_OWNER_PASSWORD
+export APP_USER
+export APP_USER_PASSWORD
+export APP_USER_LOGIN
+export APP_USER_LOGIN_PASSWORD
+
+envsubst "$VARIABLES_TO_SUBSTITUTE" < $SCRIPT_DIR/10-grant-permissions.sql.template | psql -v ON_ERROR_STOP=1 -h localhost --username "$POSTGRES_USER" --dbname "postgres"
