@@ -1,61 +1,120 @@
-# PosgreSQL (MOVER EN UN FUTURO)
+# **PostgreSQL Database Configuration**
 
-This directory contains the configuration files for a PostgreSQL database used in the project. It includes SQL scripts for creating the database schema, views, and stored procedures, as well as environment variables for configuring the database connection. It also contains a set of tests to check the database functionality.
+This directory contains the configuration files for a PostgreSQL database. It includes SQL scripts for initialization, schema creation, views, and procedures, as well as a comprehensive test suite to verify the database's structure, permissions, and functionality.
 
-## Set up
+## **Setup and Execution**
 
-The dockerfile is used to set up the database. It will create a database with the nam
-export APP_DB_NAME
-export DB_OWNER_USERe specified in the `.env` file and run the SQL scripts to create the schema, views, and stored procedures.
+The database is initialized and configured using a single shell script.
 
-## Postgres Database Configuration
+1. **Configure Variables**: Ensure the .env file in the project's root directory is correctly configured with all necessary credentials.  
+2. **Run the Script**: From the root directory, execute the following command:  
+```./execute\_scripts.sh```
 
-The main configuration is located in the `.env` file. The schema, views and precedimmets are defined in the scripts folder.
+This script will read the variables from .env, process the SQL templates, and execute all scripts in the correct order to get the database ready for use.
 
-## Test
+## **File Structure**
 
-`conftest.py` prepares the enviromment for the tests. Loads environment variables and populates the database.
+* ```execute\_scripts.sh```: Orchestrates the entire initialization process.  
+* ```scripts/```: Contains the SQL files.  
+  * ```01-init-db.sql.template```: Creates the database and user roles.  
+  * ```02-create-schema.sql```: Defines and creates all tables.  
+  * ```03-views.sql```: Creates the database views.  
+  * ```04-procediments.sql```: Creates stored functions and procedures.  
+  * ```10-grant-permissions.sql.template```: Assigns specific permissions to each role.  
+* ```test/```: Contains the pytest tests.  
+  * ```conftest.py```: Prepares the test environment (fixtures), including DB connection and data population/cleanup.  
+  * ```test\_db\_setup.py```: Contains tests that verify the basic structure and role permissions.  
+  * ```test\_db\_integrity.py```: Contains tests that verify data integrity (constraints, foreign keys, cascades).
 
-`test_db_setup.py` contains the tests.
+## **Testing**
 
-To run the test use `pytest -s -v`.
+To run the tests, ensure you have the dependencies from requeriments.txt installed, and then run from the project's root directory:
 
-## PostgresSQL Database Schema
+```pytest \-v```
 
-### Tables
+## **Database Schema**
 
-USER
+### **Tables**
 
-CHATS
+#### **USERS**
 
-IA_PROMPTS
+Stores information for registered users.
 
-MODELS
+| Column | Type | Description |
+| :---- | :---- | :---- |
+| ID | SERIAL | **Primary Key**. Unique identifier. |
+| email | VARCHAR(255) | **Unique**, **Not Null**. User's email. |
+| password | VARCHAR(255) | **Not Null**. Password hash. |
 
-MESSAGE
+#### **CHATS**
 
-### Views
+Stores conversations or chats, associated with a user.
 
-- **view_user**: View for user information, including user ID, email, and name.
+| Column | Type | Description |
+| :---- | :---- | :---- |
+| ID | SERIAL | **Primary Key**. Unique chat identifier. |
+| titulo | VARCHAR(255) | Title or name of the chat. |
+| user\_id | INTEGER | **Not Null**, **Foreign Key** to USERS(ID). ON DELETE CASCADE. |
 
-### Procediments
+#### **IA\_PROMPTS**
 
-- **get_user_id_by_email**: returns the user ID based on the provided email.
+Stores system prompt templates for the AI.
 
-## .env variables
+| Column | Type | Description |
+| :---- | :---- | :---- |
+| ID | SERIAL | **Primary Key**. |
+| prompt | TEXT | **Not Null**. The text of the system prompt. |
+| prompt\_description | TEXT | Description of the prompt's purpose. |
+| IA\_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |
 
-- **POSTGRES_PASSWORD**: Password for the default 'postgres' superuser.
-- **POSTGRES_USER**: User for the default superuser (default is postgres). Optional to set unless you want a different name.
-- **POSTGRES_DB**: Name of the default database to create (default is postgres).
+#### **MODELS**
 
-### Custom
+Stores the different available AI models.
 
-- **APP_DB_NAME**: The name of the database your application will use
-- **DB_OWNER_USER** The user who owns the database
-- **DB_OWNER_PASSWORD**: Password for the database owner
+| Column | Type | Description |
+| :---- | :---- | :---- |
+| ID | SERIAL | **Primary Key**. |
+| IA\_name | VARCHAR(255) | **Unique**, **Not Null**. Model name (e.g., 'GPT-4'). |
 
-- **APP_USER**: The user your application will connect as
-- **APP_USER_PASSWORD**: Password for the application user
+#### **MESSAGES**
 
-- **APP_USER_LOGIN**: The user your application will connect as for the account management
-- **APP_USER_LOGIN_PASSWORD**: Password for the application login user
+Stores each individual message within a chat.
+
+| Column | Type | Description |
+| :---- | :---- | :---- |
+| ID | SERIAL | **Primary Key**. |
+| order\_number | INTEGER | **Not Null**. Order of the message in the chat. **Unique** with chat\_id. |
+| content | TEXT | **Not Null**. The content of the message. |
+| statistics | JSONB | Statistical data for the message (e.g., tokens, time). |
+| chat\_id | INTEGER | **Not Null**, **Foreign Key** to CHATS(ID). ON DELETE CASCADE. |
+| model\_id | INTEGER | **Foreign Key** to MODELS(ID). ON DELETE RESTRICT. |
+| ia\_prompt\_id | INTEGER | **Foreign Key** to IA\_PROMPTS(ID). ON DELETE RESTRICT. |
+
+### **Views**
+
+* **users\_id\_email\_view**: A secure view over the USERS table that only exposes the ID and email columns. Its purpose is to allow the application to query user information without exposing sensitive data like the password column.
+
+### **Functions**
+
+* **get\_user\_id\_by\_email(user\_email VARCHAR)**: Receives an email as a parameter and returns the corresponding user ID. If the email is not found in the database, it raises an exception (RAISE EXCEPTION).
+
+## **.env Environment Variables**
+
+### **PostgreSQL Variables**
+
+Used by the official PostgreSQL image.
+
+* POSTGRES\_PASSWORD: Password for the postgres superuser.  
+* POSTGRES\_USER: Name of the superuser (default is postgres).
+
+### **Custom Variables**
+
+Used by the initialization scripts.
+
+* APP\_DB\_NAME: The name of the application database (e.g., diligencia).  
+* DB\_OWNER\_USER: The role that owns the database and all its objects.  
+* DB\_OWNER\_PASSWORD: Password for the owner role.  
+* APP\_USER: The role the main application will use for its operations (reading/writing chats, etc.).  
+* APP\_USER\_PASSWORD: Password for the APP\_USER role.  
+* APP\_USER\_LOGIN: A specific role for account management (reading/writing to the USERS table).  
+* APP\_USER\_LOGIN\_PASSWORD: Password for the APP\_USER\_LOGIN role.

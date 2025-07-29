@@ -6,12 +6,12 @@ from pathlib import Path
 import sys
 from faker import Faker
 
-# --- Inicialización y Carga de Entorno ---
+# --- Initialization & Environment Loading ---
 fake = Faker()
 dotenv_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path)
 
-# --- Variables de Configuración de la Base de Datos ---
+# --- Database Configuration Variables ---
 DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
 DB_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -24,19 +24,19 @@ APP_USER_PASSWORD = os.getenv("APP_USER_PASSWORD")
 APP_USER_LOGIN = os.getenv("APP_USER_LOGIN")
 APP_USER_LOGIN_PASSWORD = os.getenv("APP_USER_LOGIN_PASSWORD")
 
-# Verificación de que todas las variables necesarias están presentes
+# Verify that all necessary variables are present
 for var_name in [
     "POSTGRES_USER", "POSTGRES_PASSWORD", "APP_DB_NAME",
     "DB_OWNER_USER", "DB_OWNER_PASSWORD", "APP_USER", "APP_USER_PASSWORD",
     "APP_USER_LOGIN", "APP_USER_LOGIN_PASSWORD"
 ]:
     if not os.getenv(var_name):
-        raise EnvironmentError(f"Falta la variable de entorno para tests: {var_name}")
+        raise EnvironmentError(f"Missing environment variable for tests: {var_name}")
 
-# --- Factoría de Conexiones (Fixture) ---
+# --- Connection Factory Fixture ---
 @pytest.fixture(scope="function")
 def get_db_connection_for_role():
-    """Factoría para obtener una conexión a la BD para un rol específico."""
+    """Factory to get a DB connection for a specific role."""
     open_connections = []
 
     def _connect_as_role(role_name: str):
@@ -48,7 +48,7 @@ def get_db_connection_for_role():
         }
         user, password = user_creds_map.get(role_name, (None, None))
         if not user:
-            pytest.fail(f"Rol de base de datos desconocido o mal configurado: '{role_name}'")
+            pytest.fail(f"Unknown or improperly configured database role: '{role_name}'")
 
         try:
             conn = psycopg2.connect(
@@ -58,7 +58,7 @@ def get_db_connection_for_role():
             open_connections.append(conn)
             return conn
         except Exception as e:
-            pytest.fail(f"No se pudo establecer conexión para el rol '{role_name}': {e}")
+            pytest.fail(f"Could not establish connection for role '{role_name}': {e}")
 
     yield _connect_as_role
 
@@ -66,58 +66,60 @@ def get_db_connection_for_role():
         if not conn.closed:
             conn.close()
 
-# --- Fixture para Poblar y Limpiar la Base de Datos ---
+# --- Database Population and Cleanup Fixture (MODIFIED) ---
 @pytest.fixture(scope="function")
 def populated_db(get_db_connection_for_role):
     """
-    Popula las tablas con datos de prueba y garantiza la limpieza después del test.
-    Usa el rol 'db_owner' para la manipulación de datos.
+    Populates tables with test data and yields the connection used.
+    Ensures cleanup after the test.
     """
     conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
-    print(f"\n--- Poblando '{APP_DB_NAME}' con datos de prueba ---")
+    print(f"\n--- Populating '{APP_DB_NAME}' with test data ---")
     try:
-        # 1. Poblar tablas sin dependencias
+        # 1. Populate tables without dependencies
         cursor.execute("INSERT INTO MODELS (IA_name) VALUES ('GPT-4'), ('Claude 3') RETURNING ID;")
         model_ids = [row[0] for row in cursor.fetchall()]
 
-        cursor.execute("INSERT INTO IA_PROMPTS (prompt, IA_name) VALUES ('Eres un asistente útil.', 'AsistenteGeneral') RETURNING ID;")
+        cursor.execute("INSERT INTO IA_PROMPTS (prompt, IA_name) VALUES ('You are a helpful assistant.', 'GeneralAssistant') RETURNING ID;")
         prompt_ids = [row[0] for row in cursor.fetchall()]
 
-        # 2. Poblar USERS
+        # 2. Populate USERS
         user_ids = []
         for _ in range(5):
             cursor.execute("INSERT INTO USERS (email, password) VALUES (%s, %s) RETURNING ID;", (fake.unique.email(), 'fakepass'))
             user_ids.append(cursor.fetchone()[0])
 
-        # 3. Poblar CHATS (depende de USERS)
+        # 3. Populate CHATS (depends on USERS)
         chat_ids = []
         for user_id in user_ids:
-            cursor.execute("INSERT INTO CHATS (titulo, user_id) VALUES (%s, %s) RETURNING ID;", (f"Chat de {user_id}", user_id))
+            cursor.execute("INSERT INTO CHATS (titulo, user_id) VALUES (%s, %s) RETURNING ID;", (f"Chat for {user_id}", user_id))
             chat_ids.append(cursor.fetchone()[0])
 
-        # 4. Poblar MESSAGES (depende de CHATS, MODELS, IA_PROMPTS)
+        # 4. Populate MESSAGES (depends on CHATS, MODELS, IA_PROMPTS)
         for i, chat_id in enumerate(chat_ids):
             cursor.execute(
                 """INSERT INTO MESSAGES (order_number, content, chat_id, model_id, ia_prompt_id)
                    VALUES (%s, %s, %s, %s, %s);""",
-                (i + 1, 'Este es un mensaje de prueba.', chat_id, fake.random_element(model_ids), fake.random_element(prompt_ids))
+                (i + 1, 'This is a test message.', chat_id, fake.random_element(model_ids), fake.random_element(prompt_ids))
             )
         conn.commit()
-        print("--- Poblado completado ---")
+        print("--- Population complete ---")
         
-        yield # El test se ejecuta aquí
+        yield conn  # Yield the connection to the test function
 
     finally:
-        print(f"\n--- Limpiando datos de '{APP_DB_NAME}' ---")
-        # El orden de borrado es inverso al de creación para no violar las llaves foráneas
+        print(f"\n--- Cleaning up data from '{APP_DB_NAME}' ---")
         try:
-            cursor.execute("TRUNCATE TABLE MESSAGES, CHATS, USERS, IA_PROMPTS, MODELS RESTART IDENTITY CASCADE;")
-            conn.commit()
-            print("--- Limpieza completada ---")
+            # Use a new cursor in case the test closed the old one
+            if not conn.closed:
+                cleanup_cursor = conn.cursor()
+                cleanup_cursor.execute("TRUNCATE TABLE MESSAGES, CHATS, USERS, IA_PROMPTS, MODELS RESTART IDENTITY CASCADE;")
+                conn.commit()
+                print("--- Cleanup complete ---")
+                cleanup_cursor.close()
         except Exception as e:
-            print(f"Error durante la limpieza de la base de datos: {e}", file=sys.stderr)
+            print(f"Error during database cleanup: {e}", file=sys.stderr)
             conn.rollback()
-        finally:
-            cursor.close()
+        # The connection itself will be closed by the get_db_connection_for_role fixture's own teardown
