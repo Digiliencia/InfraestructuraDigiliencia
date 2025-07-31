@@ -50,7 +50,8 @@ class ScrapUtils:
         options.add_argument("--start-maximized")
         service = Service(ChromeDriverManager().install())
         driver = WebDriver(service=service, options=options)
-        driver.implicitly_wait(Env().implicit_wait)
+        # driver.implicitly_wait(Env().implicit_wait)
+        driver.implicitly_wait(1.0)
         return driver
 
     @staticmethod
