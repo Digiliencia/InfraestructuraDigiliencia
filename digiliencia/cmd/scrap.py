@@ -2,35 +2,35 @@ from typing import List
 
 from loguru import logger
 
-from data.services.neomodel.field.field_classification_service import (
-    FieldClassificationService,
-)
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
+
+# from configs.env import Env
+from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
+from digiliencia.data.services.neomodel.field.field_classification_service import (
+    FieldClassificationService,
+)
 from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_classification_service import (
     TopicClassificationService,
 )
 
-# from configs.env import Env
-from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
-from digiliencia.data.scrapping.nist import Nist
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
-    CanadianScraper().scrap_news(100)
-    """
+    # CanadianScraper().scrap_news(100)
+
     Env()
 
     news_service = NewsService()
     topics_class_service = TopicClassificationService()
     fields_class_service = FieldClassificationService()
 
-    scrapers = [WEForumScraper, IncibeScraper, Ncsc]
+    scrapers = [CanadianScraper, WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
@@ -66,7 +66,7 @@ def scrap(from_days_ago: int = 5):
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    """
+
     logger.info("Scraping finished")
 
 
