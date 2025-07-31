@@ -7,7 +7,7 @@ from digiliencia.data.scrapping.nist import Nist
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
-    CanadianScraper().scrap_news(0)
+    CanadianScraper().scrap_news(2)
     """
     Env()
     
