@@ -84,9 +84,9 @@ class Nist(AbstractScraper):
         elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
         show_line_str = elem_show_line.split()
         return int(show_line_str[3])
-    
+
     def _get_all_events(self) -> int:
-        ''' Give all events of website '''
+        """Give all events of website"""
         elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
         show_line_str = elem_show_line.split()
         return int(show_line_str[5])
