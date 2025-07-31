@@ -4,6 +4,8 @@ from loguru import logger
 
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
+# from configs.env import Env
+from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 #from configs.env import Env
@@ -20,8 +22,8 @@ from digiliencia.exc.dao_create_exc import DAOCreateError
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
-    CanadianScraper().scrap_news(100)
-    """
+    # CanadianScraper().scrap_news(100)
+
     Env()
     news_service = NewsService()
     topics_class_service = TopicClassificationService()
@@ -69,7 +71,7 @@ def scrap(from_days_ago: int = 5):
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    """
+
     logger.info("Scraping finished")
 
 
