@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Sequence
 
-from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.models.events_model import ScrapedEventsModel
 
 
-class AbstractScraper(ABC):
+class AbstractEvents(ABC):
     """
     Abstract base class for all scrapers
 
@@ -12,9 +12,9 @@ class AbstractScraper(ABC):
     """
 
     @abstractmethod
-    def scrap_news(self, from_days_ago: int) -> Sequence[ScrapedNewsModel]:
+    def scrap_events(self, from_days_ago: int) -> Sequence[ScrapedEventsModel]:
         """
-        Scraps the class content from from_days_ago days ago.
+        Scraps the events content from from_days_ago days ago.
 
         Parameters
         ----------
@@ -23,7 +23,7 @@ class AbstractScraper(ABC):
 
         Returns
         -------
-        tuple[ScrapedNewsModel]
-            A tuple containing ScrapedNewsModels with the scraped data.
+        tuple[ScrapedEventsModel]
+            A tuple containing ScrapedEventsModel with the scraped data.
         """
         pass

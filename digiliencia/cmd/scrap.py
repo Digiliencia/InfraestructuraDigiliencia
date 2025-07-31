@@ -1,25 +1,14 @@
 from loguru import logger
 
-from typing import List
-
-from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.data.daos.news_dao import NewsDAO
-from digiliencia.data.scrapping.incibe import IncibeScraper
-from digiliencia.data.scrapping.weforum import WEForumScraper
-from digiliencia.exc.dao_create_exc import DAOCreateError
-
-#from configs.env import Env
+# from configs.env import Env
+from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.nist import Nist
-
-#from configs.env import Env
-from digiliencia.data.scrapping.nist import Nist
-
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
-    Nist().scrap_events(0)
-    '''
+    # Nist().scrap_events(0)
+    CanadianScraper().scrap_news(0)
+    """
     Env()
     
     news_dao = NewsDAO()
@@ -34,7 +23,7 @@ def scrap(from_days_ago: int = 5):
                     pass
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    '''
+    """
     logger.info("Scraping finished")
 
 
