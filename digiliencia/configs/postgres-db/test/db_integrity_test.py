@@ -4,22 +4,27 @@ from psycopg2.errors import NotNullViolation, UniqueViolation, ForeignKeyViolati
 
 # This file contains tests to verify data constraints and integrity.
 
+
 def test_unique_email_constraint(populated_db):
     """
     Verifies that the UNIQUE constraint on the 'email' column of the USERS table works.
     """
-    conn = populated_db # Use the connection from the fixture
+    conn = populated_db  # Use the connection from the fixture
     cursor = conn.cursor()
 
     cursor.execute("SELECT email FROM users LIMIT 1;")
     existing_email = cursor.fetchone()[0]
 
     with pytest.raises(UniqueViolation):
-        cursor.execute("INSERT INTO users (email, password) VALUES (%s, 'password');", (existing_email,))
-    
+        cursor.execute(
+            "INSERT INTO users (email, password) VALUES (%s, 'password');",
+            (existing_email,),
+        )
+
     conn.rollback()
     print(f"\nUnique email test passed.")
     cursor.close()
+
 
 def test_not_null_constraints(populated_db):
     """
@@ -33,11 +38,14 @@ def test_not_null_constraints(populated_db):
     conn.rollback()
 
     with pytest.raises(NotNullViolation):
-        cursor.execute("INSERT INTO chats (titulo, user_id) VALUES ('Test Chat', NULL);")
+        cursor.execute(
+            "INSERT INTO chats (titulo, user_id) VALUES ('Test Chat', NULL);"
+        )
     conn.rollback()
-    
+
     print("\nNOT NULL constraints test passed.")
     cursor.close()
+
 
 def test_foreign_key_constraints(populated_db):
     """
@@ -48,11 +56,15 @@ def test_foreign_key_constraints(populated_db):
 
     non_existent_user_id = 999999
     with pytest.raises(ForeignKeyViolation):
-        cursor.execute("INSERT INTO chats (titulo, user_id) VALUES ('Ghost Chat', %s);", (non_existent_user_id,))
-    
+        cursor.execute(
+            "INSERT INTO chats (titulo, user_id) VALUES ('Ghost Chat', %s);",
+            (non_existent_user_id,),
+        )
+
     conn.rollback()
     print("\nForeign key constraint test passed.")
     cursor.close()
+
 
 def test_on_delete_cascade_behavior(populated_db):
     """
@@ -63,7 +75,7 @@ def test_on_delete_cascade_behavior(populated_db):
 
     cursor.execute("SELECT user_id, id FROM chats LIMIT 1;")
     user_id, chat_id = cursor.fetchone()
-    
+
     cursor.execute("DELETE FROM users WHERE id = %s;", (user_id,))
     conn.commit()
 
@@ -72,6 +84,7 @@ def test_on_delete_cascade_behavior(populated_db):
 
     print("\nON DELETE CASCADE test passed.")
     cursor.close()
+
 
 def test_on_delete_restrict_behavior(populated_db):
     """
@@ -85,10 +98,11 @@ def test_on_delete_restrict_behavior(populated_db):
 
     with pytest.raises(ForeignKeyViolation):
         cursor.execute("DELETE FROM models WHERE id = %s;", (model_id_in_use,))
-    
+
     conn.rollback()
     print("\nON DELETE RESTRICT test passed.")
     cursor.close()
+
 
 def test_users_view_security(populated_db):
     """
@@ -106,6 +120,6 @@ def test_users_view_security(populated_db):
         assert len(cursor.fetchone()) == 2
     except psycopg2.Error as e:
         pytest.fail(f"Could not select 'id' and 'email' columns from the view: {e}")
-    
+
     print("\nView security test passed.")
     cursor.close()
