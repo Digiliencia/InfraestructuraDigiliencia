@@ -35,7 +35,7 @@ class CanadianScraper(AbstractScraper):
             "academia": "https://www.cyber.gc.ca/en/academia",
         }
 
-    def get_article(self) -> ScrapedNewsModel | None:
+    def get_article(self, pos: int = 0) -> ScrapedNewsModel | None:
         """
         Give an object ScrapedNewsModel is an articles of a section.
 
@@ -45,7 +45,7 @@ class CanadianScraper(AbstractScraper):
         try:
             time.sleep(1)  # Wait to load article
             title = self.driver.find_element(By.ID, "wb-cont").text
-            date_str = self.date_articles[-1]
+            date_str = self.date_articles[pos]
             container_content = self.driver.find_elements(By.CSS_SELECTOR, "div p")
             content = [contents.text for contents in container_content]
             content = "".join(content)
@@ -99,28 +99,36 @@ class CanadianScraper(AbstractScraper):
 
             links = [row.find_element(By.TAG_NAME, "a").get_attribute("href") for row in rows_body]
             
-            pos = 0 # Busco la posición del artículo hasta la fecha dada
+            pos = 0 # Busco la posición del último artículo hasta la fecha dada
+            flag = False
             for row in rows_body:
                 date_str = row.find_element(By.CLASS_NAME, "sorting_1").text
                 date_dt = datetime.strptime(date_str, "%Y-%m-%d")
                 date_ft = date_dt.strftime("%d %B %Y")
                 self.date_articles.append(date_ft)
 
-                if TimeUtils.days_between_es_dates(date_ft, until_date) < 0:
+                if TimeUtils.days_between_es_dates(date_ft, until_date) > 0:
+                    flag = True
                     break
                 else:
                     pos = pos + 1
 
-            count = 0
-            for link in links:
-                self.driver.get(str(link))
-                article = self.get_article()
-                if article is not None:
-                    articles_section.append(article)
-                count = count + 1
-                if pos == count: # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
-                    break
-            
+            if flag: # En la página, se encuentra el último artículo a extraer los datos
+                for i, link in enumerate(links):
+                    if pos == i: # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
+                        break
+                    self.driver.get(str(link))
+                    article = self.get_article(i)
+                    if article is not None:
+                        articles_section.append(article)
+                break
+            else:
+                for i, link in enumerate(links):
+                    self.driver.get(str(link))
+                    article = self.get_article(i)
+                    if article is not None:
+                        articles_section.append(article)
+                     
             self.driver.get(url) # Volvemos a la página de inicio de la sección
 
             if self._is_there_button_next:   

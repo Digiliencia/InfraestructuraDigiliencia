@@ -19,7 +19,7 @@ from digiliencia.exc.dao_create_exc import DAOCreateError
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
-    CanadianScraper().scrap_news(2)
+    CanadianScraper().scrap_news(100)
     """
     Env()
 
