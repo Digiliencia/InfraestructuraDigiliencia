@@ -22,7 +22,7 @@ def test_unique_email_constraint(populated_db):
         )
 
     conn.rollback()
-    print(f"\nUnique email test passed.")
+    print("\nUnique email test passed.")
     cursor.close()
 
 
