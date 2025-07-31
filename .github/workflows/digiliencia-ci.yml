@@ -30,19 +30,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Add neo4j-test alias to /etc/hosts
+        run: |
+          echo "127.0.0.1 neo4j-test" | sudo tee -a /etc/hosts
+
       - name: Wait for Neo4j HTTP API to be ready
         run: |
           for i in {1..30}; do
             echo "Waiting for Neo4j HTTP API (attempt $i)..."
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7474 || echo "000")
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://neo4j-test:7474 || echo "000")
             if [ "$http_code" = "200" ]; then
               echo "Neo4j HTTP API is ready!"
               break
             fi
             sleep 2
           done
-
-
 
       - name: Check container status and logs
         run: |
@@ -52,8 +54,6 @@ jobs:
           echo "Neo4j logs:"
           docker ps -a --filter ancestor=neo4j:latest
           docker logs $(docker ps -q --filter ancestor=neo4j:latest)
-
-
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -23,12 +23,12 @@ class Env:
 
     _instance = None
     _ddbb_uri: str = ""
-    _ddbb_username: str = ""
-    _ddbb_passwd: str = ""
     _weforum_email: str = ""
     _weforum_passwd: str = ""
     _webdriverwait_timeout: int = 5
     _implicit_wait: int = 2
+    _llm_url: str = ""
+    _classification_model: str = ""
 
     def __new__(cls):
         logger.debug("Loading environment variables")
@@ -36,8 +36,6 @@ class Env:
             cls._instance = super().__new__(cls)
             cls._instance.load_env_vars()
             cls._instance._ddbb_uri = cls._instance.get_env_var("DDBB_URI")
-            cls._instance._ddbb_username = cls._instance.get_env_var("DDBB_USERNAME")
-            cls._instance._ddbb_passwd = cls._instance.get_env_var("DDBB_PASSWD")
             cls._instance._weforum_email = cls._instance.get_env_var("WEFORUM_EMAIL")
             cls._instance._weforum_passwd = cls._instance.get_env_var("WEFORUM_PASSWD")
             cls._instance._webdriverwait_timeout = int(
@@ -45,6 +43,10 @@ class Env:
             )
             cls._instance._implicit_wait = int(
                 cls._instance.get_env_var("IMPLICIT_WAIT", 2)
+            )
+            cls._instance._llm_url = cls._instance.get_env_var("LLM_URL")
+            cls._instance._classification_model = cls._instance.get_env_var(
+                "CLASSIFICATION_MODEL"
             )
         return cls._instance
 
@@ -56,14 +58,6 @@ class Env:
     @property
     def ddbb_uri(self) -> str:
         return self._ddbb_uri
-
-    @property
-    def ddbb_username(self) -> str:
-        return self._ddbb_username
-
-    @property
-    def ddbb_passwd(self) -> str:
-        return self._ddbb_passwd
 
     @property
     def weforum_email(self) -> str:
@@ -81,9 +75,19 @@ class Env:
     def implicit_wait(self) -> int:
         return self._implicit_wait
 
+    @property
+    def llm_url(self) -> str:
+        return self._llm_url
+
+    @property
+    def classification_model(self) -> str:
+        return self._classification_model
+
     @staticmethod
     def load_env_vars():
-        load_dotenv(override=True)
+        # In testing mode, don't load from .env to avoid overwriting test variables
+        if not os.getenv("TESTING"):
+            load_dotenv(override=True)
         logger.debug("Environment variables loaded")
 
     @staticmethod
