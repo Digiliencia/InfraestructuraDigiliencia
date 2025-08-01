@@ -159,6 +159,3 @@ class Nist(AbstractScraper):
         logger.debug(f"Number of eventes extract data: {len(news_events)}")
 
         return news_events
-
-    def scrap_news(self, from_days_ago: int) -> Sequence[ScrapedNewsModel]:
-        return super().scrap_news(from_days_ago)
