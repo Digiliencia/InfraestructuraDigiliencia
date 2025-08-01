@@ -19,7 +19,6 @@ from digiliencia.utils.time import TimeUtils
 
 
 from digiliencia.data.models.events_model import ScrapedEventsModel
-from digiliencia.data.models.news_model import ScrapedNewsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.nist_exec import NistExec
 from digiliencia.utils.scrap import ScrapUtils
