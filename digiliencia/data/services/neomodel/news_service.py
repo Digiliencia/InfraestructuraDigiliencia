@@ -1,8 +1,10 @@
 """News service for managing news using neomodel."""
 
+import os
 from datetime import datetime
 from typing import List, Optional
 
+import requests
 from loguru import logger
 
 from digiliencia.data.models.neomodel.field import Field
@@ -190,3 +192,49 @@ class NewsService:
             List[News]: List of news items without fields
         """
         return [news for news in News.nodes.all() if not news.fields]
+
+    def generate_embeddings_for_all_news(self):
+        """
+        Generate embeddings for all news items.
+
+        Args:
+            embedding_service: Optional EmbeddingService instance. If None, creates a new one.
+        """
+        news_items = self.get_all_news()
+        for news in news_items:
+            # Get the embeddings service URL from environment
+            embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
+            if not embeddings_service_url:
+                logger.error("EMBEDDINGS_SERVICE_URL environment variable not set")
+                continue
+
+            try:
+                # CONTENT
+                # Prepare the request payload
+                payload = {"texts": [news.header, news.content]}
+
+                # Make POST request to embeddings service
+                response = requests.post(
+                    embeddings_service_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
+
+                # Extract embedding from response
+                embeddings = response.json().get("embeddings")
+
+                if embeddings:
+                    news.header_embedding = embeddings[0]
+                    news.content_embedding = embeddings[1]
+                    news.save()
+                    logger.info(f"Generated embeddings for news: {news.header}")
+                else:
+                    logger.error(f"No embeddings returned for news: {news.header}")
+
+            except requests.RequestException as e:
+                logger.error(f"Error generating embeddings for news {news.header}: {e}")
+            except Exception as e:
+                logger.error(
+                    f"Unexpected error generating embeddings for news {news.header}: {e}"
+                )

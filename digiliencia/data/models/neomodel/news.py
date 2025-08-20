@@ -28,11 +28,13 @@ class News(StructuredNode):
     date = DateTimeProperty(required=True)
     content = StringProperty(required=True)
     url = StringProperty(required=True)
-    
+
     # Embedding properties
     header_embedding = ArrayProperty(FloatProperty(), default=None)
     content_embedding = ArrayProperty(FloatProperty(), default=None)
-    embedding_model = StringProperty(default="all-MiniLM-L6-v2")  # Track which model was used
+    embedding_model = StringProperty(
+        default="all-MiniLM-L6-v2"
+    )  # Track which model was used
 
     # Relationships
     published_by = RelationshipTo("NewsAgency", "PUBLISHED_BY", cardinality=One)
@@ -136,39 +138,43 @@ class News(StructuredNode):
             except Exception as e:
                 # Log error but don't fail the entire operation
                 import logging
+
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to generate embeddings for news {news.uid}: {e}")
+                logger.warning(
+                    f"Failed to generate embeddings for news {news.uid}: {e}"
+                )
 
         return news
 
     def generate_embeddings(self, embedding_service=None) -> "News":
         """
         Generate and store embeddings for header and content.
-        
+
         Args:
             embedding_service: Optional EmbeddingService instance. If None, creates a new one.
-            
+
         Returns:
             News: Self instance with updated embeddings
         """
         if embedding_service is None:
             from digiliencia.models.embedding_manager import EmbeddingManager
+
             embedding_manager = EmbeddingManager()
-            
+
             # Generate embeddings - access properties as strings
             header_text = str(self.header) if self.header else ""
             content_text = str(self.content) if self.content else ""
-            
+
             self.header_embedding = embedding_manager.generate_embedding(header_text)
             self.content_embedding = embedding_manager.generate_embedding(content_text)
         else:
             # Use the provided embedding service
             header_text = str(self.header) if self.header else ""
             content_text = str(self.content) if self.content else ""
-            
+
             self.header_embedding = embedding_service.embed_one(header_text)
             self.content_embedding = embedding_service.embed_one(content_text)
-            
+
         self.save()
         return self
 

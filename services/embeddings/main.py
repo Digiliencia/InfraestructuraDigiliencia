@@ -18,7 +18,9 @@ def build_app() -> FastAPI:
     def embed(payload: EmbedRequest):
         try:
             vectors = service.embed_many(payload.texts)
-            return EmbedResponse(embeddings=vectors, dim=len(vectors[0]) if vectors else 0)
+            return EmbedResponse(
+                embeddings=vectors, dim=len(vectors[0]) if vectors else 0
+            )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
