@@ -238,3 +238,75 @@ class NewsService:
                 logger.error(
                     f"Unexpected error generating embeddings for news {news.header}: {e}"
                 )
+
+    def generate_embeddings_for_unembedded_news(self, limit: Optional[int] = None):
+        """
+        Generate embeddings for news items that don't have embeddings yet.
+
+        Args:
+            limit: Maximum number of news items to process. If None, processes all.
+        """
+        # Get news items without embeddings
+        news_items = []
+        for news in News.nodes.all():
+            if not news.has_embeddings():
+                news_items.append(news)
+                if limit and len(news_items) >= limit:
+                    break
+        
+        if not news_items:
+            logger.info("No news items found without embeddings")
+            return
+
+        logger.info(f"Found {len(news_items)} news items without embeddings. Starting generation...")
+
+        # Get the embeddings service URL from environment
+        embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
+        if not embeddings_service_url:
+            logger.error("EMBEDDINGS_SERVICE environment variable not set")
+            return
+
+        processed_count = 0
+        failed_count = 0
+
+        for news in news_items:
+            try:
+                # Skip if embeddings were generated in the meantime
+                if news.has_embeddings():
+                    logger.debug(f"Skipping news {news.header} - already has embeddings")
+                    continue
+
+                # Prepare the request payload
+                payload = {"texts": [news.header, news.content]}
+
+                # Make POST request to embeddings service
+                response = requests.post(
+                    embeddings_service_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
+
+                # Extract embedding from response
+                embeddings = response.json().get("embeddings")
+
+                if embeddings and len(embeddings) >= 2:
+                    news.header_embedding = embeddings[0]
+                    news.content_embedding = embeddings[1]
+                    news.save()
+                    processed_count += 1
+                    logger.info(f"Generated embeddings for news: {news.header} ({processed_count}/{len(news_items)})")
+                else:
+                    failed_count += 1
+                    logger.error(f"No embeddings returned for news: {news.header}")
+
+            except requests.RequestException as e:
+                failed_count += 1
+                logger.error(f"Error generating embeddings for news {news.header}: {e}")
+            except Exception as e:
+                failed_count += 1
+                logger.error(
+                    f"Unexpected error generating embeddings for news {news.header}: {e}"
+                )
+
+        logger.info(f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}")

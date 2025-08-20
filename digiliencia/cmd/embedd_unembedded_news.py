@@ -9,7 +9,7 @@ def main():
         configure_neomodel()
 
         news_service = NewsService()
-        news_service.generate_embeddings_for_all_news()
+        news_service.generate_embeddings_for_unembedded_news()
     except Exception as e:
         logger.exception(f"Fatal error running script: {e}")
 
