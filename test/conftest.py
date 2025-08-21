@@ -15,6 +15,7 @@ TEST_DB_CONFIG = {
     "IMPLICIT_WAIT": "2",
     "LLM_URL": "http://localhost:11434",
     "CLASSIFICATION_MODEL": "test_model",
+    "EMBEDDINGS_SERVICE": "http://localhost:8000",
 }
 
 

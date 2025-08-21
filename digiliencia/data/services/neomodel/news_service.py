@@ -253,12 +253,14 @@ class NewsService:
                 news_items.append(news)
                 if limit and len(news_items) >= limit:
                     break
-        
+
         if not news_items:
             logger.info("No news items found without embeddings")
             return
 
-        logger.info(f"Found {len(news_items)} news items without embeddings. Starting generation...")
+        logger.info(
+            f"Found {len(news_items)} news items without embeddings. Starting generation..."
+        )
 
         # Get the embeddings service URL from environment
         embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
@@ -273,7 +275,9 @@ class NewsService:
             try:
                 # Skip if embeddings were generated in the meantime
                 if news.has_embeddings():
-                    logger.debug(f"Skipping news {news.header} - already has embeddings")
+                    logger.debug(
+                        f"Skipping news {news.header} - already has embeddings"
+                    )
                     continue
 
                 # Prepare the request payload
@@ -295,7 +299,9 @@ class NewsService:
                     news.content_embedding = embeddings[1]
                     news.save()
                     processed_count += 1
-                    logger.info(f"Generated embeddings for news: {news.header} ({processed_count}/{len(news_items)})")
+                    logger.info(
+                        f"Generated embeddings for news: {news.header} ({processed_count}/{len(news_items)})"
+                    )
                 else:
                     failed_count += 1
                     logger.error(f"No embeddings returned for news: {news.header}")
@@ -309,4 +315,6 @@ class NewsService:
                     f"Unexpected error generating embeddings for news {news.header}: {e}"
                 )
 
-        logger.info(f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}")
+        logger.info(
+            f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}"
+        )
