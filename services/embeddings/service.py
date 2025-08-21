@@ -1,20 +1,37 @@
-from typing import List, Optional
 import gc
+from typing import Iterable, List, Optional
+
 import torch
 from sentence_transformers import SentenceTransformer
 
 
 class EmbeddingService:
-    def __init__(self, model_name: str, device: Optional[str] = None):
-        # SentenceTransformer gestiona el device automáticamente; se puede forzar con .to(device)
-        self.model = SentenceTransformer(model_name)
-        if device:
-            try:
-                self.model = self.model.to(device)
-            except Exception:
-                # Fallback silencioso si el device no es válido
-                pass
-        self.device = str(device) if device else "auto"
+    def __init__(
+        self,
+        model_name: str,
+        device: Optional[str] = None,
+        batch_size: int = 16,
+        dtype: str = "auto",
+        normalize_embeddings: bool = False,
+    ):
+        # Carga del modelo
+        self.model = SentenceTransformer(model_name, device=device or None)
+
+        # Dtype para reducir VRAM
+        self._dtype_context = None
+        if dtype and dtype != "auto":
+            if dtype.lower() in ("float16", "fp16"):  # CUDA recomendado
+                self._dtype = torch.float16
+            elif dtype.lower() in ("bfloat16", "bf16"):
+                self._dtype = torch.bfloat16
+            else:
+                self._dtype = torch.float32
+        else:
+            self._dtype = None
+
+        self.batch_size = int(batch_size) if batch_size else 16
+        self.normalize_embeddings = bool(normalize_embeddings)
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
     def _clear_memory(self):
         """Limpia la memoria GPU/CPU después de generar embeddings"""
@@ -26,12 +43,42 @@ class EmbeddingService:
         if text is None or not str(text).strip():
             raise ValueError("Texto vacío o nulo")
         try:
-            vec = self.model.encode(text, show_progress_bar=False)
+            with torch.inference_mode():
+                if self._dtype is not None and self.device.startswith("cuda"):
+                    with torch.autocast(device_type="cuda", dtype=self._dtype):
+                        vec = self.model.encode(
+                            text,
+                            show_progress_bar=False,
+                            batch_size=1,
+                            normalize_embeddings=self.normalize_embeddings,
+                            convert_to_numpy=True,
+                            device=self.device,
+                        )
+                else:
+                    vec = self.model.encode(
+                        text,
+                        show_progress_bar=False,
+                        batch_size=1,
+                        normalize_embeddings=self.normalize_embeddings,
+                        convert_to_numpy=True,
+                        device=self.device,
+                    )
+            # Asegurar que el resultado esté en CPU y como lista para liberar VRAM
             result = vec.tolist()
             return result
         finally:
             # Limpiar memoria después de generar el embedding
             self._clear_memory()
+
+    def _batch_iter(self, items: Iterable[str], batch_size: int) -> Iterable[List[str]]:
+        batch: List[str] = []
+        for t in items:
+            batch.append(t)
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
 
     def embed_many(self, texts: List[str]) -> List[List[float]]:
         if not texts:
@@ -41,11 +88,48 @@ class EmbeddingService:
         if not cleaned:
             raise ValueError("Todos los textos están vacíos o no son válidos")
         try:
-            vectors = self.model.encode(
-                cleaned, show_progress_bar=False, normalize_embeddings=False
-            )
-            result = [v.tolist() for v in vectors]
-            return result
+            all_vecs: List[List[float]] = []
+            with torch.inference_mode():
+                for batch in self._batch_iter(cleaned, self.batch_size):
+                    local_bs = len(batch)
+                    while True:
+                        try:
+                            if self._dtype is not None and self.device.startswith(
+                                "cuda"
+                            ):
+                                with torch.autocast(
+                                    device_type="cuda", dtype=self._dtype
+                                ):
+                                    vecs = self.model.encode(
+                                        batch[:local_bs],
+                                        show_progress_bar=False,
+                                        batch_size=local_bs,
+                                        normalize_embeddings=self.normalize_embeddings,
+                                        convert_to_numpy=True,
+                                        device=self.device,
+                                    )
+                            else:
+                                vecs = self.model.encode(
+                                    batch[:local_bs],
+                                    show_progress_bar=False,
+                                    batch_size=local_bs,
+                                    normalize_embeddings=self.normalize_embeddings,
+                                    convert_to_numpy=True,
+                                    device=self.device,
+                                )
+                            all_vecs.extend(v.tolist() for v in vecs)
+                            del vecs
+                            break
+                        except RuntimeError as e:
+                            # Manejo de OOM en CUDA
+                            if "out of memory" in str(e).lower() and local_bs > 1:
+                                local_bs = max(1, local_bs // 2)
+                                self._clear_memory()
+                                continue
+                            raise
+                    self._clear_memory()
+
+            return all_vecs
         finally:
             # Limpiar memoria después de generar los embeddings
             self._clear_memory()

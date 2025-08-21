@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from schemas import EmbedRequest, EmbedResponse
-from settings import Settings
 from service import EmbeddingService
+from settings import Settings
 
 
 def build_app() -> FastAPI:

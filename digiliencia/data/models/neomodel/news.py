@@ -14,6 +14,7 @@ from neomodel import (
     ZeroOrMore,
 )
 
+from digiliencia.data.models.neomodel.chunk import Chunk
 from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
@@ -41,6 +42,7 @@ class News(StructuredNode):
     written_by = RelationshipTo("Author", "WRITTEN_BY", cardinality=ZeroOrMore)
     topics = RelationshipTo("Topic", "COVERS", cardinality=ZeroOrMore)
     fields = RelationshipTo("Field", "RELATED_TO", cardinality=ZeroOrMore)
+    chunks = RelationshipTo("Chunk", "HAS_CHUNK", cardinality=ZeroOrMore)
 
     @classmethod
     def get_or_create_with_relationships(
