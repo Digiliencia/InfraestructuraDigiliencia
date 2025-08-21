@@ -109,7 +109,9 @@ class ChunkService:
         with requests.Session() as session:
             session.headers.update({"Content-Type": "application/json"})
             all_vectors: List[List[float]] = []
-            for batch in self._batch(texts, batch_size):
+            # cap batch size to maximum 30 per request
+            effective_bs = max(1, min(int(batch_size) if batch_size else 16, 30))
+            for batch in self._batch(texts, effective_bs):
                 try:
                     resp = session.post(embeddings_service_url, json={"texts": batch})
                     resp.raise_for_status()
@@ -253,11 +255,13 @@ class ChunkService:
         with requests.Session() as session:
             session.headers.update({"Content-Type": "application/json"})
             try:
+                # cap batch size to maximum 30 per request
+                effective_bs = max(1, min(int(batch_size) if batch_size else 32, 30))
                 for ch in Chunk.nodes.filter(embedding__isnull=True):
                     if limit is not None and updated >= limit:
                         break
                     buffer.append(ch)
-                    if len(buffer) >= batch_size:
+                    if len(buffer) >= effective_bs:
                         updated += _process_buffer(session, buffer)
                         buffer = []
                         gc.collect()

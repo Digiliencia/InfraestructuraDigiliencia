@@ -16,14 +16,14 @@ def main():
             chunk_size=800,
             overlap=100,
             include_header=True,
-            batch_size=16,
+            batch_size=30,
         )
         logger.info(f"News chunked: {created_news}")
 
         # 2) Generar embeddings para cada chunk sin embedding
         updated_chunks = news_service.generate_embeddings_for_missing_chunks(
             limit=None,
-            batch_size=32,
+            batch_size=30,
         )
         logger.info(f"Chunks embedded: {updated_chunks}")
     except Exception as e:
