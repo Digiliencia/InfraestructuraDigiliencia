@@ -8,7 +8,9 @@ Scrapping of website: https://www.ncsc.gov.uk/
 
 import time
 from datetime import datetime
+
 from loguru import logger
+from pydantic import HttpUrl
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
@@ -25,7 +27,7 @@ class Ncsc(AbstractScraper):
         self.scrapUtils = ScrapUtils()
         self.load = Env()
         self.driver = ScrapUtils.get_driver()
-        self.articles: list[ScrapedNewsModel] = []
+        self.articles: list[ScrapedNews] = []
 
     def _show_articles_until_date(self, until_date: str = ""):
         """
@@ -104,12 +106,12 @@ class Ncsc(AbstractScraper):
                 date = self.articles[-1].date.strftime("%d %B %Y")
             date_dt = datetime.strptime(date, "%d %B %Y")
 
-            return ScrapedNewsModel(
+            return ScrapedNews(
                 header=title,
                 date=date_dt,
                 source="NCSC",
                 content=content,
-                url=url,
+                url=HttpUrl(url),
                 authors=[author],
                 topics=None,
             )
@@ -154,7 +156,7 @@ class Ncsc(AbstractScraper):
 
         return {"concepts": concepts, "descriptions": descriptions}
 
-    def scrap_news(self, from_days_ago: int = 0) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int = 0) -> list[ScrapedNews]:
         """
         Inicialite scrapping of website: https://www.ncsc.gov.uk/section/advice-guidance/all-articles?q=&defaultTypes=guidance,information,blog-post,collection&sort=date%2Bdesc
 

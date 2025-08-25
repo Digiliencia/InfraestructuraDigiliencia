@@ -95,9 +95,7 @@ class IncibeScraper(AbstractScraper):
                 break
         return urls
 
-    def get_information_by_url(
-        self, url: str, classes: dict[str, str]
-    ) -> ScrapedNewsModel:
+    def get_information_by_url(self, url: str, classes: dict[str, str]) -> ScrapedNews:
         """
         Get the information from the URL title, content, date and author
 
@@ -108,7 +106,7 @@ class IncibeScraper(AbstractScraper):
 
         Returns:
 
-        ScrapedNewsModel: The information from the URL
+        ScrapedNews: The information from the URL
         """
 
         logger.debug(f"Scraping URL {url}")
@@ -160,12 +158,12 @@ class IncibeScraper(AbstractScraper):
         date = date.split(" ")[-1]
         date = datetime.strptime(date, "%d/%m/%Y")
 
-        return ScrapedNewsModel(
+        return ScrapedNews(
             header=title,
             date=date,
             source="INCIBE",
             content=content,
-            url=url,
+            url=HttpUrl(url),
             authors=[author],
             topics=None,
         )
@@ -349,7 +347,7 @@ class IncibeScraper(AbstractScraper):
             logger.warning(f"Error getting Incibe blog posts from {url_to_open}")
             return []  # type: ignore
 
-    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int) -> list[ScrapedNews]:
         """
         Call the methods to get the information from the Incibe page
 
@@ -385,7 +383,7 @@ class IncibeScraper(AbstractScraper):
             },
         ]
 
-        news_articles: list[ScrapedNewsModel] = []
+        news_articles: list[ScrapedNews] = []
 
         for data in incibe_scrap:
             source_url = data["url"]

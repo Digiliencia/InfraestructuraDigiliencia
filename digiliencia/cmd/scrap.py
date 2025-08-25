@@ -1,4 +1,3 @@
-from loguru import logger
 from typing import List
 
 # from digiliencia.configs.env import Env
@@ -17,7 +16,7 @@ def scrap(from_days_ago: int = 5):
     scrapers = [WEForumScraper]  # , IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
-            scraped_news: List[ScrapedNewsModel] = scraper().scrap_news(from_days_ago)
+            scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
             for news in scraped_news:
                 try:
                     # news_dao.create_from_scrap(news)
@@ -31,4 +30,4 @@ def scrap(from_days_ago: int = 5):
 
 if __name__ == "__main__":
     logger.info("Starting the application")
-    scrap()
+    scrap(8)
