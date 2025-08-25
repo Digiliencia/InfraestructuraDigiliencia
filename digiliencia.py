@@ -7,10 +7,8 @@ from digiliencia.configs.env import Env
 
 
 def set_up_logging():
-    logger.remove()
-    logger.add(sys.stdout, level="INFO")
-    logger.add("logs/execution.log", level="INFO")
-    logger.add("logs/executionhistory.log", level="INFO", rotation="1 week")
+    logger.add("logs/execution.log", level="DEBUG")
+    logger.add("logs/executionhistory.log", level="DEBUG", rotation="1 week")
 
 
 if __name__ == "__main__":
