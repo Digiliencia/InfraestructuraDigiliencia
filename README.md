@@ -19,10 +19,11 @@ CLASSIFICATION_MODEL    # LLM usado para la clasificación de topics
 
 Este proyecto ha sido desarrollado por:
 
-- [Santiago Ares Alfayate]()
+- [Santiago Ares Alfayete]()
 - [César Bermejo Fernández](https://github.com/cesonico-ule)
 - [Ander Chueca Rodríguez]()
 - [Gabriel Díez Tejedor]()
 - [Esteban Peña Salazar](https://github.com/esalap00)
 - [Álvaro Prieto Álvarez](https://github.com/Apriea04)
 - [Carlos Prieto Viñuela]()
+
