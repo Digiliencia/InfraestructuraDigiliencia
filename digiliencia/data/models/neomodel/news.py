@@ -19,7 +19,7 @@ from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
 
 from digiliencia.data.models.neomodel.topic import Topic
-from digiliencia.data.models.neomodel.chunk import Chunk # noqa: F401
+from digiliencia.data.models.neomodel.chunk import Chunk  # noqa: F401
 
 
 class News(StructuredNode):
