@@ -15,7 +15,6 @@ from neomodel import (
 )
 
 from digiliencia.data.models.neomodel.field import Field
-from digiliencia.data.models.neomodel.chunk import Chunk
 from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
 from digiliencia.data.models.neomodel.topic import Topic
