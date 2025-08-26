@@ -8,7 +8,7 @@ from faker import Faker
 
 # --- Initialization & Environment Loading ---
 fake = Faker()
-dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+dotenv_path = Path(__file__).resolve().parent.parent / "../.env"
 load_dotenv(dotenv_path)
 
 # --- Database Configuration Variables ---
