@@ -12,6 +12,7 @@ from embedding_manager import EmbeddingManager
 
 API_URL = "http://localhost:8000/generate_embedding/"
 
+
 def test_connection(run_container):
     """
     Simple test: check that the embedding endpoint responds correctly.
