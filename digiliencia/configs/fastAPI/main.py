@@ -1,30 +1,33 @@
 # /main.py
-# Added middleware for CORS, rate limiting, and security headers
+import uuid
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import APIRouter
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from auth.users import fastapi_users
 
-from api.routers import auth  # Add other routers here
+from auth.transport import auth_backend
+from auth.manager import get_user_manager
+from db.models import User
+from schemas import user as user_schema
+from api.routers import chats, custom_users
 from core.config import settings
 
-# Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
 
 app = FastAPI(
-    title="Secure and Performant Chat API",
-    description="An API with async support, refresh tokens, rate limiting, and security headers.",
+    title="API",
+    description="API for IA.",
+    version="1.0.0"
 )
 
-# Add state for the limiter
+# --- Middlewares ---
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# --- Middleware ---
-# 1. CORS Middleware
+# 1. CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -33,49 +36,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# 2. Security Headers Middleware
+# 2. Security headers
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers["Strict-Transport-Security"] = (
-        "max-age=31536000; includeSubDomains"
-    )
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self'"
-    )
     return response
-
 
 # --- Routers ---
-# Apply rate limiting to specific routers or endpoints
-api_router = APIRouter(prefix="/api")
+api_prefix = "/api"
+
+# Endpoints from fastapi-users
+# /login, /logout, /register, etc.
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend), prefix=f"{api_prefix}/auth", tags=["Auth"]
+)
+app.include_router(
+    fastapi_users.get_register_router(user_schema.UserRead, user_schema.UserCreate),
+    prefix=api_prefix, tags=["Auth"]
+)
+app.include_router(
+    fastapi_users.get_verify_router(user_schema.UserRead), prefix=api_prefix, tags=["Auth"]
+)
 
 
-# Rate limit the auth router more strictly
-@app.middleware("http")
-async def rate_limit_auth(request: Request, call_next):
-    try:
-        if request.url.path.endswith("/login") or request.url.path.endswith(
-            "/register"
-        ):
-            await limiter.check(request)
-    except RateLimitExceeded as e:
-        return JSONResponse(
-            status_code=429, content={"detail": f"Too many requests: {e.detail}"}
-        )
-    response = await call_next(request)
-    return response
-
-
-api_router.include_router(auth.router)
-api_router.include_router(auth.users_router)
-
-app.mount("/api", api_router)
-
+app.include_router(custom_users.router, prefix=api_prefix, tags=["Users"])
+app.include_router(chats.router, prefix=api_prefix, tags=["Chats"])
 
 @app.get("/", tags=["Root"])
 def read_root():
-    return {"message": "API REST"}
+    return {"message": "Welcome to the Chat API"}

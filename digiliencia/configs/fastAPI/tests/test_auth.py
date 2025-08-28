@@ -1,98 +1,71 @@
 # /tests/test_auth.py
-# CHANGED: All tests are now async. New tests for refresh tokens, password strength, and rate limiting.
 import pytest
-import asyncio
+import uuid
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
 
-
-async def test_register_user_success(api_client: AsyncClient, registered_user_factory):
-    """Tests successful user registration."""
-    user_credentials = {
-        "email": "new_user@example.com",
-        "password": "a_strong_password",
-    }
-    response = await api_client.post("/users/register", json=user_credentials)
+async def test_register_success(api_client: AsyncClient, db_session):
+    """Tests a successful user registration."""
+    email = f"test_{uuid.uuid4()}@example.com"
+    password = "superPassword"
+    
+    response = await api_client.post("/register", json={"email": email, "password": password})
+    
     assert response.status_code == 201
-
+    data = response.json()
+    assert data["email"] == email
+    assert data["is_active"] is True
+    assert "id" in data
+    
     # Cleanup
-    login_resp = await api_client.post("/auth/login", json=user_credentials)
-    token = login_resp.json()["access_token"]
-    await api_client.delete("/users/me", headers={"Authorization": f"Bearer {token}"})
+    user_in_db = await db_session.get(User, uuid.UUID(data["id"]))
+    await db_session.delete(user_in_db)
+    await db_session.commit()
 
 
-# NEW: Test for weak password validation
-async def test_register_user_weak_password(api_client: AsyncClient):
-    """Cybersecurity Test: Ensures registration fails with a weak password."""
-    user_credentials = {"email": "weakpass@example.com", "password": "123"}
-    response = await api_client.post("/users/register", json=user_credentials)
-    assert response.status_code == 422
-    assert "at least 8 characters long" in response.text
+async def test_register_conflict(api_client: AsyncClient, authenticated_client: AsyncClient):
+    """Tests that a user cannot register with an already existing email."""
+    # The authenticated client has already created a user. We get their email.
+    user_info_resp = await authenticated_client.get("/users/me")
+    email = user_info_resp.json()["email"]
+    
+    response = await api_client.post("/register", json={"email": email, "password": "anotherpassword"})
+    
+    assert response.status_code == 400 # fastapi-users returns 400 by default for duplicate users
 
+async def test_login_success(api_client: AsyncClient, db_session):
+    """Tests a successful login."""
+    # Arrange: Create a user manually for the test
+    email = f"login_{uuid.uuid4()}@example.com"
+    password = "aVerySecurePassword123"
+    register_payload = {"email": email, "password": password}
+    register_response = await api_client.post("/register", json=register_payload)
+    assert register_response.status_code == 201
+    user_id = register_response.json()["id"]
 
-async def test_login_success(api_client: AsyncClient, registered_user_factory):
-    """Tests successful login, checking for both access and refresh tokens."""
-    user_data = await registered_user_factory("login_success")
-    user_credentials = user_data["credentials"]
-
-    response = await api_client.post("/auth/login", json=user_credentials)
-
+    # Act: Log in
+    login_payload = {"username": email, "password": password}
+    response = await api_client.post("/auth/jwt/login", data=login_payload)
+    
+    # Assert
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
-    assert "refresh_token" in data  # Check for the new refresh token
     assert data["token_type"] == "bearer"
+    
+    # Cleanup
+    user_in_db = await db_session.get(User, uuid.UUID(user_id))
+    await db_session.delete(user_in_db)
+    await db_session.commit()
 
+async def test_login_wrong_password(api_client: AsyncClient):
+    """Tests that login fails with an incorrect password."""
+    login_payload = {"username": "test@example.com", "password": "wrongpassword"}
+    response = await api_client.post("/auth/jwt/login", data=login_payload)
+    assert response.status_code == 400 # fastapi-users returns 400 for incorrect credentials
 
-# NEW: Test for token refresh functionality
-async def test_token_refresh_success(api_client: AsyncClient, registered_user_factory):
-    """Tests that a valid refresh token can be used to get a new access token."""
-    # Arrange: Get initial tokens
-    user_data = await registered_user_factory("refresh_success")
-    refresh_token = user_data["refresh_token"]
-
-    # Act: Use the refresh token to get new tokens
-    refresh_payload = {"refresh_token": refresh_token}
-    response = await api_client.post("/auth/refresh", json=refresh_payload)
-
-    # Assert: Check for a successful response with new tokens
+async def test_logout(authenticated_client: AsyncClient):
+    """Tests that the logout endpoint works for an authenticated user."""
+    response = await authenticated_client.post("/auth/jwt/logout")
     assert response.status_code == 200
-    new_tokens = response.json()
-    assert "access_token" in new_tokens
-    assert "refresh_token" in new_tokens
-    assert (
-        new_tokens["access_token"] != user_data["access_token"]
-    )  # Ensure the token is new
-
-
-async def test_token_refresh_invalid(api_client: AsyncClient):
-    """Cybersecurity Test: Ensures an invalid refresh token is rejected."""
-    refresh_payload = {"refresh_token": "this.is.an.invalid.token"}
-    response = await api_client.post("/auth/refresh", json=refresh_payload)
-    assert response.status_code == 401
-
-
-# NEW: Test for rate limiting
-async def test_rate_limiting_on_login(api_client: AsyncClient):
-    """
-    Cybersecurity Test: Verifies that the rate limiter blocks excessive requests.
-    Note: This test assumes a strict limit for testing purposes (e.g., 5 per minute).
-    The actual limit in `main.py` should be configured for production.
-    """
-    # Arrange
-    user_credentials = {
-        "email": "ratelimit@example.com",
-        "password": "password",
-    }  # Credentials don't need to be valid
-
-    # Act: Make rapid requests until one is blocked
-    for i in range(15):  # Assuming limit is less than 15
-        response = await api_client.post("/auth/login", json=user_credentials)
-        if response.status_code == 429:  # Too Many Requests
-            break
-        await asyncio.sleep(0.1)  # Small delay to not overwhelm the test runner
-
-    # Assert
-    assert response.status_code == 429
-    assert "Too many requests" in response.text

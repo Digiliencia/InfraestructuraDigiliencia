@@ -1,25 +1,20 @@
 # /schemas/chat.py
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import Dict, List
 
-
-class MessagePayload(BaseModel):
+class Text(BaseModel):
     model: str
     text: str
 
-
-class MessageContent(BaseModel):
+class Texts(BaseModel):
     text: str
-
-
-class ConversationInfo(BaseModel):
-    idChat: str
-    title: str
-
-
-class ConversationList(BaseModel):
-    conversations: Dict[str, ConversationInfo]
-
 
 class Captcha(BaseModel):
     captcha: str
+
+class ConversationDetail(BaseModel):
+    idChat: str
+    Título: str
+
+class ConversationList(BaseModel):
+    conversations: Dict[str, ConversationDetail]

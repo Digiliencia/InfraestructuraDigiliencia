@@ -11,3 +11,4 @@ slowapi
 pytest-asyncio
 pytest
 httpx
+fastapi-users[sqlalchemy,jwt]
