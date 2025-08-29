@@ -54,8 +54,9 @@ app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix=f"{api_prefix}/auth", tags=["Auth"]
 )
 app.include_router(
-    fastapi_users.get_register_router(user_schema.UserRead, user_schema.UserCreate),
-    prefix=api_prefix, tags=["Auth"]
+    fastapi_users.get_register_router(user_schema.UserRead, user_schema.UserRegistration), # <--- AQUÍ
+    prefix=api_prefix,
+    tags=["Auth"],
 )
 app.include_router(
     fastapi_users.get_verify_router(user_schema.UserRead), prefix=api_prefix, tags=["Auth"]

@@ -28,7 +28,7 @@ class Chat(Base):
     __tablename__ = "chats"
     id = Column(Integer, primary_key=True)
     titulo = Column(String(255), index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("usuario.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
     owner = relationship("User", back_populates="chats")
     messages = relationship("Message", back_populates="chat", cascade="all, delete-orphan")

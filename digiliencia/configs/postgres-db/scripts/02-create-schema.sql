@@ -7,10 +7,14 @@ DROP TABLE IF EXISTS MODELS CASCADE;
 
 
 -- Create the USERS table
-CREATE TABLE USERS (
-    ID SERIAL PRIMARY KEY, -- SERIAL automatically creates a sequence and provides unique integer IDs
-    email VARCHAR(255) UNIQUE NOT NULL, -- Email should be unique and not null
-    password VARCHAR(255) NOT NULL -- Password should not be null
+-- Note: Adjusted to match FastAPI Users requirements
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,                -- SERIAL automatically creates a sequence and provides unique integer IDs
+    email VARCHAR(255) UNIQUE NOT NULL,    -- Email should be unique and not null
+    hashed_password VARCHAR(255) NOT NULL,        -- Password should not be null (hashed password)
+    is_active BOOLEAN DEFAULT TRUE,        -- User's account active status (default is TRUE)
+    is_superuser BOOLEAN DEFAULT FALSE,    -- User's superuser status (default is FALSE)
+    is_verified BOOLEAN DEFAULT FALSE     -- User's verification status (default is FALSE)
 );
 
 -- Create the CHATS table
