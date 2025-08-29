@@ -12,7 +12,7 @@ class UserUpdate(schemas.BaseUserUpdate):
     """Schema for updating user data."""
     pass
 
-class UserRegistration(BaseModel):
+class UserRegistration(schemas.BaseUserCreate):
     """
     Schema used ONLY for user registration.
     It only requires the essential fields.

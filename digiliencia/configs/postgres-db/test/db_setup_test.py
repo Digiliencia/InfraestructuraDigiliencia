@@ -104,7 +104,7 @@ def test_app_user_permissions(get_db_connection_for_role):
     # INSERT into USERS - should fail
     with pytest.raises(psycopg2.errors.InsufficientPrivilege):
         cursor.execute(
-            "INSERT INTO users (email, password) VALUES ('test@fail.com', 'pass');"
+            "INSERT INTO users (email, hashed_password) VALUES ('test@fail.com', 'pass');"
         )
     conn.rollback()
 
@@ -130,7 +130,7 @@ def test_app_user_login_permissions(get_db_connection_for_role):
     # INSERT into USERS - should succeed
     try:
         cursor.execute(
-            "INSERT INTO users (email, password) VALUES ('login@test.com', 'pass') RETURNING id;"
+            "INSERT INTO users (email, hashed_password) VALUES ('login@test.com', 'pass') RETURNING id;"
         )
         new_user_id = cursor.fetchone()[0]
         cursor.execute("DELETE FROM users WHERE id = %s;", (new_user_id,))

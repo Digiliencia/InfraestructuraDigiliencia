@@ -92,9 +92,16 @@ def populated_db(get_db_connection_for_role):
 
     print(f"\n--- Populating '{APP_DB_NAME}' with test data ---")
     try:
+        # Cleanup any existing data
+        cursor.execute(
+            "TRUNCATE TABLE MESSAGES, CHATS, USERS, IA_PROMPTS, MODELS RESTART IDENTITY CASCADE;"
+        )
+        conn.commit()
+
         # 1. Populate tables without dependencies
         cursor.execute(
-            "INSERT INTO MODELS (IA_name) VALUES ('GPT-4'), ('Claude 3') RETURNING ID;"
+            "INSERT INTO MODELS (IA_name) VALUES (%s), (%s) RETURNING ID;",
+            (fake.unique.word(), fake.unique.word()),  # Avoid duplicates
         )
         model_ids = [row[0] for row in cursor.fetchall()]
 
@@ -107,7 +114,7 @@ def populated_db(get_db_connection_for_role):
         user_ids = []
         for _ in range(5):
             cursor.execute(
-                "INSERT INTO USERS (email, password) VALUES (%s, %s) RETURNING ID;",
+                "INSERT INTO USERS (email, hashed_password) VALUES (%s, %s) RETURNING ID;",
                 (fake.unique.email(), "fakepass"),
             )
             user_ids.append(cursor.fetchone()[0])

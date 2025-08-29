@@ -1,6 +1,7 @@
 import pytest
 import psycopg2
 from psycopg2.errors import NotNullViolation, UniqueViolation, ForeignKeyViolation
+import uuid
 
 # This file contains tests to verify data constraints and integrity.
 
@@ -17,7 +18,7 @@ def test_unique_email_constraint(populated_db):
 
     with pytest.raises(UniqueViolation):
         cursor.execute(
-            "INSERT INTO users (email, password) VALUES (%s, 'password');",
+            "INSERT INTO users (email, hashed_password) VALUES (%s, 'hashed_password');",
             (existing_email,),
         )
 
@@ -34,7 +35,9 @@ def test_not_null_constraints(populated_db):
     cursor = conn.cursor()
 
     with pytest.raises(NotNullViolation):
-        cursor.execute("INSERT INTO users (email, password) VALUES (NULL, 'password');")
+        cursor.execute(
+            "INSERT INTO users (email, hashed_password) VALUES (NULL, 'hashed_password');"
+        )
     conn.rollback()
 
     with pytest.raises(NotNullViolation):
@@ -54,7 +57,7 @@ def test_foreign_key_constraints(populated_db):
     conn = populated_db
     cursor = conn.cursor()
 
-    non_existent_user_id = 999999
+    non_existent_user_id = str(uuid.uuid4())
     with pytest.raises(ForeignKeyViolation):
         cursor.execute(
             "INSERT INTO chats (titulo, user_id) VALUES ('Ghost Chat', %s);",
@@ -112,7 +115,7 @@ def test_users_view_security(populated_db):
     cursor = conn.cursor()
 
     with pytest.raises(psycopg2.errors.UndefinedColumn):
-        cursor.execute("SELECT password FROM users_id_email_view LIMIT 1;")
+        cursor.execute("SELECT hashed_password FROM users_id_email_view LIMIT 1;")
     conn.rollback()
 
     try:
