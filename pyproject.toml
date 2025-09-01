@@ -8,7 +8,6 @@ dependencies = [
     "loguru>=0.7.3",
     "neo4j>=5.28.1",
     "neomodel>=5.5.0",
-    "numpy>=2.3.2",
     "pydantic-settings>=2.9.1",
     "requests>=2.31.0",
     "rich>=14.0.0",
