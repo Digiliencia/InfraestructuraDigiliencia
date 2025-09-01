@@ -54,11 +54,6 @@ services:
     ports:
       - "7475:7474" # HTTP
       - "7688:7687" # Bolt
-    tmpfs:
-      - /data
-      - /logs
-      - /import
-      - /plugins
     networks:
       - dev-network
   embedding-api-service:
