@@ -47,7 +47,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                 reason="La contraseña debe contener al menos una letra."
             )
     
-    async def authenticate(
+    async def authenticate_json(
         self, credentials: UserLogin
     ) -> Optional[User]:
         """

@@ -9,7 +9,7 @@ from auth.transport import auth_backend
 router = APIRouter()
 
 @router.post("/auth/login")
-async def login(
+async def login_with_json(
     credentials: UserLogin,
     user_manager: UserManager = Depends(get_user_manager),
 ):
@@ -17,7 +17,7 @@ async def login(
     Login a user.
     """
     # 2. Default authentication logic from fastapi-users
-    user = await user_manager.authenticate(credentials)
+    user = await user_manager.authenticate_json(credentials)
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -29,3 +29,4 @@ async def login(
     response = await auth_backend.login(auth_backend.get_strategy(), user)
     
     return response
+
