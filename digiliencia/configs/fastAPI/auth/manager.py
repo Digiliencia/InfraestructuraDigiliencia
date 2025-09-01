@@ -9,9 +9,7 @@ from .db import get_user_db
 from core.config import settings
 from db.models import User
 from schemas.user import UserRegistration
-from schemas.user import UserLogin
-
-
+from schemas.user import UserLogin, UserCreate
 
 SECRET = settings.JWT_SECRET_KEY
 
@@ -75,6 +73,32 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             await self.user_db.update(user, {"hashed_password": updated_password_hash})
 
         return user
+    
+
+    async def on_after_register(self, user: User, request: Optional[Request] = None):
+        print(f"User {user.id} has registered.")
+
+    async def create(
+        self,
+        user_create_public: UserRegistration,
+        safe: bool = False,
+        request: Optional[Request] = None,
+    ) -> User:
+        """
+        Overrides the create method to use a simplified public schema.
+        It converts the public schema to the internal one before processing.
+        """
+        user_create_internal = UserCreate(
+            email=user_create_public.email,
+            password=user_create_public.password,
+            is_active=True,
+            is_superuser=False,
+            is_verified=False,
+        )
+
+        created_user = await super().create(user_create_internal, safe, request)
+
+        return created_user
 
 
 async def get_user_manager(

@@ -15,11 +15,17 @@ class UserUpdate(schemas.BaseUserUpdate):
 
     pass
 
-
-class UserRegistration(schemas.BaseUserCreate):
+class UserCreate(schemas.BaseUserCreate):
     """
-    Schema used ONLY for user registration.
-    It only requires the essential fields.
+    Internal schema for creating a user. Includes all required fields
+    with their default values for fastapi-users logic.
+    """
+    pass
+
+class UserRegistration(BaseModel):
+    """
+    Schema for the public registration endpoint.
+    Only asks for the required fields from the user.
     """
 
     email: EmailStr

@@ -13,6 +13,9 @@ async def login(
     credentials: UserLogin,
     user_manager: UserManager = Depends(get_user_manager),
 ):
+    """
+    Login a user.
+    """
     # 2. Default authentication logic from fastapi-users
     user = await user_manager.authenticate(credentials)
 

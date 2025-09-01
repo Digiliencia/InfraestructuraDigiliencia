@@ -44,20 +44,24 @@ async def add_security_headers(request: Request, call_next):
 api_prefix = "/api"
 
 # Endpoints from fastapi-users
-# /login, /logout, /register, etc.
+
+# /login
 app.include_router(
     custom_auth.router,
     prefix=api_prefix,
     tags=["Auth"]
 )
 
+# /register
 app.include_router(
     fastapi_users.get_register_router(
-        user_schema.UserRead, user_schema.UserRegistration
+        user_schema.UserRead, user_schema.UserRegistration # type: ignore
     ),
     prefix=api_prefix,
     tags=["Auth"],
 )
+
+# /verify
 app.include_router(
     fastapi_users.get_verify_router(user_schema.UserRead),
     prefix=api_prefix,

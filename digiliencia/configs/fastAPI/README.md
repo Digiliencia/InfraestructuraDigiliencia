@@ -56,7 +56,7 @@ All endpoints are under the ```/api``` prefix.
 
 | Method | Route                    | Requires Auth | Description                                         |
 | :----- | :------------------------ | :------------ | :-------------------------------------------------- |
-| `POST` | `/auth/jwt/login`         | No            | Log in with email and password. Returns a token.    |
+| `POST` | `login`         | No            | Log in with email and password. Returns a token.    |
 | `POST` | `/auth/logout`            | Yes           | Logs out the user.                                  |
 | `POST` | `/register`               | No            | Registers a new user.                               |
 | `POST` | `/verify/{token}`         | No            | Verifies the user's email with a token.             |
