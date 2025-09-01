@@ -9,39 +9,7 @@ from core.endpoints import LOGIN
 router = APIRouter()
 
 
-@router.post(
-    LOGIN,
-    summary="Login with Email",
-    description="Authenticate a user using email and password credentials",
-    response_description="JWT token for authenticated user",
-    responses={
-        200: {
-            "description": "Successful authentication",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer",
-                    }
-                }
-            },
-        },
-        401: {
-            "description": "Authentication failed",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Incorrect email or password"}
-                }
-            },
-        },
-        422: {
-            "description": "Validation error",
-            "content": {
-                "application/json": {"example": {"detail": "Invalid email format"}}
-            },
-        },
-    },
-)
+@router.post("/auth/login")
 async def login_with_json(
     credentials: UserLogin,
     user_manager: UserManager = Depends(get_user_manager),

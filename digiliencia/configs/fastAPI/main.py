@@ -51,12 +51,12 @@ async def add_security_headers(request: Request, call_next):
 # /api/auth/jwt/login
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
-    prefix=JWT_PATH,
+    prefix=f"{api_prefix}/auth/jwt",
     tags=["Auth"],
 )
 
 # /login
-app.include_router(custom_auth.router, prefix=API_PREFIX, tags=["Auth"])
+app.include_router(custom_auth.router, prefix=api_prefix, tags=["Auth"])
 
 # /register
 app.include_router(

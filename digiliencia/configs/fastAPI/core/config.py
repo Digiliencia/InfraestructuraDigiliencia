@@ -12,16 +12,15 @@ from pydantic import field_validator
 from typing import List
 import os
 import json
-from pathlib import Path
+from pathlib import Path  # 1. Importa la librería Path
 
 
-# Calculate the project's root directory (three levels up from this file)
-# /core/config.py -> /core -> / -> project_root
+# 2. Calcula la ruta raíz del proyecto (dos niveles por encima de este fichero)
+#    /core/config.py -> /core/ -> /
+project_root = Path(__file__).resolve().parent.parent.parent
 
-# Build the absolute path to the .env file located at the project root.
-dotenv_path = Path(__file__).resolve().parent.parent / ".env"
-if not os.path.exists(dotenv_path):
-    dotenv_path = Path(__file__).resolve().parent.parent.parent.parent.parent / ".env"
+# 3. Construye la ruta absoluta y explícita al fichero .env
+dotenv_path = project_root / ".env"
 
 
 class Settings(BaseSettings):
@@ -108,16 +107,9 @@ class Settings(BaseSettings):
                 raise ValueError("ALLOWED_ORIGINS is not valid JSON")
         return v
 
-    # Redis Configuration
-    REDIS_HOST: str = "localhost"
-    REDIS_HOST_TEST: str = "localhost"
-    REDIS_PORT: int = 6379
-
-    # Pydantic model configuration.
-    model_config = {
-        "env_file": dotenv_path,  # Specifies the path to the .env file.
-        "extra": "ignore",  # Ignores any extra environment variables not defined in this model.
-    }
+    class Config:
+        env_file = dotenv_path
+        extra = "ignore"  # Ignore extra environment variables
 
 
 # A global instance of the Settings class that can be imported and used

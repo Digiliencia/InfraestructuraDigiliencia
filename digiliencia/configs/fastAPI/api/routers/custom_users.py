@@ -150,22 +150,9 @@ async def logout(
     """
     Logs out the current user.
 
-    This endpoint requires a valid Bearer token in the Authorization header.
-    For stateless JWT (Bearer) authentication, this endpoint serves as
-    a server-side confirmation. The client is responsible for deleting/discarding
-    the token locally.
-
-    Parameters:
-        user (User): The currently authenticated user (injected).
-
-    Returns:
-        dict: A confirmation message.
-
-    Raises:
-        HTTPException:
-            - 401: If no valid token is provided or the user is inactive.
-    """
-    # For stateless Bearer tokens, logout is a "no-op" on the server.
-    # The client is responsible for discarding the token.
-    # We just return a success message to confirm authentication.
-    return {"detail": "Logout successful"}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "is_active": current_user.is_active,
+        "chats_count": len(current_user.chats) if current_user.chats else 0,
+    }
