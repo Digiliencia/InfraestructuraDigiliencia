@@ -2,14 +2,14 @@ from typing import List
 
 from loguru import logger
 
-from data.services.neomodel.field.field_classification_service import (
-    FieldClassificationService,
-)
 from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
+from digiliencia.data.services.neomodel.field.field_classification_service import (
+    FieldClassificationService,
+)
 from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_classification_service import (
     TopicClassificationService,
@@ -54,6 +54,9 @@ def scrap(from_days_ago: int = 5):
                     logger.info(
                         f"Classified news '{created_news.header}' into {len(fields)} fields"
                     )
+
+                    # Generate chunks and embeddings
+                    news_service.generate_chunk_embeddings_for_news(created_news)
 
                 except Exception as create_error:
                     logger.error(f"Error creating news: {create_error}")
