@@ -15,12 +15,15 @@ class UserUpdate(schemas.BaseUserUpdate):
 
     pass
 
+
 class UserCreate(schemas.BaseUserCreate):
     """
     Internal schema for creating a user. Includes all required fields
     with their default values for fastapi-users logic.
     """
+
     pass
+
 
 class UserRegistration(BaseModel):
     """
@@ -31,9 +34,11 @@ class UserRegistration(BaseModel):
     email: EmailStr
     password: str
 
+
 class UserLogin(BaseModel):
     """
     Schema used for user login with email and password.
     """
+
     email: EmailStr
     password: str

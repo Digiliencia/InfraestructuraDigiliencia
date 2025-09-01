@@ -3,6 +3,15 @@ from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List
 import json
+from pathlib import Path  # 1. Importa la librería Path
+
+
+# 2. Calcula la ruta raíz del proyecto (dos niveles por encima de este fichero)
+#    /core/config.py -> /core/ -> /
+project_root = Path(__file__).resolve().parent.parent.parent
+
+# 3. Construye la ruta absoluta y explícita al fichero .env
+dotenv_path = project_root / ".env"
 
 
 class Settings(BaseSettings):
@@ -23,9 +32,6 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
-    # Refresh token settings
-    REFRESH_TOKEN_SECRET_KEY: str
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS settings
     ALLOWED_ORIGINS: List[str] = []
@@ -47,7 +53,7 @@ class Settings(BaseSettings):
         return v
 
     class Config:
-        env_file = "../.env"
+        env_file = dotenv_path
         extra = "ignore"  # Ignore extra environment variables
 
 

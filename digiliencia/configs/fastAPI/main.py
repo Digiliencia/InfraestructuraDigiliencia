@@ -14,7 +14,7 @@ from core.config import settings
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
 
-app = FastAPI(title="API", description="API for IA.", version="1.0.0")
+app = FastAPI(title="API", description="API for AI.", version="1.0.0")
 
 # --- Middlewares ---
 app.state.limiter = limiter
@@ -49,22 +49,19 @@ api_prefix = "/api"
 
 # /api/auth/jwt/login
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend), 
+    fastapi_users.get_auth_router(auth_backend),
     prefix=f"{api_prefix}/auth/jwt",
-    tags=["Auth"]
+    tags=["Auth"],
 )
 
 # /login
-app.include_router(
-    custom_auth.router,
-    prefix=api_prefix,
-    tags=["Auth"]
-)
+app.include_router(custom_auth.router, prefix=api_prefix, tags=["Auth"])
 
 # /register
 app.include_router(
     fastapi_users.get_register_router(
-        user_schema.UserRead, user_schema.UserRegistration # type: ignore
+        user_schema.UserRead,
+        user_schema.UserRegistration,  # type: ignore
     ),
     prefix=api_prefix,
     tags=["Auth"],

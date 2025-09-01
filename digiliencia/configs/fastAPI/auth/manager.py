@@ -46,13 +46,11 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             raise InvalidPasswordException(
                 reason="La contraseña debe contener al menos una letra."
             )
-    
-    async def authenticate_json(
-        self, credentials: UserLogin
-    ) -> Optional[User]:
+
+    async def authenticate_json(self, credentials: UserLogin) -> Optional[User]:
         """
         Override the default authenticate method to use email and password.
-        
+
         Returns the authenticated user or None if authentication fails.
         """
         try:
@@ -68,12 +66,11 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         )
         if not verified:
             return None
-        
+
         if updated_password_hash is not None:
             await self.user_db.update(user, {"hashed_password": updated_password_hash})
 
         return user
-    
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")

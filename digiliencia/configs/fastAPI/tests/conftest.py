@@ -5,10 +5,16 @@ import uuid
 import time
 import uvicorn
 import multiprocessing
-from typing import Dict, AsyncGenerator, Any
+from typing import AsyncGenerator, Any
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 
 from core.config import settings
 from db.models import User
@@ -28,8 +34,10 @@ TestingSessionLocal = sessionmaker(
 )
 
 
+# --- Fixture to manage the API server lifecycle ---
 def run_server():
     """Function to be run in a separate process to serve the app."""
+    # Note: We're running the imported 'app' instance
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
@@ -54,6 +62,13 @@ async def setup_database(app_server):
         await conn.run_sync(Base.metadata.drop_all)
 
 
+@pytest_asyncio.fixture(scope="function")
+async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
+    """Provides a clean database session for each test."""
+    async with TestingSessionLocal() as session:
+        yield session
+
+
 # --- HTTP Client Fixtures ---
 API_URL = "http://127.0.0.1:8000/api"
 
@@ -66,13 +81,6 @@ async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
-    """Provides a clean database session for each test."""
-    async with TestingSessionLocal() as session:
-        yield session
-
-
-@pytest_asyncio.fixture(scope="function")
 async def authenticated_client(
     api_client: httpx.AsyncClient, db_session: AsyncSession
 ) -> AsyncGenerator[httpx.AsyncClient, Any]:
@@ -80,7 +88,6 @@ async def authenticated_client(
     Creates a user, logs in, and returns an authenticated HTTP client.
     Cleans up the user from the DB after the test.
     """
-    # 1. Register user
     email = f"testuser_{uuid.uuid4()}@example.com"
     password = "aVerySecurePassword123"
     user_payload = {"email": email, "password": password}
@@ -89,25 +96,18 @@ async def authenticated_client(
     assert register_response.status_code == 201
     user_id = register_response.json()["id"]
 
-    # 2. Log in to get the token
-    login_payload = {
-        "username": email,
-        "password": password,
-    }  # fastapi-users uses 'username'
+    login_payload = {"username": email, "password": password}
     login_response = await api_client.post("/auth/jwt/login", data=login_payload)
     assert login_response.status_code == 200
     token = login_response.json()["access_token"]
 
-    # 3. Create and return the authenticated client
     auth_client = httpx.AsyncClient(
         base_url=API_URL, headers={"Authorization": f"Bearer {token}"}
     )
     yield auth_client
 
-    # --- Teardown ---
     await auth_client.aclose()
 
-    # 4. Delete the user directly from the DB to ensure a clean state
     user_to_delete = await db_session.get(User, uuid.UUID(user_id))
     if user_to_delete:
         await db_session.delete(user_to_delete)
