@@ -1,4 +1,9 @@
+import inspect
+
+# --- Enums (simplificado, importa aquí tu Topics completo) ---
 from enum import Enum
+
+from neo4j import GraphDatabase
 
 
 class RelatedFields:
@@ -505,3 +510,41 @@ class RelatedFields:
         DATA_PROTECTION_FOR_CUSTOMER_CENTRIC_BUSINESSES = (
             "Data Protection for Customer-Centric Businesses"
         )
+
+
+# --- Neo4j Checker ---
+class Neo4jEnumChecker:
+    def __init__(self, uri, user, password):
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+
+    def close(self):
+        self.driver.close()
+
+    def check_node_exists(self, name: str) -> bool:
+        query = "MATCH (n {name: $name}) RETURN n LIMIT 1"
+        with self.driver.session() as session:
+            result = session.run(query, name=name)
+            return result.single() is not None
+
+    def check_all_enums(self, topics_class):
+        for _, enum_class in inspect.getmembers(topics_class, inspect.isclass):
+            if issubclass(enum_class, Enum):
+                print(f"\n[Checking category: {enum_class.__name__}]")
+                for item in enum_class:
+                    exists = self.check_node_exists(item.value)
+                    status = "✅ Found" if exists else "❌ Missing"
+                    print(f"- {item.value}: {status}")
+
+
+# --- Example Usage ---
+if __name__ == "__main__":
+    # Configura tu conexión a Neo4j
+    URI = "neo4j+s://da62eb24.databases.neo4j.io"
+    USER = "neo4j"
+    PASSWORD = "fXnHergx-oqx6zqiRvQ2VyOgV3G3oIuYa-0QKxCB94k"
+
+    checker = Neo4jEnumChecker(URI, USER, PASSWORD)
+    try:
+        checker.check_all_enums(RelatedFields)
+    finally:
+        checker.close()
