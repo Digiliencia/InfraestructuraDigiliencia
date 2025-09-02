@@ -8,16 +8,13 @@ Web scrapping: https://www.cyber.gc.ca/en/
 
 import time
 from datetime import datetime
-
 from loguru import logger
 from selenium.webdriver.common.by import By
-
-from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.canadian_exec import CanadianExec
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
-
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -35,29 +32,29 @@ class CanadianScraper(AbstractScraper):
             "academia": "https://www.cyber.gc.ca/en/academia",
         }
 
-    def get_article(self, pos: int = 0) -> ScrapedNewsModel | None:
+    def get_article(self, pos: int = 0) -> ScrapedNews | None:
         """
         Give an object ScrapedNewsModel is an articles of a section.
 
         Return:
-            An article of a section is a ScrapedNewsModel or None, if article is not good format
+            An article of a section is a ScrapedNews or None, if article is not good format.
         """
         try:
             time.sleep(1)  # Wait to load article
             title = self.driver.find_element(By.ID, "wb-cont").text
-            date_str = self.date_articles[pos]
+            date_dt = self.date_articles[pos]
             container_content = self.driver.find_elements(By.CSS_SELECTOR, "div p")
             content = [contents.text for contents in container_content]
             content = "".join(content)
             url = self.driver.current_url
             author = ""  # There is not an author
 
-            return ScrapedNewsModel(
+            return ScrapedNews(
                 header=title,
-                date=date_str,
+                date=date_dt,
                 source="Canadian Center for Cybersegurity",
                 content=content,
-                url=url,
+                url=str(url),   # type: ignore
                 authors=[author],
                 topics=None,
             )
@@ -73,9 +70,7 @@ class CanadianScraper(AbstractScraper):
         """
         return ScrapUtils.if_element_exists(self.driver, By.ID, "table_next")  # type: ignore
 
-    def scrap_section(
-        self, url: str = "", until_date: str = ""
-    ) -> list[ScrapedNewsModel]:
+    def scrap_section(self, url: str = "", until_date: str = "") -> list[ScrapedNews]:
         """
         Scrapes all articles in a section up to the date given by parameter.
 
@@ -90,7 +85,7 @@ class CanadianScraper(AbstractScraper):
         name_section = url.replace("https://www.cyber.gc.ca/en/", "")
         logger.debug(f"Scrap articles of section: {name_section}")
 
-        articles_section: list[ScrapedNewsModel] = []
+        articles_section: list[ScrapedNews] = []
 
         while self._is_there_button_next:
             table = self.driver.find_element(By.ID, "table")
@@ -104,8 +99,8 @@ class CanadianScraper(AbstractScraper):
             for row in rows_body:
                 date_str = row.find_element(By.CLASS_NAME, "sorting_1").text
                 date_dt = datetime.strptime(date_str, "%Y-%m-%d")
+                self.date_articles.append(date_dt)
                 date_ft = date_dt.strftime("%d %B %Y")
-                self.date_articles.append(date_ft)
 
                 if TimeUtils.days_between_es_dates(date_ft, until_date) > 0:
                     flag = True
@@ -129,17 +124,15 @@ class CanadianScraper(AbstractScraper):
                     if article is not None:
                         articles_section.append(article)
                      
-            self.driver.get(url) # Volvemos a la página de inicio de la sección
-
             if self._is_there_button_next:   
-                wait = WebDriverWait(self.driver, 10)
-                wait.until(EC.presence_of_element_located((By.ID, "table_next")))
+                #wait = WebDriverWait(self.driver, 10)
+                #wait.until(EC.presence_of_element_located((By.ID, "table_next")))
                 button_next = self.driver.find_element(By.ID, "table_next")
                 button_next.click()   
        
         return articles_section
 
-    def scrap_news(self, from_days_ago: int) -> list[ScrapedNewsModel]:
+    def scrap_news(self, from_days_ago: int) -> list[ScrapedNews]:
         """
         Call the methods to get the information from the Canadian page
 
@@ -147,14 +140,14 @@ class CanadianScraper(AbstractScraper):
             from_days_ago (int): The number of days to get the information from
 
         Returns:
-            tuple[dict[str, str]]: A tuple with a dictionary
+            list[ScrapNews]: A list with several objects ScrapNews
         """
         logger.info(f"Getting events from {from_days_ago} days ago")
         if from_days_ago < 0:
             logger.error("from_days_ago must be greater than 0")
             raise ValueError("from_days_ago must be greater than 0")
 
-        news_articles: list[ScrapedNewsModel] = []
+        news_articles: list[ScrapedNews] = []
 
         until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago)
 

@@ -10,12 +10,11 @@ import time
 from datetime import datetime
 from loguru import logger
 from selenium.webdriver.common.by import By
-from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.exc.america_cyber_agency_exec import AmericaCyberAgencyExec
 from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.utils.time import TimeUtils
-
+from digiliencia.exc.america_cyber_agency_exec import AmericaCyberAgencyExec
 
 class AmericaCyberAgencyScraper(AbstractScraper):
     def __init__(self):
@@ -24,7 +23,7 @@ class AmericaCyberAgencyScraper(AbstractScraper):
         self.URLS_SECTIONS = {
             "news": "https://www.cisa.gov/news-events/news",
             "advisories": "https://www.cisa.gov/news-events/cybersecurity-advisories",
-            "directives": "https://www.cisa.gov/news-events/directives",
+            "directives": "https://www.cisa.gov/news-events/directives"
         }
 
     def get_article(self) -> ScrapedNews | None:
@@ -36,78 +35,37 @@ class AmericaCyberAgencyScraper(AbstractScraper):
         """
         try:
             time.sleep(1)  # Wait to load article
-            title = self.driver.find_element(
-                By.CSS_SELECTOR, ".c-page-title__title"
-            ).text
-            date_str = str(
-                self.driver.find_element(By.CSS_SELECTOR, ".c-field__content time").text
-            )
+            title = self.driver.find_element(By.CSS_SELECTOR, ".c-page-title__title").text
+            date_str = str(self.driver.find_element(By.CSS_SELECTOR, ".c-field__content time").text)
             date_dt = datetime.strptime(date_str, "%B %d, %Y")
             topics_elem = self.driver.find_elements(By.CSS_SELECTOR, ".c-top__topics")
             topics = [str(topic.text) + " " for topic in topics_elem]
-            container_content = self.driver.find_elements(
-                By.CSS_SELECTOR, ".c-field__content"
-            )
+            container_content = self.driver.find_elements(By.CSS_SELECTOR, ".c-field__content")
             content = [contents.text for contents in container_content]
             content = "".join(content)
             url = self.driver.current_url
             author = ""  # There is not an author
-
+            
             return ScrapedNews(
                 header=title,
                 date=date_dt,
                 source="Canadian Center for Cybersegurity",
                 content=content,
-                url=str(url),  # type: ignore
+                url=str(url),       # type: ignore
                 authors=[author],
                 topics=topics,
             )
         except AmericaCyberAgencyExec as e:
             logger.warning("Article is not good format: ", e)
             return None
-
+    
     def _is_there_button_next(self) -> bool:
         """
         Return:
             True: button next is disabled.
             False: button next is not disabled.
         """
-        return ScrapUtils.if_element_exists(
-            self.driver,
-            By.CSS_SELECTOR,  # type: ignore
-            ".c-pager__item.c-pager__item--next",  # type: ignore
-        )  # type: ignore
-
-    def _check_availability_page(self) -> bool:
-        """
-        it veritify availability of website America's CyberDefense Agency. if website is availability, or website is not availability.
-
-        Args:
-            content(str): body of actual page
-
-        Return:
-            True: website is availability
-            False: website is not availability
-        """
-
-        title_h1 = "No se puede acceder a este sitio web"
-        title_elem = self.driver.find_element(By.TAG_NAME, "h1").text
-
-        if title_h1 == title_elem:
-            logger.info(
-                f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}"
-            )
-            return False
-
-        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "error-code"):  # type: ignore
-            error_code = self.driver.find_element(By.CLASS_NAME, "error-code").text
-            if error_code == "ERR_HTTP2_PROTOCOL_ERROR":
-                logger.info(
-                    f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}"
-                )
-                return False
-
-        return True
+        return ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, ".c-pager__item.c-pager__item--next")  # type: ignore
 
     def scrap_section(self, url: str = "", until_date: str = "") -> list[ScrapedNews]:
         """
@@ -126,40 +84,31 @@ class AmericaCyberAgencyScraper(AbstractScraper):
 
         articles_section: list[ScrapedNews] = []
 
-        while self._is_there_button_next and self._check_availability_page():
+        while self._is_there_button_next:
             articles = self.driver.find_elements(By.CSS_SELECTOR, ".c-teaser__title")
-            links = [
-                art.find_element(By.TAG_NAME, "a").get_attribute("href")
-                for art in articles
-            ]
+            links = [art.find_element(By.TAG_NAME, "a").get_attribute("href") for art in articles]
 
-            pos = 0  # Busco la posición del último artículo hasta la fecha dada
+            pos = 0 # Busco la posición del último artículo hasta la fecha dada
             flag = False
-            dates_page = self.driver.find_elements(
-                By.CSS_SELECTOR, ".c-teaser__date time"
-            )
+            dates_page = self.driver.find_elements(By.CSS_SELECTOR, ".c-teaser__date time")
             for date in dates_page:
-                date_dt = datetime.strptime(str(date.text), "%b %d, %Y")
+                date_dt = datetime.strptime(str(date.text), "%b %d, %Y") 
                 date_ft = date_dt.strftime("%d %B %Y")
 
                 if TimeUtils.days_between_es_dates(date_ft, until_date) > 0:
-                    flag = True
-                    break
+                        flag = True
+                        break
                 else:
                     pos = pos + 1
 
-            if (
-                flag
-            ):  # En la página, se encuentra el último artículo a extraer los datos
+            if flag: # En la página, se encuentra el último artículo a extraer los datos
                 for i, link in enumerate(links):
-                    if (
-                        pos == i
-                    ):  # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
-                        break
-                    self.driver.get(str(link))
-                    article = self.get_article()
-                    if article is not None:
-                        articles_section.append(article)
+                        if pos == i: # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
+                            break
+                        self.driver.get(str(link))
+                        article = self.get_article()
+                        if article is not None:
+                            articles_section.append(article)
                 break
             else:
                 for i, link in enumerate(links):
@@ -167,12 +116,10 @@ class AmericaCyberAgencyScraper(AbstractScraper):
                     article = self.get_article()
                     if article is not None:
                         articles_section.append(article)
-
+            
             if self._is_there_button_next:
-                button_next = self.driver.find_element(
-                    By.CSS_SELECTOR, ".c-pager__link.c-pager__link--next"
-                )
-                button_next.click()
+                button_next = self.driver.find_element(By.CSS_SELECTOR, ".c-pager__link.c-pager__link--next")
+                button_next.click()   
 
         return articles_section
 
@@ -190,7 +137,7 @@ class AmericaCyberAgencyScraper(AbstractScraper):
         if from_days_ago < 0:
             logger.error("from_days_ago must be greater than 0")
             raise ValueError("from_days_ago must be greater than 0")
-
+        
         news_articles: list[ScrapedNews] = []
 
         until_date = TimeUtils.format_subtract_days_to_actual_date(from_days_ago)
