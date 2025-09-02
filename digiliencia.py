@@ -3,7 +3,7 @@ import sys
 from loguru import logger
 
 from digiliencia.cmd.scrap import scrap
-from digiliencia.configs.env import Env
+#from digiliencia.configs.env import Env
 
 
 def set_up_logging():
@@ -15,6 +15,6 @@ def set_up_logging():
 
 if __name__ == "__main__":
     logger.info("Starting the application")
-    set_up_logging()
-    Env()
+    #set_up_logging()
+    #Env()
     scrap(1)
