@@ -8,7 +8,6 @@ Web scrapping: https://www.cyber.gc.ca/en/
 
 import time
 from datetime import datetime
-
 from loguru import logger
 from selenium.webdriver.common.by import By
 from digiliencia.data.models.news_model import ScrapedNews
