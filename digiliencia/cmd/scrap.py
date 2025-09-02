@@ -15,6 +15,13 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
     TopicClassificationService
 from digiliencia.exc.dao_create_exc import DAOCreateError
 
+from digiliencia.data.services.neomodel.topic.topic_classification_service import (
+    TopicClassificationService,
+)"""
+from digiliencia.data.scrapping.america_cyber_agency import \
+    AmericaCyberAgencyScraper
+from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
+
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
@@ -64,7 +71,7 @@ def scrap(from_days_ago: int = 5):
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-
+    """
     logger.info("Scraping finished")
 
 
