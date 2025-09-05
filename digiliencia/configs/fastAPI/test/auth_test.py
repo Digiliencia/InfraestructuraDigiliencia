@@ -94,6 +94,67 @@ async def test_custom_login_wrong_password(api_client: AsyncClient):
     assert response.status_code == 400
 
 
+async def test_login_nonexistent_user(api_client: AsyncClient):
+    """
+    Login should fail if the user does not exist.
+    """
+    response = await api_client.post(
+        "/auth/login", json={"email": "noexiste@example.com", "password": "irrelevante"}
+    )
+    assert response.status_code in (400, 401)
+
+
+async def test_login_invalid_email_format(api_client: AsyncClient):
+    """
+    Login should fail if the email is not valid.
+    """
+    response = await api_client.post(
+        "/auth/login", json={"email": "no-es-email", "password": "irrelevante"}
+    )
+    assert response.status_code == 422
+
+
+async def test_login_malformed_payload(api_client: AsyncClient):
+    """
+    Login should fail if the payload is malformed.
+    """
+    response = await api_client.post(
+        "/auth/login", json={"usuario": "test", "clave": "123"}
+    )
+    assert response.status_code == 422
+
+
+async def test_login_wrong_method(api_client: AsyncClient):
+    """
+    Login should fail if GET is used instead of POST.
+    """
+    response = await api_client.get("/auth/login")
+    assert response.status_code in (405, 404)
+
+
+async def test_standard_login_success(api_client: AsyncClient):
+    """
+    Standard login (form-data) should work if the user exists.
+    """
+    email = f"std_login_{uuid.uuid4()}@example.com"
+    password = "aVerySecurePassword123"
+    await api_client.post("/register", json={"email": email, "password": password})
+    response = await api_client.post(
+        "/auth/jwt/login", data={"username": email, "password": password}
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+
+async def test_protected_endpoint_with_invalid_token(api_client: AsyncClient):
+    """
+    Access to a protected endpoint with an invalid token should be rejected.
+    """
+    headers = {"Authorization": "Bearer token_invalido"}
+    response = await api_client.get("/users/me", headers=headers)
+    assert response.status_code == 401
+
+
 # --- User Deletion Tests ---
 
 

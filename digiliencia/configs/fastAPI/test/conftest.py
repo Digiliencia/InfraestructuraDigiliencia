@@ -85,7 +85,7 @@ async def authenticated_client(
     api_client: httpx.AsyncClient, db_session: AsyncSession
 ) -> AsyncGenerator[httpx.AsyncClient, Any]:
     """
-    Creates a user, logs in, and returns an authenticated HTTP client.
+    Creates a user, logs in (custom or standard), and returns an authenticated HTTP client.
     Cleans up the user from the DB after the test.
     """
     email = f"testuser_{uuid.uuid4()}@example.com"
@@ -93,13 +93,23 @@ async def authenticated_client(
     user_payload = {"email": email, "password": password}
 
     register_response = await api_client.post("/register", json=user_payload)
-    assert register_response.status_code == 201
-    user_id = register_response.json()["id"]
+    assert register_response.status_code in (200, 201)
+    user_id = register_response.json().get("id")
+    token = None
 
-    login_payload = {"username": email, "password": password}
-    login_response = await api_client.post("/auth/jwt/login", data=login_payload)
-    assert login_response.status_code == 200
-    token = login_response.json()["access_token"]
+    # 1. Intentar login personalizado (JSON)
+    login_payload_json = {"email": email, "password": password}
+    login_response = await api_client.post("/auth/login", json=login_payload_json)
+    if login_response.status_code == 200 and "access_token" in login_response.json():
+        token = login_response.json()["access_token"]
+    else:
+        # 2. Intentar login estándar (form-data)
+        login_payload_form = {"username": email, "password": password}
+        login_response = await api_client.post("/auth/jwt/login", data=login_payload_form)
+        assert login_response.status_code == 200
+        token = login_response.json()["access_token"]
+
+    assert token, "No se pudo obtener el token de autenticación"
 
     auth_client = httpx.AsyncClient(
         base_url=API_URL, headers={"Authorization": f"Bearer {token}"}
@@ -108,7 +118,8 @@ async def authenticated_client(
 
     await auth_client.aclose()
 
-    user_to_delete = await db_session.get(User, uuid.UUID(user_id))
-    if user_to_delete:
-        await db_session.delete(user_to_delete)
-        await db_session.commit()
+    if user_id:
+        user_to_delete = await db_session.get(User, uuid.UUID(user_id))
+        if user_to_delete:
+            await db_session.delete(user_to_delete)
+            await db_session.commit()

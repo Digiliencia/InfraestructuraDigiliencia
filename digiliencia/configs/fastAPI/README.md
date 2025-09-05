@@ -70,7 +70,7 @@ All endpoints are under the ```/api``` prefix.
 | :------- | :--------------------- | :------------ | :-------------------------------------------------- |
 | `GET`    | `/users/me`            | Yes           | Gets the authenticated user's data.                 |
 | `PATCH`  | `/users/me`            | Yes           | Updates the authenticated user's data.              |
-| `DELETE` | `/users/me`            | Yes           | **(Custom)** Deletes the current user's account.    |
+| `DELETE` | `/users/me`            | Yes           | Deletes the current user's account.    |
 | `GET`    | `/users/{id}/export`   | Yes           | **(Custom)** Exports the user's data.               |
 
 
