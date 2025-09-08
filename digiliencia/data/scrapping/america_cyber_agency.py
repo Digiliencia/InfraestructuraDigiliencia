@@ -73,8 +73,35 @@ class AmericaCyberAgencyScraper(AbstractScraper):
             False: button next is not disabled.
         """
         return ScrapUtils.if_element_exists(
-            self.driver, By.CSS_SELECTOR, ".c-pager__item.c-pager__item--next"
+            self.driver, By.CSS_SELECTOR, ".c-pager__item.c-pager__item--next"  # type: ignore
         )  # type: ignore
+
+    def _check_availability_page(self) -> bool:
+        """
+        it veritify availability of website America's CyberDefense Agency. if website is availability, or website is not availability.
+
+        Args:
+            content(str): body of actual page 
+
+        Return:
+            True: website is availability
+            False: website is not availability
+        """
+
+        title_h1 = "No se puede acceder a este sitio web"
+        title_elem = self.driver.find_element(By.TAG_NAME, "h1").text
+
+        if title_h1 == title_elem:
+            logger.info(f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}")
+            return False
+
+        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "error-code"): # type: ignore
+            error_code = self.driver.find_element(By.CLASS_NAME, "error-code").text
+            if error_code == "ERR_HTTP2_PROTOCOL_ERROR":
+                logger.info(f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}")
+                return False
+            
+        return True
 
     def scrap_section(self, url: str = "", until_date: str = "") -> list[ScrapedNews]:
         """
@@ -93,7 +120,7 @@ class AmericaCyberAgencyScraper(AbstractScraper):
 
         articles_section: list[ScrapedNews] = []
 
-        while self._is_there_button_next:
+        while self._is_there_button_next and self._check_availability_page():
             articles = self.driver.find_elements(By.CSS_SELECTOR, ".c-teaser__title")
             links = [
                 art.find_element(By.TAG_NAME, "a").get_attribute("href")
