@@ -1,6 +1,7 @@
 """Complex neomodel models."""
 
 from datetime import datetime
+import logging
 
 from neomodel import (
     ArrayProperty,
@@ -20,6 +21,15 @@ from digiliencia.data.models.neomodel.person.author import Author
 
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.neomodel.chunk import Chunk  # noqa: F401
+from digiliencia.enums.topics import is_valid_topic
+from digiliencia.enums.related_fields import (
+    all_related_field_values,
+    is_valid_related_field,
+)
+
+logger = logging.getLogger(__name__)
+
+_VALID_FIELD_VALUES = all_related_field_values()
 
 
 class News(StructuredNode):
@@ -116,23 +126,33 @@ class News(StructuredNode):
                     author = Author(name=author_name).save()
                 news.written_by.connect(author)
 
-        # Connect to topics
+        # Connect to topics (validación silenciosa con logging de nombres no válidos)
         if topic_names:
             for topic_name in topic_names:
+                if not is_valid_topic(topic_name):
+                    logger.warning("Topic inválido ignorado: %s", topic_name)
+                    continue
                 try:
                     topic = Topic.nodes.get(name=topic_name)
                     news.topics.connect(topic)
                 except Topic.DoesNotExist:
-                    pass
+                    logger.warning(
+                        "Topic válido según enum pero no existente en BD: %s", topic_name
+                    )
 
-        # Connect to fields if provided
+        # Connect to fields (validación silenciosa con logging)
         if field_names:
             for field_name in field_names:
+                if not is_valid_related_field(field_name):
+                    logger.warning("Field inválido ignorado: %s", field_name)
+                    continue
                 try:
                     field = Field.nodes.get(name=field_name)
                     news.fields.connect(field)
                 except Field.DoesNotExist:
-                    pass
+                    logger.warning(
+                        "Field válido según enum pero no existente en BD: %s", field_name
+                    )
 
         # Generate embeddings if requested
         if generate_embeddings:

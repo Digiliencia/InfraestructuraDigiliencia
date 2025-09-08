@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class Topics(str, Enum):
+    """Enumeración de tópicos disponibles (refleja los creados vía Cypher)."""
+
     ADWARE = "Adware"
     BOTNET = "Botnet"
     CYBERBULLYING = "Cyberbullying"
@@ -28,3 +30,11 @@ class Topics(str, Enum):
     VISHING = "Vishing"
     VULNERABILITY = "Vulnerability"
     WARSHIPPING = "Warshipping"
+
+# Conjunto precomputado para validaciones O(1)
+TOPIC_VALUES: set[str] = {t.value for t in Topics}
+
+def is_valid_topic(value: str) -> bool:
+    """Devuelve True si el valor está en la enumeración Topics."""
+    return value in TOPIC_VALUES
+
