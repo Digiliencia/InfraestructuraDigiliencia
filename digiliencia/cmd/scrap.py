@@ -1,11 +1,10 @@
 from typing import List
 
+from configs.env import Env
 from loguru import logger
 
-"""from digiliencia.configs.env import Env
+from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
-
-from configs.env import Env
 from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
@@ -16,17 +15,12 @@ from digiliencia.data.services.neomodel.field.field_classification_service impor
 from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_classification_service import (
     TopicClassificationService,
-)"""
-from digiliencia.data.scrapping.america_cyber_agency import AmericaCyberAgencyScraper
-from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
+)
 
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
-    # Nist().scrap_events(0)
-    CanadianScraper().scrap_news(100)
-    AmericaCyberAgencyScraper().scrap_news(100)
-    """
+
     Env()
 
     news_service = NewsService()
@@ -69,7 +63,7 @@ def scrap(from_days_ago: int = 5):
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    """
+
     logger.info("Scraping finished")
 
 
