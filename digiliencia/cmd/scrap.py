@@ -20,11 +20,12 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
 from digiliencia.data.scrapping.america_cyber_agency import AmericaCyberAgencyScraper
 from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 
+
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
     CanadianScraper().scrap_news(100)
-    AmericaCyberAgencyScraper().scrap_news(100)    
+    AmericaCyberAgencyScraper().scrap_news(100)
     """
     Env()
 
