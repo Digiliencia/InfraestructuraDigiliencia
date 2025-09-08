@@ -77,3 +77,22 @@ REQUIRE f.name IS NOT NULL;
 CREATE CONSTRAINT require_field_description
 FOR (f:Field)
 REQUIRE f.description IS NOT NULL;
+
+// -------------------- Chunk constraints & indexes --------------------
+// Uniqueness constraint for Chunk uid (neomodel UniqueIdProperty)
+CREATE CONSTRAINT unique_chunk_uid
+FOR (c:Chunk)
+REQUIRE c.uid IS UNIQUE;
+
+// Required properties for Chunk
+CREATE CONSTRAINT require_chunk_index
+FOR (c:Chunk)
+REQUIRE c.index IS NOT NULL;
+
+CREATE CONSTRAINT require_chunk_text
+FOR (c:Chunk)
+REQUIRE c.text IS NOT NULL;
+
+// Optional indexes to speed up filters used during upserts
+CREATE INDEX chunk_index_idx FOR (c:Chunk) ON (c.index);
+CREATE INDEX chunk_text_idx FOR (c:Chunk) ON (c.text);

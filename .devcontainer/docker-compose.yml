@@ -54,10 +54,16 @@ services:
     ports:
       - "7475:7474" # HTTP
       - "7688:7687" # Bolt
-    tmpfs:
-      - /data
-      - /logs
-      - /import
-      - /plugins
     networks:
       - dev-network
+  embedding-api-service:
+      build:
+        context: ../digiliencia/models
+        dockerfile: Dockerfile 
+      environment:
+        - NVIDIA_VISIBLE_DEVICES=all
+      ports:
+        - "8000:8000"
+      networks:
+        - dev-network
+      runtime: nvidia

@@ -56,6 +56,9 @@ def scrap(from_days_ago: int = 5):
                         f"Classified news '{created_news.header}' into {len(fields)} fields"
                     )
 
+                    # Generate chunks and embeddings
+                    news_service.generate_chunk_embeddings_for_news(created_news)
+
                 except Exception as create_error:
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
