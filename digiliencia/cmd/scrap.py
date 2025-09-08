@@ -1,4 +1,5 @@
 from typing import List
+
 from configs.env import Env
 from loguru import logger
 from digiliencia.data.models.news_model import ScrapedNews
@@ -14,13 +15,6 @@ from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_classification_service import \
     TopicClassificationService
 from digiliencia.exc.dao_create_exc import DAOCreateError
-
-from digiliencia.data.services.neomodel.topic.topic_classification_service import (
-    TopicClassificationService,
-)"""
-from digiliencia.data.scrapping.america_cyber_agency import \
-    AmericaCyberAgencyScraper
-from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 
 
 def scrap(from_days_ago: int = 5):
