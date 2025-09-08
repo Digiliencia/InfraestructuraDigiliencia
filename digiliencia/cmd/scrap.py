@@ -16,7 +16,6 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
     TopicClassificationService
 from digiliencia.exc.dao_create_exc import DAOCreateError
 
-
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
 
