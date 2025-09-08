@@ -23,7 +23,7 @@ class CanadianScraper(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.date_articles = []
         self.num_page = 1
-        self.num_art_by_page = 10 
+        self.num_art_by_page = 10
         self.URLS_SECTIONS = {
             "individuals": "https://www.cyber.gc.ca/en/individuals",
             "small-medium-businesses": "https://www.cyber.gc.ca/en/small-medium-businesses",
@@ -54,7 +54,7 @@ class CanadianScraper(AbstractScraper):
                 date=date_dt,
                 source="Canadian Center for Cybersegurity",
                 content=content,
-                url=str(url),   # type: ignore
+                url=str(url),  # type: ignore
                 authors=[author],
                 topics=None,
             )
@@ -92,9 +92,12 @@ class CanadianScraper(AbstractScraper):
             body = table.find_element(By.TAG_NAME, "tbody")
             rows_body = body.find_elements(By.TAG_NAME, "tr")
 
-            links = [row.find_element(By.TAG_NAME, "a").get_attribute("href") for row in rows_body]
-            
-            pos = 0 # Busco la posición del último artículo hasta la fecha dada
+            links = [
+                row.find_element(By.TAG_NAME, "a").get_attribute("href")
+                for row in rows_body
+            ]
+
+            pos = 0  # Busco la posición del último artículo hasta la fecha dada
             flag = False
             for row in rows_body:
                 date_str = row.find_element(By.CLASS_NAME, "sorting_1").text
@@ -108,11 +111,15 @@ class CanadianScraper(AbstractScraper):
                 else:
                     pos = pos + 1
 
-            count_art:int = 0
+            count_art: int = 0
 
-            if flag: # En la página, se encuentra el último artículo a extraer los datos
+            if (
+                flag
+            ):  # En la página, se encuentra el último artículo a extraer los datos
                 for i, link in enumerate(links):
-                    if pos == i: # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
+                    if (
+                        pos == i
+                    ):  # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
                         break
                     self.driver.get(str(link))
                     article = self.get_article(i)
@@ -125,16 +132,17 @@ class CanadianScraper(AbstractScraper):
                     article = self.get_article(i)
                     if article is not None:
                         articles_section.append(article)
-                        count_art = count_art +1
-                     
-            if count_art == self.num_art_by_page:   
+                        count_art = count_art + 1
+
+            if count_art == self.num_art_by_page:
                 count_art = 0
                 self.num_page = self.num_page + 1
                 self.driver.get(url)
-                buttons_page = self.driver.find_elements(By.CSS_SELECTOR, "a.paginate_button")
+                buttons_page = self.driver.find_elements(
+                    By.CSS_SELECTOR, "a.paginate_button"
+                )
                 buttons_page[self.num_page].click()
 
-       
         return articles_section
 
     def scrap_news(self, from_days_ago: int) -> list[ScrapedNews]:
