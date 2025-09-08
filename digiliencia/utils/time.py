@@ -124,7 +124,7 @@ class TimeUtils:
         today = datetime.now()
         date_result = today - timedelta(days=days_ago)
         return date_result.strftime("%d/%m/%Y")
-    
+
     @staticmethod
     def format_eeuu_date(days_ago: int) -> str:
         """
@@ -143,7 +143,7 @@ class TimeUtils:
     @staticmethod
     def days_between_es_dates(date_str1: str, date_str2: str) -> int:
         """
-        Calculates the difference in days between two dates in several formats. 
+        Calculates the difference in days between two dates in several formats.
         Args:
             date_str1 (str): The first date string (e.g., "1/10/2023").
             date_str2 (str): The second date string (e.g., "10/10/2023").
