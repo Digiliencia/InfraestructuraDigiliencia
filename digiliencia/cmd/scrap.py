@@ -75,4 +75,3 @@ def scrap(from_days_ago: int = 5):
 if __name__ == "__main__":
     logger.info("Starting the application")
     scrap(8)
-    
