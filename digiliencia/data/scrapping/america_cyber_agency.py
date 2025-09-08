@@ -10,11 +10,11 @@ import time
 from datetime import datetime
 from loguru import logger
 from selenium.webdriver.common.by import By
-from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNews
-from digiliencia.utils.time import TimeUtils
+from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.america_cyber_agency_exec import AmericaCyberAgencyExec
+from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
 
 
 class AmericaCyberAgencyScraper(AbstractScraper):
@@ -73,7 +73,9 @@ class AmericaCyberAgencyScraper(AbstractScraper):
             False: button next is not disabled.
         """
         return ScrapUtils.if_element_exists(
-            self.driver, By.CSS_SELECTOR, ".c-pager__item.c-pager__item--next"  # type: ignore
+            self.driver,
+            By.CSS_SELECTOR,  # type: ignore
+            ".c-pager__item.c-pager__item--next",  # type: ignore
         )  # type: ignore
 
     def _check_availability_page(self) -> bool:
@@ -81,7 +83,7 @@ class AmericaCyberAgencyScraper(AbstractScraper):
         it veritify availability of website America's CyberDefense Agency. if website is availability, or website is not availability.
 
         Args:
-            content(str): body of actual page 
+            content(str): body of actual page
 
         Return:
             True: website is availability
@@ -92,15 +94,19 @@ class AmericaCyberAgencyScraper(AbstractScraper):
         title_elem = self.driver.find_element(By.TAG_NAME, "h1").text
 
         if title_h1 == title_elem:
-            logger.info(f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}")
+            logger.info(
+                f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}"
+            )
             return False
 
-        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "error-code"): # type: ignore
+        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "error-code"):  # type: ignore
             error_code = self.driver.find_element(By.CLASS_NAME, "error-code").text
             if error_code == "ERR_HTTP2_PROTOCOL_ERROR":
-                logger.info(f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}")
+                logger.info(
+                    f"America's CyberDefense Agency is not availability. The website is down. The last url: {self.driver.current_url}"
+                )
                 return False
-            
+
         return True
 
     def scrap_section(self, url: str = "", until_date: str = "") -> list[ScrapedNews]:
