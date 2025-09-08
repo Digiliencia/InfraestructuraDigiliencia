@@ -69,7 +69,7 @@ class Nist(AbstractScraper):
         disabled_button_next = ".paginate_button.next.disabled"
         return ScrapUtils.if_element_exists(
             self.driver,
-            By.CSS_SELECTOR,    # type: ignore
+            By.CSS_SELECTOR,  # type: ignore
             disabled_button_next,  # type: ignore
         )  # type: ignore
 
