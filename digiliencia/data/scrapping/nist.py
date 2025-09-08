@@ -7,7 +7,6 @@ Web scrapping: https://www.nist.gov/nice/ccw-events
 """
 import time
 from datetime import datetime
-from typing import Sequence
 
 from loguru import logger
 from selenium.webdriver.common.by import By
@@ -58,8 +57,7 @@ class Nist(AbstractScraper):
                     return {"description": "", "url": ""}
             else:
                 return {"description": "", "url": ""}
-        except NistExec as e:
-            logger.warning("")
+        except NistExec:
             return {"description": "", "url": ""}
 
     def _is_disabled_button_next(self) -> bool:
@@ -71,7 +69,7 @@ class Nist(AbstractScraper):
         disabled_button_next = ".paginate_button.next.disabled"
         return ScrapUtils.if_element_exists(
             self.driver,
-            By.CSS_SELECTOR,
+            By.CSS_SELECTOR,    # type: ignore
             disabled_button_next,  # type: ignore
         )  # type: ignore
 
