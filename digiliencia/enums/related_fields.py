@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Set, Dict, Optional
 
 
 class RelatedFields:
@@ -505,3 +506,46 @@ class RelatedFields:
         DATA_PROTECTION_FOR_CUSTOMER_CENTRIC_BUSINESSES = (
             "Data Protection for Customer-Centric Businesses"
         )
+
+# --- Utilidades de agregación y validación ---
+
+# Recolecta todas las subclases Enum declaradas dentro de RelatedFields
+_RELATED_FIELD_ENUM_CLASSES = [
+    getattr(RelatedFields, attr)
+    for attr in dir(RelatedFields)
+    if isinstance(getattr(RelatedFields, attr), type)
+    and issubclass(getattr(RelatedFields, attr), Enum)
+]
+
+# Mapa categoría -> set de valores
+RELATED_FIELD_VALUES_BY_CATEGORY: Dict[str, Set[str]] = {
+    cls.__name__: {member.value for member in cls} for cls in _RELATED_FIELD_ENUM_CLASSES
+}
+
+# Set global con todos los valores permitidos
+RELATED_FIELD_VALUES: Set[str] = set().union(*RELATED_FIELD_VALUES_BY_CATEGORY.values())
+
+def is_valid_related_field(value: str) -> bool:
+    """Devuelve True si el valor está en alguno de los enums de RelatedFields."""
+    return value in RELATED_FIELD_VALUES
+
+def all_related_field_values() -> Set[str]:
+    """Retorna el set de todos los valores de campos relacionados."""
+    return RELATED_FIELD_VALUES
+
+def related_field_category(value: str) -> Optional[str]:
+    """Devuelve el nombre de la categoría (enum interno) a la que pertenece el valor, o None."""
+    for category, values in RELATED_FIELD_VALUES_BY_CATEGORY.items():
+        if value in values:
+            return category
+    return None
+
+__all__ = [
+    "RelatedFields",
+    "RELATED_FIELD_VALUES_BY_CATEGORY",
+    "RELATED_FIELD_VALUES",
+    "is_valid_related_field",
+    "all_related_field_values",
+    "related_field_category",
+]
+
