@@ -13,7 +13,7 @@ from digiliencia.data.services.neomodel.news_service import NewsService
 from digiliencia.data.services.neomodel.topic.topic_classification_service import (
     TopicClassificationService,
 )
-from digiliencia.data.scrapping.america_cyber_agency import AmericaCyberAgencyScraper
+
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
@@ -24,13 +24,7 @@ def scrap(from_days_ago: int = 5):
     topics_class_service = TopicClassificationService()
     fields_class_service = FieldClassificationService()
 
-    scrapers = [
-        AmericaCyberAgencyScraper,
-        CanadianScraper,
-        WEForumScraper,
-        IncibeScraper,
-        Ncsc,
-    ]
+    scrapers = [CanadianScraper, WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
