@@ -71,7 +71,7 @@ def scrap(from_days_ago: int = 5):
                     logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
-    """
+
     logger.info("Scraping finished")
 
 
