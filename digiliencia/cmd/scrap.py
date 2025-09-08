@@ -1,7 +1,6 @@
 from typing import List
 from configs.env import Env
 from loguru import logger
-from digiliencia.configs.env import Env
 from digiliencia.data.models.news_model import ScrapedNews
 # from configs.env import Env
 from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
