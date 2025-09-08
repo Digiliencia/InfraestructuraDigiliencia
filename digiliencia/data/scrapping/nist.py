@@ -114,7 +114,7 @@ class Nist(AbstractScraper):
         logger.info(f"All Events to scarp website: {self._get_all_events()}")
         logger.info(f"Number of rows: {num_rows} of table")
 
-        while self._is_disabled_button_next() == False:
+        while not self._is_disabled_button_next():
             tabla = self.driver.find_element(By.XPATH, "//table")
             filas = tabla.find_elements(By.TAG_NAME, "tr")
 
@@ -153,7 +153,7 @@ class Nist(AbstractScraper):
                 news_events.append(event)
                 elems_col.clear()
 
-            if self._is_disabled_button_next() == False:
+            if not self._is_disabled_button_next():
                 ScrapUtils.click_element(self.driver, ".paginate_button.next", 1)
 
         logger.debug(f"Number of eventes extract data: {len(news_events)}")
