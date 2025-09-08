@@ -8,11 +8,9 @@ Web scrapping: https://www.nist.gov/nice/ccw-events
 
 import time
 from datetime import datetime
-
 from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-
 from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.nist_exec import NistExec
@@ -70,7 +68,7 @@ class Nist(AbstractScraper):
         disabled_button_next = ".paginate_button.next.disabled"
         return ScrapUtils.if_element_exists(
             self.driver,
-            By.CSS_SELECTOR,    # type: ignore
+            By.CSS_SELECTOR,  # type: ignore
             disabled_button_next,  # type: ignore
         )  # type: ignore
 
