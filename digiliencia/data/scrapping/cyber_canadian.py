@@ -15,8 +15,7 @@ from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.canadian_exec import CanadianExec
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
 
 class CanadianScraper(AbstractScraper):
     def __init__(self):
@@ -24,6 +23,7 @@ class CanadianScraper(AbstractScraper):
         self.driver = ScrapUtils.get_driver()
         self.date_articles = []
         self.num_page = 1
+        self.num_art_by_page = 10 
         self.URLS_SECTIONS = {
             "individuals": "https://www.cyber.gc.ca/en/individuals",
             "small-medium-businesses": "https://www.cyber.gc.ca/en/small-medium-businesses",
@@ -108,6 +108,8 @@ class CanadianScraper(AbstractScraper):
                 else:
                     pos = pos + 1
 
+            count_art:int = 0
+
             if flag: # En la página, se encuentra el último artículo a extraer los datos
                 for i, link in enumerate(links):
                     if pos == i: # Si la posición coincide con el ultimo articulo a extraer los datos, para el algoritmo
@@ -123,12 +125,15 @@ class CanadianScraper(AbstractScraper):
                     article = self.get_article(i)
                     if article is not None:
                         articles_section.append(article)
+                        count_art = count_art +1
                      
-            if self._is_there_button_next:   
-                #wait = WebDriverWait(self.driver, 10)
-                #wait.until(EC.presence_of_element_located((By.ID, "table_next")))
-                button_next = self.driver.find_element(By.ID, "table_next")
-                button_next.click()   
+            if count_art == self.num_art_by_page:   
+                count_art = 0
+                self.num_page = self.num_page + 1
+                self.driver.get(url)
+                buttons_page = self.driver.find_elements(By.CSS_SELECTOR, "a.paginate_button")
+                buttons_page[self.num_page].click()
+
        
         return articles_section
 

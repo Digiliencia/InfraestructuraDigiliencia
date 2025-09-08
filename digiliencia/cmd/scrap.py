@@ -30,7 +30,7 @@ def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
     # Nist().scrap_events(0)
     CanadianScraper().scrap_news(100)
-    #AmericaCyberAgencyScraper().scrap_news(100)    
+    AmericaCyberAgencyScraper().scrap_news(100)    
     """
     Env()
     news_service = NewsService()
