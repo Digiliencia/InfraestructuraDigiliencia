@@ -1,7 +1,11 @@
 from typing import List
+
 from configs.env import Env
 from loguru import logger
+
 from digiliencia.data.models.news_model import ScrapedNews
+from digiliencia.data.scrapping.america_cyber_agency import \
+    AmericaCyberAgencyScraper
 # from configs.env import Env
 from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.incibe import IncibeScraper
@@ -16,13 +20,6 @@ from digiliencia.data.services.neomodel.topic.topic_classification_service impor
     TopicClassificationService
 from digiliencia.exc.dao_create_exc import DAOCreateError
 
-from digiliencia.data.services.neomodel.topic.topic_classification_service import (
-    TopicClassificationService,
-)"""
-from digiliencia.data.scrapping.america_cyber_agency import \
-    AmericaCyberAgencyScraper
-from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
-
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
@@ -32,10 +29,7 @@ def scrap(from_days_ago: int = 5):
     topics_class_service = TopicClassificationService()
     fields_class_service = FieldClassificationService()
 
-    scrapers = [WEForumScraper, IncibeScraper, Ncsc]
-    
-    news_dao = NewsDAO()
-    scrapers = [WEForumScraper, IncibeScraper]
+    scrapers = [AmericaCyberAgencyScraper, CanadianScraper, WEForumScraper, IncibeScraper, Ncsc]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
