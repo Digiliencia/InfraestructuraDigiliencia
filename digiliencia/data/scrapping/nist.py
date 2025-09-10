@@ -11,12 +11,12 @@ from datetime import datetime
 from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from utils.time import TimeUtils
 
 from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.nist_exec import NistExec
 from digiliencia.utils.scrap import ScrapUtils
+from digiliencia.utils.time import TimeUtils
 
 
 class Nist(AbstractScraper):
