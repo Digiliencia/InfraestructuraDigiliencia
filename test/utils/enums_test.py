@@ -1,10 +1,10 @@
 """Tests básicos para validación de enums de Topics y RelatedFields."""
 
-from digiliencia.enums.topics import is_valid_topic, Topics
 from digiliencia.enums.related_fields import (
+    all_related_field_values,
     is_valid_related_field,
-    get_all_related_field_values,
 )
+from digiliencia.enums.topics import Topics, is_valid_topic
 
 
 def test_is_valid_topic_true():
@@ -16,7 +16,7 @@ def test_is_valid_topic_false():
 
 
 def test_related_field_collections_non_empty():
-    values = get_all_related_field_values()
+    values = all_related_field_values()
     assert len(values) > 10  # sanity check
 
 
