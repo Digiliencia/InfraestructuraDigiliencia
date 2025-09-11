@@ -58,7 +58,7 @@ services:
       - dev-network
   embedding-api-service:
       build:
-        context: ../digiliencia/models
+        context: ../services/embeddings
         dockerfile: Dockerfile 
       environment:
         - NVIDIA_VISIBLE_DEVICES=all
