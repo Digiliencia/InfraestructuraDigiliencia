@@ -5,6 +5,7 @@ Created on Wed Jan 15 10:08:33 2025
 @author: Carlos Prieto
 Web scrapping: https://www.nist.gov/nice/ccw-events
 """
+
 import time
 from datetime import datetime
 
