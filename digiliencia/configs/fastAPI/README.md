@@ -30,7 +30,7 @@ The project is organized into modules for clear separation of concerns, followin
 |   |-- chat.py                 # Pydantic schemas for chats
 |   +-- user.py                 # Pydantic schemas for users
 |
-|-- .env_example                # Environment variable template
+|-- .env                # Environment variables
 |-- main.py                     # Application entry point and middlewares
 +-- requirements.txt            # Project dependencies
 ```

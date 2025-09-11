@@ -23,7 +23,9 @@ async def test_get_unauthenticated(api_client: AsyncClient):
     assert response.status_code == 401
 
 
-async def test_create_and_get_conversation(authenticated_client: AsyncClient, db_session):
+async def test_create_and_get_conversation(
+    authenticated_client: AsyncClient, db_session
+):
     """Test creating a conversation and immediately retrieving it."""
     # Crear un chat manualmente en la base de datos
     from db.models import Chat
@@ -41,7 +43,9 @@ async def test_create_and_get_conversation(authenticated_client: AsyncClient, db
     assert any(c["Título"] == "Test Chat" for c in data["conversations"].values())
 
 
-async def test_patch_and_get_full_conversation(authenticated_client: AsyncClient, db_session):
+async def test_patch_and_get_full_conversation(
+    authenticated_client: AsyncClient, db_session
+):
     """Test patching a conversation and retrieving its full content."""
     from db.models import Chat
 
@@ -64,7 +68,9 @@ async def test_patch_and_get_full_conversation(authenticated_client: AsyncClient
     assert any("Francia" in t["text"] for t in texts)
 
 
-async def test_put_and_delete_conversation(authenticated_client: AsyncClient, db_session):
+async def test_put_and_delete_conversation(
+    authenticated_client: AsyncClient, db_session
+):
     """Test importing messages to a conversation, deleting the conversation, and ensuring it no longer exists."""
     from db.models import Chat
 

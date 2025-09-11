@@ -105,7 +105,9 @@ async def authenticated_client(
     else:
         # 2. Intentar login estándar (form-data)
         login_payload_form = {"username": email, "password": password}
-        login_response = await api_client.post("/auth/jwt/login", data=login_payload_form)
+        login_response = await api_client.post(
+            "/auth/jwt/login", data=login_payload_form
+        )
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
 

@@ -36,9 +36,7 @@ async def get_full_conversation(
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
     result = await db.execute(
-        select(Message)
-        .where(Message.chat_id == chat_id)
-        .order_by(Message.n_orden)
+        select(Message).where(Message.chat_id == chat_id).order_by(Message.n_orden)
     )
     messages = result.scalars().all()
     return [{"text": m.contenido} for m in messages]
@@ -56,15 +54,19 @@ async def ask_question_to_chat(
         raise HTTPException(status_code=404, detail="Chat not found")
     # Guardar la pregunta
     n_orden = (
-        await db.execute(select(Message.n_orden).where(Message.chat_id == chat_id))
-    ).scalars().all()
+        (await db.execute(select(Message.n_orden).where(Message.chat_id == chat_id)))
+        .scalars()
+        .all()
+    )
     n_orden = max(n_orden) + 1 if n_orden else 1
     message = Message(chat_id=chat_id, n_orden=n_orden, contenido=payload.text)
     db.add(message)
     await db.commit()
     await db.refresh(message)
     # Llamada a servicio externo (placeholder)
-    respuesta = f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model}"
+    respuesta = (
+        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model}"
+    )
     # Guardar la respuesta
     n_orden += 1
     response_message = Message(chat_id=chat_id, n_orden=n_orden, contenido=respuesta)
@@ -85,9 +87,7 @@ async def import_conversation(
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
     # Borrar mensajes anteriores
-    await db.execute(
-        Message.__table__.delete().where(Message.chat_id == chat_id)
-    )
+    await db.execute(Message.__table__.delete().where(Message.chat_id == chat_id))
     # Insertar nuevos mensajes
     for i, msg in enumerate(payload, start=1):
         db.add(Message(chat_id=chat_id, n_orden=i, contenido=msg.text))
