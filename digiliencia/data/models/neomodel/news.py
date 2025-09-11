@@ -1,7 +1,7 @@
 """Complex neomodel models."""
 
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from neomodel import (
     ArrayProperty,
@@ -16,16 +16,15 @@ from neomodel import (
 )
 
 from digiliencia.data.models.neomodel.field import Field
+from digiliencia.data.models.neomodel.chunk import Chunk  # noqa: F401  # Ensure class is loaded for RelationshipTo("Chunk")
 from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
-
 from digiliencia.data.models.neomodel.topic import Topic
-from digiliencia.data.models.neomodel.chunk import Chunk  # noqa: F401
-from digiliencia.enums.topics import is_valid_topic
 from digiliencia.enums.related_fields import (
     all_related_field_values,
     is_valid_related_field,
 )
+from digiliencia.enums.topics import is_valid_topic
 
 logger = logging.getLogger(__name__)
 
@@ -126,19 +125,24 @@ class News(StructuredNode):
                     author = Author(name=author_name).save()
                 news.written_by.connect(author)
 
-        # Connect to topics (validación silenciosa con logging de nombres no válidos)
+        # Connect to topics: si existen en BD, se conectan independientemente del enum
+        # Si no existen, se deja constancia por log para depuración
         if topic_names:
             for topic_name in topic_names:
-                if not is_valid_topic(topic_name):
-                    logger.warning("Topic inválido ignorado: %s", topic_name)
-                    continue
                 try:
                     topic = Topic.nodes.get(name=topic_name)
                     news.topics.connect(topic)
                 except Topic.DoesNotExist:
-                    logger.warning(
-                        "Topic válido según enum pero no existente en BD: %s", topic_name
-                    )
+                    if is_valid_topic(topic_name):
+                        logger.warning(
+                            "Topic válido según enum pero no existente en BD: %s",
+                            topic_name,
+                        )
+                    else:
+                        logger.warning(
+                            "Topic no reconocido y no existente en BD, omitido: %s",
+                            topic_name,
+                        )
 
         # Connect to fields (validación silenciosa con logging)
         if field_names:
@@ -151,7 +155,8 @@ class News(StructuredNode):
                     news.fields.connect(field)
                 except Field.DoesNotExist:
                     logger.warning(
-                        "Field válido según enum pero no existente en BD: %s", field_name
+                        "Field válido según enum pero no existente en BD: %s",
+                        field_name,
                     )
 
         # Generate embeddings if requested
@@ -160,9 +165,6 @@ class News(StructuredNode):
                 news.generate_embeddings(embedding_service)
             except Exception as e:
                 # Log error but don't fail the entire operation
-                import logging
-
-                logger = logging.getLogger(__name__)
                 logger.warning(
                     f"Failed to generate embeddings for news {news.uid}: {e}"
                 )
