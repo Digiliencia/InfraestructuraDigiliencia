@@ -31,10 +31,11 @@ class Topics(str, Enum):
     VULNERABILITY = "Vulnerability"
     WARSHIPPING = "Warshipping"
 
+
 # Conjunto precomputado para validaciones O(1)
 TOPIC_VALUES: set[str] = {t.value for t in Topics}
+
 
 def is_valid_topic(value: str) -> bool:
     """Devuelve True si el valor está en la enumeración Topics."""
     return value in TOPIC_VALUES
-
