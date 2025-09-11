@@ -7,7 +7,10 @@ from neomodel import (
 )
 import logging
 from digiliencia.data.models.neomodel.organization.organization import Organization  # noqa: F401
-from digiliencia.enums.related_fields import is_valid_related_field, all_related_field_values
+from digiliencia.enums.related_fields import (
+    is_valid_related_field,
+    all_related_field_values,
+)
 
 logger = logging.getLogger(__name__)
 
