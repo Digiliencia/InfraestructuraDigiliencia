@@ -1,7 +1,9 @@
-import pytest
-
 from digiliencia.enums.topics import is_valid_topic, TOPIC_VALUES
-from digiliencia.enums.related_fields import is_valid_related_field, all_related_field_values, related_field_category
+from digiliencia.enums.related_fields import (
+    is_valid_related_field,
+    all_related_field_values,
+    related_field_category,
+)
 
 
 def test_topics_enum_validation():
