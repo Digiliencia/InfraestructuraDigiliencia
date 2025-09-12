@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Classification Microservice",
+      "type": "shell",
+      "command": "cd services/classification && python main.py",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Start Classification Microservice (Uvicorn)",
+      "type": "shell",
+      "command": "cd services/classification && uvicorn main:app --host 0.0.0.0 --port 8080 --reload",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Install Classification Service Dependencies",
+      "type": "shell",
+      "command": "cd services/classification && uv sync",
+      "group": "build",
+      "isBackground": false,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Classification Service Tests",
+      "type": "shell",
+      "command": "cd services/classification && python -m pytest tests/ -v",
+      "group": "test",
+      "isBackground": false,
+      "problemMatcher": ["$python"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}

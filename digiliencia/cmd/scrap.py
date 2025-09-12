@@ -1,39 +1,31 @@
 from typing import List
-from digiliencia.configs.env import Env
+from configs.env import Env
 from loguru import logger
+from typing import List
 
 from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNews
+from digiliencia.data.models.news_model import ScrapedNewsModel
+from digiliencia.data.daos.news_dao import NewsDAO
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
-from digiliencia.data.services.neomodel.news_service import NewsService
+from digiliencia.exc.dao_create_exc import DAOCreateError
 
 
 def scrap(from_days_ago: int = 365):
     logger.info("Start scraping")
 
     Env()
-    news_service = NewsService()
-    scrapers = [WEForumScraper, IncibeScraper, Ncsc]
+    news_dao = NewsDAO()
+    scrapers = [WEForumScraper, IncibeScraper]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
             for news in scraped_news:
                 try:
-                    # Convert ScrapedNews to ScrapedNews for validation
-                    validated_data = ScrapedNews(
-                        header=news.header,
-                        date=news.date,
-                        source=news.source,
-                        content=news.content,
-                        url=news.url,
-                        authors=news.authors,
-                        topics=news.topics,
-                    )
-                    news_service.create_from_scraped_data(validated_data)
-                except Exception as create_error:
-                    logger.error(f"Error creating news: {create_error}")
+                    news_dao.create_from_scrap(news)
+                except DAOCreateError:
+                    pass
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
 
@@ -42,4 +34,4 @@ def scrap(from_days_ago: int = 365):
 
 if __name__ == "__main__":
     logger.info("Starting the application")
-    scrap()
+    scrap(8)

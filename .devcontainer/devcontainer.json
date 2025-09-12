@@ -39,7 +39,7 @@
     }
   },
 
-  "forwardPorts": [5432],
+  "forwardPorts": [5432, 8080],
 
   "containerEnv": {
     "DISPLAY": "dummy",
