@@ -6,23 +6,46 @@ import time
 import uvicorn
 import multiprocessing
 from typing import AsyncGenerator, Any
+import psycopg2
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine.url import URL
+
 
 from pathlib import Path
 import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+import os
+from dotenv import load_dotenv
 
-from core.config import settings
+# Cargar variables de entorno desde el .env del proyecto
+from pathlib import Path
+dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path)
 from db.models import User
 from db.session import Base
 from main import app  # Import the FastAPI app instance
 
-# --- Test Database Configuration ---
-TEST_DATABASE_URL = f"{settings.DATABASE_URL}_test"
+
+# Get DB owner credentials for test DB connection
+DB_OWNER_USER = os.getenv("DB_OWNER_USER")
+DB_OWNER_PASSWORD = os.getenv("DB_OWNER_PASSWORD")
+APP_DB_NAME = os.getenv("APP_DB_NAME")
+
+# Compose test DB name and URL for SQLAlchemy (asyncpg)
+test_db_name = APP_DB_NAME + "_test"
+
+TEST_DATABASE_URL = f"postgresql+asyncpg://{DB_OWNER_USER}:{DB_OWNER_PASSWORD}@localhost:5432/{test_db_name}"
+
+# Get admin credentials for DB creation/deletion
+ADMIN_USER = os.getenv("POSTGRES_USER")
+ADMIN_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+
+admin_url = f"postgresql://{ADMIN_USER}:{ADMIN_PASSWORD}@localhost:5432/postgres"
+
 
 engine = create_async_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(
@@ -32,7 +55,6 @@ TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
 
 # --- Fixture to manage the API server lifecycle ---
 def run_server():
@@ -52,14 +74,45 @@ def app_server():
     proc.join()
 
 
+# --- Fixture to create and drop the test database itself ---
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database(app_server):
-    """Creates and tears down database tables for the test session."""
+    """Creates the test database, tables, and drops everything after tests."""
+    # Create test DB using admin connection
+    # Use sync engine for DB creation (CREATE DATABASE not allowed in async)
+    sync_admin_url = admin_url
+    try:
+        conn = psycopg2.connect(sync_admin_url)
+        conn.autocommit = True  # ✅ Activa autocommit antes de usar cursor
+        cur = conn.cursor()
+        
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (test_db_name,))
+        exists = cur.fetchone()
+        if not exists:
+            cur.execute(f'CREATE DATABASE "{test_db_name}"')
+        
+        cur.close()
+        conn.close()
+    except Exception as e:
+        raise RuntimeError(f"Could not create test database: {e}")
+
+    # Create tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
+    # Drop tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    # Drop test DB (must disconnect all sessions first)
+    try:
+        with psycopg2.connect(sync_admin_url) as conn:
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                # Terminate all connections to the test DB
+                cur.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s", (test_db_name,))
+                cur.execute(f"DROP DATABASE IF EXISTS \"{test_db_name}\"")
+    except Exception as e:
+        print(f"Warning: Could not drop test database: {e}")
 
 
 @pytest_asyncio.fixture(scope="function")
