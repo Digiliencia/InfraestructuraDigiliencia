@@ -1,5 +1,5 @@
 from typing import List
-
+from digiliencia.configs.env import Env
 from loguru import logger
 
 from digiliencia.configs.env import Env
