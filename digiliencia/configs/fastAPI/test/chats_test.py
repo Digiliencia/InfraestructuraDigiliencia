@@ -1,5 +1,4 @@
 # /tests/test_chats.py
-# CHANGED: All tests are now async.
 import pytest
 import uuid
 from httpx import AsyncClient

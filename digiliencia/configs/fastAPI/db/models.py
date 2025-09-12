@@ -9,8 +9,10 @@ from .session import Base
 chat_iaprompt_association = Table(
     "chat_iaprompt_association",
     Base.metadata,
-    Column("chat_id", ForeignKey("chats.id"), primary_key=True),
-    Column("iaprompt_id", ForeignKey("ia_prompts.id"), primary_key=True),
+    Column("chat_id", UUID(as_uuid=True), ForeignKey("chats.id"), primary_key=True),
+    Column(
+        "iaprompt_id", UUID(as_uuid=True), ForeignKey("ia_prompts.id"), primary_key=True
+    ),
 )
 
 
@@ -23,7 +25,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
 class Chat(Base):
     __tablename__ = "chats"
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     titulo = Column(String(255), index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
@@ -38,7 +40,7 @@ class Chat(Base):
 
 class IAPrompt(Base):
     __tablename__ = "ia_prompts"
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(255), nullable=False, unique=True)
     descripcion = Column(Text)
     prompt = Column(Text, nullable=False)
@@ -50,7 +52,7 @@ class IAPrompt(Base):
 
 class Model(Base):
     __tablename__ = "models"
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(255), nullable=False, unique=True)
 
     messages = relationship("Message", back_populates="model")
@@ -58,13 +60,13 @@ class Model(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     n_orden = Column("Order_number", Integer, nullable=False)
     contenido = Column(Text, nullable=False)
     estadisticas = Column("Statistics", JSON)
 
-    chat_id = Column(Integer, ForeignKey("chats.id"), nullable=False)
-    modelo_id = Column(Integer, ForeignKey("models.id"))
+    chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"), nullable=False)
+    modelo_id = Column(UUID(as_uuid=True), ForeignKey("models.id"))
 
     chat = relationship("Chat", back_populates="messages")
     model = relationship("Model", back_populates="messages")
