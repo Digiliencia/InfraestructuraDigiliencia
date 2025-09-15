@@ -8,7 +8,7 @@ pytestmark = pytest.mark.asyncio
 
 
 # --- Registration Tests ---
-async def test_register_success(api_client: AsyncClient, db_session, fake_user: dict):
+async def test_register_success(api_client: AsyncClient, fake_user: dict):
     """
     Tests that a user can register successfully (the happy path).
     """
@@ -25,7 +25,7 @@ async def test_register_success(api_client: AsyncClient, db_session, fake_user: 
     assert data["is_active"] is True
 
 
-async def test_register_conflict(api_client: AsyncClient, db_session, fake_user: dict):
+async def test_register_conflict(api_client: AsyncClient, fake_user: dict):
     """
     Tests that the API does not allow registering an email that already exists (the unhappy path).
     """
@@ -47,9 +47,7 @@ async def test_register_conflict(api_client: AsyncClient, db_session, fake_user:
     assert response.status_code == 400  # Expected error for a duplicate user
 
 
-async def test_register_invalid_data(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_register_invalid_data(api_client: AsyncClient, fake_user: dict):
     """
     Tests that the API rejects invalid registration data (the unhappy path).
     """
@@ -69,9 +67,7 @@ async def test_register_invalid_data(
 # --- Custom Login Tests ---
 
 
-async def test_custom_login_success(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_custom_login_success(api_client: AsyncClient, fake_user: dict):
     """
     Tests that a user can log in with correct credentials (the happy path).
     """
@@ -89,9 +85,7 @@ async def test_custom_login_success(
     assert "access_token" in data
 
 
-async def test_custom_login_wrong_password(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_custom_login_wrong_password(api_client: AsyncClient, fake_user: dict):
     """
     Tests that login fails with an incorrect password (the unhappy path).
     """
@@ -115,9 +109,7 @@ async def test_custom_login_wrong_password(
     assert response.status_code == 401
 
 
-async def test_login_nonexistent_user(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_login_nonexistent_user(api_client: AsyncClient, fake_user: dict):
     """
     Login should fail if the user does not exist.
     """
@@ -129,9 +121,7 @@ async def test_login_nonexistent_user(
     assert response.status_code == 401
 
 
-async def test_login_invalid_email_format(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_login_invalid_email_format(api_client: AsyncClient, fake_user: dict):
     """
     Login should fail if the email is not valid.
     """
@@ -141,9 +131,7 @@ async def test_login_invalid_email_format(
     assert response.status_code == 422
 
 
-async def test_login_malformed_payload(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_login_malformed_payload(api_client: AsyncClient, fake_user: dict):
     """
     Login should fail if the payload is malformed.
     """
@@ -163,9 +151,7 @@ async def test_login_wrong_method(api_client: AsyncClient, db_session):
     assert response.status_code in (405, 404)
 
 
-async def test_standard_login_success(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
     """
     Standard login (form-data) should work if the user exists.
     """
@@ -193,9 +179,7 @@ async def test_protected_endpoint_with_invalid_token(
 # --- User Deletion Tests ---
 
 
-async def test_delete_user_success(
-    api_client: AsyncClient, db_session, fake_user: dict
-):
+async def test_delete_user_success(api_client: AsyncClient, fake_user: dict):
     """
     Tests that an authenticated user can delete their own account (the happy path).
     """
@@ -259,7 +243,7 @@ async def test_delete_user_unauthenticated(api_client: AsyncClient, db_session):
     ],
 )
 async def test_register_weak_password(
-    api_client: AsyncClient, password, expected_reason, db_session, fake_user: dict
+    api_client: AsyncClient, password, expected_reason, fake_user: dict
 ):
     """
     Tests that the API rejects weak passwords according to the custom policy.

@@ -38,6 +38,9 @@ TestingSessionLocal = sessionmaker(
     autoflush=False,
 )
 
+# --- HTTP Client Fixtures ---
+API_URL = "http://127.0.0.1:8000/api"
+
 
 # --- Fixture to manage the API server lifecycle ---
 def run_server():
@@ -59,18 +62,14 @@ def app_server():
 
 # --- Fixture to create and drop the test database itself ---
 @pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_database(app_server):
-    """Creates the test database, tables, and drops everything after tests."""
-    try:
-        await populate_test_data()
-    except NameError:
-        # populate_test_data not provided by tests; skip
-        pass
+async def setup_database(db_session: AsyncSession):
+    """Populate database."""
+    # Populate the database. TODO: Add initial data if needed.
     yield
 
 
-@pytest_asyncio.fixture(scope="function")
-async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
+@pytest_asyncio.fixture(scope="session")
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provides a clean database session for each test."""
     async with TestingSessionLocal() as session:
         trans = await session.begin()
@@ -78,17 +77,6 @@ async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await trans.rollback()  # To revert any changes made during the test
-
-
-async def populate_test_data():
-    """Default no-op population hook. Tests can monkeypatch/override this function
-    (or import and call a custom implementation) to seed required data.
-    """
-    return
-
-
-# --- HTTP Client Fixtures ---
-API_URL = "http://127.0.0.1:8000/api"
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -99,8 +87,6 @@ async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
 
 
 # Faker
-
-
 @pytest_asyncio.fixture
 async def fake_user(scope="function") -> dict:
     """Generate a fake user with random email and password."""
