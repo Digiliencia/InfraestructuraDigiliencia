@@ -14,6 +14,8 @@ from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.services.neomodel.chunk_service import ChunkService
 from digiliencia.data.services.neomodel.config import configure_neomodel
+from digiliencia.enums.related_fields import RelatedFields
+from digiliencia.enums.topics import Topics
 
 
 class NewsService:
@@ -335,7 +337,6 @@ class NewsService:
             else:
                 logger.info("No news items found without embeddings")
 
-    # ---------------------- Chunking and embeddings for chunks ----------------------
     def _split_text_into_chunks(
         self,
         text: str,
@@ -449,3 +450,73 @@ class NewsService:
             limit=limit,
             batch_size=batch_size,
         )
+
+    def get(
+        self,
+        limit: int = 10,
+        topic: Optional[Topics] = None,
+        related_field: Optional[RelatedFields] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        organization: Optional[str] = None,
+    ) -> list[News]:
+        """
+        Retrieves news from the database based on various filters.
+
+        Args:
+            limit (int): Maximum number of news items to retrieve.
+            topic (Optional[Topics]): Filter by a specific topic.
+            related_field (Optional[RelatedFields]): Filter by a specific related field.
+            start_date (Optional[str]): Start date for filtering news (inclusive, formato 'YYYY-MM-DD').
+            end_date (Optional[str]): End date for filtering news (inclusive, formato 'YYYY-MM-DD').
+            organization (Optional[str]): Filter by organization name.
+        Returns:
+            List of news items matching the criteria.
+        """
+        # OPTIMIZACIÓN: Filtrado progresivo y consultas directas para evitar cargar todos los nodos en memoria
+        qs = News.nodes
+
+        # Filtros directos sobre propiedades simples
+        filters = {}
+        if organization is not None:
+            filters["source_name"] = organization
+        if start_date:
+            try:
+                filters["date__gte"] = datetime.strptime(start_date, "%Y-%m-%d")
+            except Exception:
+                pass
+        if end_date:
+            try:
+                filters["date__lte"] = datetime.strptime(end_date, "%Y-%m-%d")
+            except Exception:
+                pass
+
+        qs = qs.filter(**filters)
+
+        # Filtrado por relaciones (topic y related_field) usando generador para no cargar todo en memoria
+        topic_name = getattr(topic, "value", topic) if topic is not None else None
+        related_field_name = (
+            getattr(related_field, "name", str(related_field))
+            if related_field is not None
+            else None
+        )
+        result = []
+        count = 0
+        for news in qs:
+            if topic_name is not None:
+                if not any(
+                    getattr(t, "name", None) == topic_name
+                    for t in getattr(news, "topics", [])
+                ):
+                    continue
+            if related_field_name is not None:
+                if not any(
+                    getattr(f, "name", None) == related_field_name
+                    for f in getattr(news, "fields", [])
+                ):
+                    continue
+            result.append(news)
+            count += 1
+            if count >= limit:
+                break
+        return result
