@@ -1,6 +1,5 @@
 # /tests/test_auth.py
 import pytest
-import uuid
 from httpx import AsyncClient
 
 # Mark all tests in this file to be run asynchronously

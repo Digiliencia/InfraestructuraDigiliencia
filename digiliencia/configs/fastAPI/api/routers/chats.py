@@ -1,10 +1,9 @@
 # /api/routers/chats.py
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from db.models import User, Chat, Message, Model
+from db.models import User, Chat, Message
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db

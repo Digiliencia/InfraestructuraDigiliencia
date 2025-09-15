@@ -1,7 +1,6 @@
 # /tests/conftest.py
 import pytest_asyncio
 import httpx
-import uuid
 import time
 import uvicorn
 import multiprocessing
@@ -13,19 +12,18 @@ from faker import Faker
 from pathlib import Path
 import sys
 
+from dotenv import load_dotenv
+
+from main import app  # Import the FastAPI app instance
+from core.config import settings
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-import os
-from dotenv import load_dotenv
 
 # Cargar variables de entorno desde el .env del proyecto
 dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(dotenv_path)
 
-from core.config import settings
-from db.models import User
-from db.session import Base
-from main import app  # Import the FastAPI app instance
 
 # Use original DATABASE_URL from settings (no create/drop DB)
 DATABASE_URL = settings.DATABASE_URL
