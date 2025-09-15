@@ -8,6 +8,7 @@ import multiprocessing
 from typing import AsyncGenerator, Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from faker import Faker
 
 from pathlib import Path
 import sys
@@ -60,27 +61,23 @@ def app_server():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database(app_server):
     """Creates the test database, tables, and drops everything after tests."""
-
-    # Create tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Optional population hook: implement to insert test data into DB
     try:
         await populate_test_data()
     except NameError:
         # populate_test_data not provided by tests; skip
         pass
     yield
-    # Drop tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
     """Provides a clean database session for each test."""
     async with TestingSessionLocal() as session:
-        yield session
+        trans = await session.begin()
+        try:
+            yield session
+        finally:
+            await trans.rollback()  # To revert any changes made during the test
 
 
 async def populate_test_data():
@@ -94,8 +91,19 @@ async def populate_test_data():
 API_URL = "http://127.0.0.1:8000/api"
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
     """Asynchronous, unauthenticated HTTP client."""
     async with httpx.AsyncClient(base_url=API_URL) as client:
         yield client
+
+
+# Faker
+
+
+@pytest_asyncio.fixture
+async def fake_user(scope="function") -> dict:
+    """Generate a fake user with random email and password."""
+    email = Faker().email()  # Generate a random email
+    password = Faker().password()  # Generate a random password
+    return {"email": email, "password": password}
