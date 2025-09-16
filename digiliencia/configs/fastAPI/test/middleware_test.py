@@ -5,7 +5,7 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.asyncio
 
 
-# NEW: Test to ensure security headers are added to responses.
+# Test to ensure security headers are added to responses.
 async def test_security_headers_are_present(api_client: AsyncClient):
     """
     Cybersecurity Test: Verifies that essential security headers are present in the response.
@@ -22,7 +22,7 @@ async def test_security_headers_are_present(api_client: AsyncClient):
     assert response.headers["X-Frame-Options"] == "DENY"
 
 
-# NEW: Test to ensure CORS headers are working correctly.
+# Test to ensure CORS headers are working correctly.
 async def test_cors_headers_are_present(api_client: AsyncClient):
     """
     Tests that CORS middleware adds the correct headers for allowed origins.

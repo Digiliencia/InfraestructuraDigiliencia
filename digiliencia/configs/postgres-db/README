@@ -42,9 +42,12 @@ Stores information for registered users.
 
 | Column | Type | Description |
 | :---- | :---- | :---- |
-| ID | SERIAL | **Primary Key**. Unique identifier. |
+| id | UUID | **Primary Key**, default `gen_random_uuid()`. Unique identifier. |
 | email | VARCHAR(255) | **Unique**, **Not Null**. User's email. |
-| password | VARCHAR(255) | **Not Null**. Password hash. |
+| hashed_password | VARCHAR(255) | **Not Null**. Password hash (stored hashed). |
+| is_active | BOOLEAN | Default `TRUE`. User account active flag. |
+| is_superuser | BOOLEAN | Default `FALSE`. Superuser flag. |
+| is_verified | BOOLEAN | Default `FALSE`. Email/identity verification flag. |
 
 #### **CHATS**
 
@@ -52,20 +55,20 @@ Stores conversations or chats, associated with a user.
 
 | Column | Type | Description |
 | :---- | :---- | :---- |
-| ID | SERIAL | **Primary Key**. Unique chat identifier. |
+| id | UUID | **Primary Key**, default `gen_random_uuid()`. Unique chat identifier. |
 | titulo | VARCHAR(255) | Title or name of the chat. |
-| user\_id | INTEGER | **Not Null**, **Foreign Key** to USERS(ID). ON DELETE CASCADE. |
+| user_id | UUID | **Not Null**, **Foreign Key** to `users(id)`. `ON DELETE CASCADE`, `ON UPDATE CASCADE`. |
 
-#### **IA\_PROMPTS**
+#### **IA_PROMPTS**
 
 Stores system prompt templates for the AI.
 
 | Column | Type | Description |
 | :---- | :---- | :---- |
-| ID | SERIAL | **Primary Key**. |
+| id | UUID | **Primary Key**, default `gen_random_uuid()`. |
 | prompt | TEXT | **Not Null**. The text of the system prompt. |
-| prompt\_description | TEXT | Description of the prompt's purpose. |
-| IA\_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |
+| prompt_description | TEXT | Description of the prompt's purpose. |
+| ia_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |
 
 #### **MODELS**
 
@@ -73,8 +76,8 @@ Stores the different available AI models.
 
 | Column | Type | Description |
 | :---- | :---- | :---- |
-| ID | SERIAL | **Primary Key**. |
-| IA\_name | VARCHAR(255) | **Unique**, **Not Null**. Model name (e.g., 'GPT-4'). |
+| id | UUID | **Primary Key**, default `gen_random_uuid()`. |
+| ia_name | VARCHAR(255) | **Unique**, **Not Null**. Model name (e.g., 'GPT-4'). |
 
 #### **MESSAGES**
 
@@ -82,21 +85,26 @@ Stores each individual message within a chat.
 
 | Column | Type | Description |
 | :---- | :---- | :---- |
-| ID | SERIAL | **Primary Key**. |
-| order\_number | INTEGER | **Not Null**. Order of the message in the chat. **Unique** with chat\_id. |
+| id | UUID | **Primary Key**, default `gen_random_uuid()`. |
+| order_number | INTEGER | **Not Null**. Order of the message in the chat. **Unique** with `chat_id`. |
 | content | TEXT | **Not Null**. The content of the message. |
-| statistics | JSONB | Statistical data for the message (e.g., tokens, time). |
-| chat\_id | INTEGER | **Not Null**, **Foreign Key** to CHATS(ID). ON DELETE CASCADE. |
-| model\_id | INTEGER | **Foreign Key** to MODELS(ID). ON DELETE RESTRICT. |
-| ia\_prompt\_id | INTEGER | **Foreign Key** to IA\_PROMPTS(ID). ON DELETE RESTRICT. |
+| statistics | TEXT | Optional statistics for the message (stored as TEXT; may contain JSON). |
+| chat_id | UUID | **Not Null**, **Foreign Key** to `chats(id)`. `ON DELETE CASCADE`, `ON UPDATE CASCADE`. |
+| model_id | UUID | **Foreign Key** to `models(id)`. `ON DELETE RESTRICT`, `ON UPDATE RESTRICT`. |
+| ia_prompt_id | UUID | **Foreign Key** to `ia_prompts(id)`. `ON DELETE RESTRICT`, `ON UPDATE RESTRICT`. |
+
+Unique constraints and notes:
+
+- The schema enforces `UNIQUE (chat_id, order_number)` to guarantee message ordering is unique within a chat.
+- `pgcrypto` extension is enabled in the schema to provide `gen_random_uuid()` for UUID generation.
 
 ### **Views**
 
-* **users\_id\_email\_view**: A secure view over the USERS table that only exposes the ID and email columns. Its purpose is to allow the application to query user information without exposing sensitive data like the password column.
+* **users_id_email_view**: A secure view (defined in `scripts/03-views.sql`) that exposes only `id` and `email` from the `users` table.
 
 ### **Functions**
 
-* **get\_user\_id\_by\_email(user\_email VARCHAR)**: Receives an email as a parameter and returns the corresponding user ID. If the email is not found in the database, it raises an exception (RAISE EXCEPTION).
+* **get_user_id_by_email(user_email VARCHAR(255))**: (defined in `scripts/04-procediments.sql`) returns the UUID of the user matching the given email by querying `users_id_email_view`. Raises an exception if no user is found.
 
 ## **.env Environment Variables**
 

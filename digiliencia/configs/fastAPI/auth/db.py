@@ -1,7 +1,7 @@
 # /auth/db.py
 from typing import AsyncGenerator
 from fastapi import Depends
-from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User

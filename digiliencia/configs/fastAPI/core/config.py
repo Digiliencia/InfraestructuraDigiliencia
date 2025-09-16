@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     model_config = {
         "env_file": dotenv_path,
-        "extra": "ignore"  # Ignore extra environment variables
+        "extra": "ignore",  # Ignore extra environment variables
     }
 
 

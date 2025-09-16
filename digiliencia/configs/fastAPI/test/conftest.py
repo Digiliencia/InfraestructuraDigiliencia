@@ -7,7 +7,11 @@ import multiprocessing
 from typing import AsyncGenerator, Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import insert
 from faker import Faker
+import json
+
+faker = Faker()
 
 from pathlib import Path
 import sys
@@ -17,6 +21,8 @@ from dotenv import load_dotenv
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from main import app  # Import the FastAPI app instance
 from core.config import settings
+
+from db.models import User, Chat, Message, IAPrompt, Model
 
 # Cargar variables de entorno desde el .env del proyecto
 dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -56,12 +62,70 @@ def app_server():
     proc.join()
 
 
-# --- Fixture to create and drop the test database itself ---
-@pytest_asyncio.fixture(scope="session", autouse=False)
+@pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database(db_session: AsyncSession):
     """Populate database."""
-    # Populate the database. TODO: Add initial data if needed.
-    yield
+    # USERS
+    users = [
+        {"email": faker.unique.email(), "hashed_password": faker.password(length=12)}
+        for _ in range(5)
+    ]
+    result_users = await db_session.execute(
+        insert(User).returning(User.id), users
+    )
+    user_ids = [row.id for row in result_users]
+
+    # CHATS
+    chats = [
+        {"titulo": faker.sentence(nb_words=3), "user_id": faker.random_element(user_ids)}
+        for _ in range(10)
+    ]
+    result_chats = await db_session.execute(
+        insert(Chat).returning(Chat.id), chats
+    )
+    chat_ids = [row.id for row in result_chats]
+
+    # IA_PROMPTS
+    prompts = [
+        {
+            "prompt": faker.text(max_nb_chars=100),
+            "prompt_description": faker.sentence(),
+            "ia_name": faker.unique.user_name(),  # CORREGIDO: "IA_name" a "ia_name"
+        }
+        for _ in range(3)
+    ]
+    result_prompts = await db_session.execute(
+        insert(IAPrompt).returning(IAPrompt.id), prompts
+    )
+    prompt_ids = [row.id for row in result_prompts]
+
+    # MODELS
+    models = [
+        {"ia_name": faker.unique.word()}  # CORREGIDO: "IA_name" a "ia_name"
+        for _ in range(3)
+    ]
+    result_models = await db_session.execute(
+        insert(Model).returning(Model.id), models
+    )
+    model_ids = [row.id for row in result_models]
+
+    # MESSAGES
+    messages = []
+    for chat_id in chat_ids:
+        for order in range(1, 4):
+            messages.append(
+                {
+                    "order_number": order,
+                    "content": faker.paragraph(),
+                    # CORREGIDO: Convertir el dict a una cadena JSON
+                    "statistics": json.dumps({"tokens": faker.random_int(1, 100)}),
+                    "chat_id": chat_id,
+                    "model_id": faker.random_element(model_ids),
+                    "ia_prompt_id": faker.random_element(prompt_ids),
+                }
+            )
+    await db_session.execute(insert(Message), messages)
+    await db_session.commit()
 
 
 @pytest_asyncio.fixture(scope="session", autouse=False)
@@ -72,7 +136,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
         finally:
-            await trans.rollback()  # To revert any changes made during the test
+            pass#await trans.rollback()  # To revert any changes made during the test
 
 
 @pytest_asyncio.fixture(scope="function", autouse=False)
@@ -86,8 +150,9 @@ async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
 @pytest_asyncio.fixture
 async def fake_user(scope="function", autouse=False) -> dict:
     """Generate a fake user with random email and password."""
-    email = Faker().email()  # Generate a random email
-    password = Faker().password()  # Generate a random password
+    faker = Faker()
+    email = faker.email()  # Generate a random email
+    password = faker.password()  # Generate a random password
     return {"email": email, "password": password}
 
 
@@ -107,9 +172,8 @@ async def authenticated_client(
 
     if response.status_code != 200:
         raise Exception("User login failed in fixture authenticated_client.")
-    
-    token = response.json()["access_token"]
 
+    token = response.json()["access_token"]
 
     # Set the Authorization header for future requests
     api_client.headers.update({"Authorization": f"Bearer {token}"})

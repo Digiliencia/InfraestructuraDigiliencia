@@ -142,7 +142,7 @@ async def test_login_malformed_payload(api_client: AsyncClient, fake_user: dict)
     assert response.status_code == 422
 
 
-async def test_login_wrong_method(api_client: AsyncClient, db_session):
+async def test_login_wrong_method(api_client: AsyncClient):
     """
     Login should fail if GET is used instead of POST.
     """
@@ -156,7 +156,9 @@ async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
     """
     email = fake_user["email"]
     password = fake_user["password"]
-    response = await api_client.post("/register", json={"email": email, "password": password})
+    response = await api_client.post(
+        "/register", json={"email": email, "password": password}
+    )
 
     if response.status_code != 201:
         pytest.skip("User registration failed.")
@@ -169,7 +171,7 @@ async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
 
 
 async def test_protected_endpoint_with_invalid_token(
-    api_client: AsyncClient, db_session
+    api_client: AsyncClient
 ):
     """
     Access to a protected endpoint with an invalid token should be rejected.

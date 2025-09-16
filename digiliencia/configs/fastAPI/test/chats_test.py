@@ -1,6 +1,5 @@
 # /tests/test_chats.py
 import pytest
-import uuid
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio

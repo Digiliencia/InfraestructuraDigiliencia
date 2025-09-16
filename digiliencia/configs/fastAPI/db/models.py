@@ -1,72 +1,95 @@
 # /db/models.py
 import uuid
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, JSON, Table
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from fastapi_users.db import SQLAlchemyBaseUserTableUUID
-from .session import Base
-
-chat_iaprompt_association = Table(
-    "chat_iaprompt_association",
-    Base.metadata,
-    Column("chat_id", UUID(as_uuid=True), ForeignKey("chats.id"), primary_key=True),
-    Column(
-        "iaprompt_id", UUID(as_uuid=True), ForeignKey("ia_prompts.id"), primary_key=True
-    ),
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    ForeignKey,
+    Boolean,
+    JSON,
 )
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship, declarative_base
+from fastapi_users.db import SQLAlchemyBaseUserTableUUID
+
+# Define a Base for declarative models
+Base = declarative_base()
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
-    # fastapi-users already provides:
-    # id (UUID), email, hashed_password, is_active, is_superuser, is_verified
+    """
+    User model based on FastAPI Users, linked to chats.
+    """
     __tablename__ = "users"
+    
+    # fastapi-users provides: id, email, hashed_password, is_active, is_superuser, is_verified
+    
+    # Relationship to Chat: one user can have many chats
     chats = relationship("Chat", back_populates="owner", cascade="all, delete-orphan")
 
 
 class Chat(Base):
+    """
+    Chat model, representing a single conversation.
+    """
     __tablename__ = "chats"
+    
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     titulo = Column(String(255), index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-
+    
+    # Relationship back to User
     owner = relationship("User", back_populates="chats")
-    messages = relationship(
-        "Message", back_populates="chat", cascade="all, delete-orphan"
-    )
-    prompts = relationship(
-        "IAPrompt", secondary=chat_iaprompt_association, back_populates="chats"
-    )
+    # Relationship to Message: one chat can have many messages
+    messages = relationship("Message", back_populates="chat", cascade="all, delete-orphan")
 
 
 class IAPrompt(Base):
-    __tablename__ = "ia_prompts"
+    """
+    IA_Prompt model, representing a system prompt template for the AI.
+    """
+    __tablename__ = 'ia_prompts'
+    
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    nombre = Column(String(255), nullable=False, unique=True)
-    descripcion = Column(Text)
     prompt = Column(Text, nullable=False)
-
-    chats = relationship(
-        "Chat", secondary=chat_iaprompt_association, back_populates="prompts"
-    )
+    prompt_description = Column(Text, nullable=True)
+    ia_name = Column(String(255), nullable=False, unique=True)
+    
+    # Relationship to Message: one prompt can be used in many messages
+    messages = relationship("Message", back_populates="ia_prompt")
 
 
 class Model(Base):
+    """
+    Model class, representing an available AI model (e.g., 'GPT-4').
+    """
     __tablename__ = "models"
+    
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    nombre = Column(String(255), nullable=False, unique=True)
-
+    ia_name = Column(String(255), nullable=False, unique=True)
+    
+    # Relationship to Message: one model can be used in many messages
     messages = relationship("Message", back_populates="model")
 
 
 class Message(Base):
+    """
+    Message model, representing a single message within a chat.
+    """
     __tablename__ = "messages"
+    
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    n_orden = Column("Order_number", Integer, nullable=False)
-    contenido = Column(Text, nullable=False)
-    estadisticas = Column("Statistics", JSON)
-
+    order_number = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    statistics = Column(JSON) # Using JSON type is better for structured data
+    
+    # Foreign Keys
     chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"), nullable=False)
-    modelo_id = Column(UUID(as_uuid=True), ForeignKey("models.id"))
-
+    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id"))
+    ia_prompt_id = Column(UUID(as_uuid=True), ForeignKey("ia_prompts.id"))
+    
+    # Relationships back to parent tables
     chat = relationship("Chat", back_populates="messages")
     model = relationship("Model", back_populates="messages")
+    ia_prompt = relationship("IAPrompt", back_populates="messages")
