@@ -52,9 +52,10 @@ class Settings(BaseSettings):
                 raise ValueError("ALLOWED_ORIGINS is not valid JSON")
         return v
 
-    class Config:
-        env_file = dotenv_path
-        extra = "ignore"  # Ignore extra environment variables
+    model_config = {
+        "env_file": dotenv_path,
+        "extra": "ignore"  # Ignore extra environment variables
+    }
 
 
 settings = Settings()

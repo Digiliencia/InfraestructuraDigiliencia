@@ -79,6 +79,15 @@ app.include_router(custom_users.router, prefix=api_prefix, tags=["Users"])
 app.include_router(chats.router, prefix=api_prefix, tags=["Chats"])
 
 
-@app.get("/", tags=["Root"])
+@app.get(api_prefix +"/", tags=["Root"])
 def read_root():
     return {"message": "Welcome to the Chat API"}
+
+
+@app.get(api_prefix + "/health", tags=["Health"])
+def health():
+    """Simple health check endpoint.
+    Returns a small JSON payload indicating the service is reachable.
+    """
+    return {"status": "ok"}
+
