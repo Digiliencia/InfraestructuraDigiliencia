@@ -38,3 +38,4 @@ def get_news(
         end_date=end_date,
         organization=organization,
     )
+
