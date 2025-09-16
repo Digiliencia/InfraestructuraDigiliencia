@@ -16,7 +16,6 @@ from neomodel import (
 )
 
 from digiliencia.data.models.neomodel.field import Field
-from digiliencia.data.models.neomodel.chunk import Chunk  # noqa: F401  # Ensure class is loaded for RelationshipTo("Chunk")
 from digiliencia.data.models.neomodel.organization.news_agency import NewsAgency
 from digiliencia.data.models.neomodel.person.author import Author
 from digiliencia.data.models.neomodel.topic import Topic
@@ -41,11 +40,7 @@ class News(StructuredNode):
     url = StringProperty(required=True)
 
     # Embedding properties
-    header_embedding = ArrayProperty(FloatProperty(), default=None)
-    content_embedding = ArrayProperty(FloatProperty(), default=None)
-    embedding_model = StringProperty(
-        default="all-MiniLM-L6-v2"
-    )  # Track which model was used
+    header_embedding = ArrayProperty(FloatProperty(), default=None) # Track which model was used
 
     # Relationships
     published_by = RelationshipTo("NewsAgency", "PUBLISHED_BY", cardinality=One)
