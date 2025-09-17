@@ -6,7 +6,6 @@ requires-python = ">=3.13"
 dependencies = [
     "dateparser>=1.2.1",
     "llama-index>=0.14.2",
-    "llama-index-llms-ollama>=0.7.3",
     "loguru>=0.7.3",
     "neo4j>=5.28.1",
     "neomodel>=5.5.0",
