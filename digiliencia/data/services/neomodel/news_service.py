@@ -7,7 +7,6 @@ from loguru import logger
 
 from digiliencia.data.services.embedding_service import EmbeddingService
 from digiliencia.data.models.neomodel.field import Field
-from data.services.embedding_service import EmbeddingService
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
