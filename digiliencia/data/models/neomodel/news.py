@@ -40,7 +40,9 @@ class News(StructuredNode):
     url = StringProperty(required=True)
 
     # Embedding properties
-    header_embedding = ArrayProperty(FloatProperty(), default=None) # Track which model was used
+    header_embedding = ArrayProperty(
+        FloatProperty(), default=None
+    )  # Track which model was used
 
     # Relationships
     published_by = RelationshipTo("NewsAgency", "PUBLISHED_BY", cardinality=One)

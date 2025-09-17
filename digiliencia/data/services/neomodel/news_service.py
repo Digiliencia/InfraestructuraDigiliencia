@@ -1,14 +1,13 @@
 """News service for managing news using neomodel."""
 
 import gc
-import os
 from datetime import datetime
 from typing import Iterable, List, Optional
-
-import requests
 from loguru import logger
 
+from digiliencia.data.services.embedding_service import EmbeddingService
 from digiliencia.data.models.neomodel.field import Field
+from data.services.embedding_service import EmbeddingService
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
@@ -199,35 +198,16 @@ class NewsService:
 
     def generate_embeddings_for_all_news(self):
         """
-        Generate embeddings for all news items.
-
-        Args:
-            embedding_service: Optional EmbeddingService instance. If None, creates a new one.
+        Generate embeddings for all news items using EmbeddingService.
         """
+
         news_items = self.get_all_news()
+        embedding_service = EmbeddingService()
         for news in news_items:
-            # Get the embeddings service URL from environment
-            embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-            if not embeddings_service_url:
-                logger.error("EMBEDDINGS_SERVICE_URL environment variable not set")
-                continue
-
             try:
-                # CONTENT
-                # Prepare the request payload
-                payload = {"texts": [news.header, news.content]}
-
-                # Make POST request to embeddings service
-                response = requests.post(
-                    embeddings_service_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
+                embeddings = embedding_service.generate_embeddings(
+                    [str(news.header), str(news.content)]
                 )
-                response.raise_for_status()
-
-                # Extract embedding from response
-                embeddings = response.json().get("embeddings")
-
                 if embeddings:
                     news.header_embedding = embeddings[0]
                     news.content_embedding = embeddings[1]
@@ -235,107 +215,65 @@ class NewsService:
                     logger.info(f"Generated embeddings for news: {news.header}")
                 else:
                     logger.error(f"No embeddings returned for news: {news.header}")
-
-            except requests.RequestException as e:
-                logger.error(f"Error generating embeddings for news {news.header}: {e}")
             except Exception as e:
-                logger.error(
-                    f"Unexpected error generating embeddings for news {news.header}: {e}"
-                )
+                logger.error(f"Error generating embeddings for news {news.header}: {e}")
+        embedding_service.close()
 
     def generate_embeddings_for_unembedded_news(
         self, limit: Optional[int] = None, batch_size: int = 10
     ):
         """
-        Generate embeddings for news items that don't have embeddings yet.
+        Generate embeddings for news items that don't have embeddings yet using EmbeddingService.
         Optimized for local GPU processing with memory management.
-
-        Args:
-            limit: Maximum number of news items to process. If None, processes all.
-            batch_size: Number of news items to process before forcing garbage collection.
         """
-        # Get the embeddings service URL from environment first
-        embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-        if not embeddings_service_url:
-            logger.error("EMBEDDINGS_SERVICE environment variable not set")
-            return
 
-        # Use a session for connection reuse
-        with requests.Session() as session:
-            session.headers.update({"Content-Type": "application/json"})
-
-            processed_count = 0
-            failed_count = 0
-            batch_count = 0
-
-            # Process news items in a memory-efficient way
-            # Instead of loading all at once, iterate and check one by one
-            for news in News.nodes.all():
-                # Check limit early to avoid unnecessary processing
-                if limit and processed_count >= limit:
-                    break
-
-                # Skip if already has embeddings (double-check to avoid race conditions)
-                if news.has_embeddings():
-                    continue
-
-                try:
-                    # Prepare the request payload
-                    payload = {"texts": [news.header, news.content]}
-
-                    # Make POST request to embeddings service using the session
-                    response = session.post(embeddings_service_url, json=payload)
-                    response.raise_for_status()
-
-                    # Extract embedding from response
-                    embeddings = response.json().get("embeddings")
-
-                    if embeddings and len(embeddings) >= 2:
-                        news.header_embedding = embeddings[0]
-                        news.content_embedding = embeddings[1]
-                        news.save()
-                        processed_count += 1
-
-                        # Log progress less frequently to reduce memory overhead
-                        if processed_count % 5 == 0 or processed_count == 1:
-                            logger.info(
-                                f"Generated embeddings for {processed_count} news items (latest: {news.header[:50]}...)"
-                            )
-                    else:
-                        failed_count += 1
-                        logger.warning(
-                            f"No embeddings returned for news: {news.header[:50]}..."
-                        )
-
-                except requests.RequestException as e:
-                    failed_count += 1
-                    logger.error(
-                        f"Network error for news {news.header[:50]}...: {str(e)[:100]}"
-                    )
-                except Exception as e:
-                    failed_count += 1
-                    logger.error(
-                        f"Unexpected error for news {news.header[:50]}...: {str(e)[:100]}"
-                    )
-
-                # Force garbage collection every batch_size items to free GPU/system memory
-                batch_count += 1
-                if batch_count >= batch_size:
-                    gc.collect()
-                    batch_count = 0
-                    logger.debug(
-                        f"Memory cleanup after processing {processed_count + failed_count} items"
-                    )
-
-            # Final cleanup
-            gc.collect()
-
-            if processed_count > 0:
-                logger.info(
-                    f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}"
+        embedding_service = EmbeddingService()
+        processed_count = 0
+        failed_count = 0
+        batch_count = 0
+        for news in News.nodes.all():
+            if limit and processed_count >= limit:
+                break
+            if news.has_embeddings():
+                continue
+            try:
+                embeddings = embedding_service.generate_embeddings(
+                    [news.header, news.content]
                 )
-            else:
-                logger.info("No news items found without embeddings")
+                if embeddings and len(embeddings) >= 2:
+                    news.header_embedding = embeddings[0]
+                    news.content_embedding = embeddings[1]
+                    news.save()
+                    processed_count += 1
+                    if processed_count % 5 == 0 or processed_count == 1:
+                        logger.info(
+                            f"Generated embeddings for {processed_count} news items (latest: {news.header[:50]}...)"
+                        )
+                else:
+                    failed_count += 1
+                    logger.warning(
+                        f"No embeddings returned for news: {news.header[:50]}..."
+                    )
+            except Exception as e:
+                failed_count += 1
+                logger.error(
+                    f"Error generating embeddings for news {news.header[:50]}...: {str(e)[:100]}"
+                )
+            batch_count += 1
+            if batch_count >= batch_size:
+                gc.collect()
+                batch_count = 0
+                logger.debug(
+                    f"Memory cleanup after processing {processed_count + failed_count} items"
+                )
+        gc.collect()
+        embedding_service.close()
+        if processed_count > 0:
+            logger.info(
+                f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}"
+            )
+        else:
+            logger.info("No news items found without embeddings")
 
     def _split_text_into_chunks(
         self,
