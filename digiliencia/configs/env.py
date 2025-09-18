@@ -30,6 +30,7 @@ class Env:
     _llm_url: str = ""
     _classification_model: str = ""
     _embeddings_service: str = ""
+    _chatbot_llm: str = ""
 
     def __new__(cls):
         logger.debug("Loading environment variables")
@@ -52,6 +53,7 @@ class Env:
             cls._instance._embeddings_service = cls._instance.get_env_var(
                 "EMBEDDINGS_SERVICE"
             )
+            cls._instance._chatbot_llm = cls._instance.get_env_var("CHATBOT_LLM")
         return cls._instance
 
     @classmethod
@@ -90,6 +92,10 @@ class Env:
     @property
     def embeddings_service(self) -> str:
         return self._embeddings_service
+    
+    @property
+    def chatbot_llm(self) -> str:
+        return self._chatbot_llm
 
     @staticmethod
     def load_env_vars():
