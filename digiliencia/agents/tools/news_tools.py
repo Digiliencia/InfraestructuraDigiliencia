@@ -1,9 +1,9 @@
-from data.models.neomodel.news import News
-from digiliencia.enums.topics import Topics
-from digiliencia.enums.related_fields import RelatedFields
-from digiliencia.data.services.neomodel.news_service import NewsService
-
 from typing import Optional
+
+from digiliencia.data.models.neomodel.news import News
+from digiliencia.data.services.neomodel.news_service import NewsService
+from digiliencia.enums.related_fields import RelatedFields
+from digiliencia.enums.topics import Topics
 
 
 def get_news(
