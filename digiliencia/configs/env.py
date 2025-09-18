@@ -92,6 +92,10 @@ class Env:
     @property
     def embeddings_service(self) -> str:
         return self._embeddings_service
+    
+    @property
+    def chatbot_llm(self) -> str:
+        return self._chatbot_llm
 
     @property
     def chatbot_llm(self) -> str:

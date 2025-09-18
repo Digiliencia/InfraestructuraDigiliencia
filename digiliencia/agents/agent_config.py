@@ -3,11 +3,11 @@ Configuration and utility functions for the improved agent system.
 Provides centralized configuration management and helper functions.
 """
 
-import json
-import time
 from dataclasses import dataclass
+from typing import Dict, Any, Optional, List
 from enum import Enum
-from typing import Any, Dict, List, Optional
+import time
+import json
 
 
 class LogLevel(Enum):
