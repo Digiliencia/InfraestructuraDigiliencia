@@ -1,13 +1,11 @@
 from typing import Dict, List
 
+from digiliencia.agents.prompts.topic_classification_prompt import \
+    TopicClassificationPrompt
 from digiliencia.data.models.neomodel.topic import Topic
-from digiliencia.data.services.neomodel.base_classification_service import (
-    BaseClassificationService,
-)
+from digiliencia.data.services.neomodel.base_classification_service import \
+    BaseClassificationService
 from digiliencia.data.services.neomodel.topic.topic_service import TopicService
-from digiliencia.models.prompts.topic_classification_prompt import (
-    TopicClassificationPrompt,
-)
 
 
 class TopicClassificationService(BaseClassificationService[Topic]):
