@@ -14,6 +14,7 @@ from digiliencia.agents.tools import news_tools
 
 class QueryType(Enum):
     """Types of queries that can be handled."""
+
     SIMPLE_SEARCH = "simple_search"
     COMPLEX_ANALYSIS = "complex_analysis"
     RELATIONSHIP_EXPLORATION = "relationship_exploration"
@@ -59,7 +60,8 @@ class NewsAgent(BaseAgent):
         """Load all available tools from the news_tools module."""
         tools = []
         tool_functions = [
-            attr for attr in dir(news_tools)
+            attr
+            for attr in dir(news_tools)
             if callable(getattr(news_tools, attr)) and not attr.startswith("_")
         ]
         for func_name in tool_functions:
@@ -108,7 +110,14 @@ class NewsAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Error in LLM tool decision: {e}")
             # Fallback heuristic
-            keywords = ["symptom", "treatment", "disease", "drug", "diagnosis", "search"]
+            keywords = [
+                "symptom",
+                "treatment",
+                "disease",
+                "drug",
+                "diagnosis",
+                "search",
+            ]
             return any(k in message.lower() for k in keywords)
 
     async def async_send_msg(self, message: str) -> str:
@@ -180,7 +189,7 @@ class NewsAgent(BaseAgent):
         return [
             {"name": tool.metadata.name, "description": tool.metadata.description or ""}
             for tool in self.tools
-        ] # type: ignore
+        ]  # type: ignore
 
     def _get_enhanced_system_prompt(self, user_message: str) -> str:
         return f"""
