@@ -40,7 +40,7 @@ class ConversationalAgent(BaseAgent):
 
             if self.verbose:
                 for msg in chat_history[-3:]:
-                    logger.debug(f"{msg.role.value}: {msg.content[:60]}") # type: ignore
+                    logger.debug(f"{msg.role.value}: {msg.content[:60]}")  # type: ignore
 
             # Llamada al LLM
             response = self.llm.chat(chat_history)

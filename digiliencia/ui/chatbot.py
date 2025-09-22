@@ -15,9 +15,11 @@ try:
 except RuntimeError:
     pass
 
-from digiliencia.agents.agent_utils import (AgentConfig,
-                                            get_performance_monitor,
-                                            validate_config)
+from digiliencia.agents.agent_utils import (
+    AgentConfig,
+    get_performance_monitor,
+    validate_config,
+)
 from digiliencia.agents.router_agent import RouterAgent
 from digiliencia.configs.env import Env
 
@@ -97,7 +99,10 @@ def render_ui():
                 st.metric("Total Requests", metrics.get("total_requests", 0))
                 st.metric("Success Rate", f"{metrics.get('success_rate', 0):.1f}%")
             with col2:
-                st.metric("Avg Response Time", f"{metrics.get('average_response_time', 0):.2f}s")
+                st.metric(
+                    "Avg Response Time",
+                    f"{metrics.get('average_response_time', 0):.2f}s",
+                )
                 st.metric("Requests/Min", metrics.get("requests_per_minute", 0))
 
     # Inicializar RouterAgent cacheado
@@ -168,7 +173,9 @@ def render_ui():
                     response = agent_router.send_msg(user_input)
                     if isinstance(response, dict) and "error" in response:
                         st.error(f"Error: {response['error']}")
-                        response_content = response.get("fallback_response", str(response))
+                        response_content = response.get(
+                            "fallback_response", str(response)
+                        )
                     else:
                         response_content = str(response)
                         process_think_content(response_content)
@@ -178,7 +185,8 @@ def render_ui():
                     monitor.record_request(
                         agent_type="router",
                         response_time=processing_time,
-                        success="error" not in (response if isinstance(response, dict) else {}),
+                        success="error"
+                        not in (response if isinstance(response, dict) else {}),
                     )
 
                     metadata = {
@@ -199,11 +207,19 @@ def render_ui():
                     error_message = f"An error occurred: {e}"
                     st.error(error_message)
                     response_content = error_message
-                    metadata = {"error": str(e), "processing_time": f"{time.time() - start_time:.2f}s"}
+                    metadata = {
+                        "error": str(e),
+                        "processing_time": f"{time.time() - start_time:.2f}s",
+                    }
                     logger.error(f"Query failed: {e}")
 
         st.session_state.messages.append(
-            {"role": "assistant", "content": response_content, "metadata": metadata, "timestamp": time.time()}
+            {
+                "role": "assistant",
+                "content": response_content,
+                "metadata": metadata,
+                "timestamp": time.time(),
+            }
         )
 
     # Extras
