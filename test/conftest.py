@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 from typing import Dict, Generator
+import subprocess
+import time
+import requests
 
 import pytest
 from neo4j import GraphDatabase
@@ -15,6 +18,9 @@ TEST_DB_CONFIG = {
     "IMPLICIT_WAIT": "2",
     "LLM_URL": "http://localhost:11434",
     "CLASSIFICATION_MODEL": "test_model",
+    "EMBEDDINGS_SERVICE": "http://localhost:8000",
+    "COMPOSE_PROJECT_DIR": "../.devcontainer",
+    "SERVICE_NAME": "embedding-api-service",
 }
 
 
@@ -133,6 +139,81 @@ def _initialize_database(driver) -> None:
                     session.run(query)
         except Exception as e:
             print(f"[WARNING] Error executing initialization.cypher:\n{e}")
+
+
+@pytest.fixture(scope="session", autouse=False)
+def run_container():
+    # Build and start the service
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            f"{TEST_DB_CONFIG['COMPOSE_PROJECT_DIR']}/docker-compose.yml",
+            "build",
+            TEST_DB_CONFIG["SERVICE_NAME"],
+        ],
+        check=True,
+    )
+    subprocess.Popen(
+        [
+            "docker",
+            "compose",
+            "-f",
+            f"{TEST_DB_CONFIG['COMPOSE_PROJECT_DIR']}/docker-compose.yml",
+            "up",
+            TEST_DB_CONFIG["SERVICE_NAME"],
+        ],
+        cwd=TEST_DB_CONFIG["COMPOSE_PROJECT_DIR"],
+    )
+
+    # Wait for the service to be ready
+    for _ in range(30):
+        try:
+            r = requests.get("http://localhost:8000/docs")
+            if r.status_code == 200:
+                break
+        except Exception:
+            pass
+        time.sleep(2)
+    else:
+        # If the API does not start in time, shut down the container and raise an error
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                f"{TEST_DB_CONFIG['COMPOSE_PROJECT_DIR']}/docker-compose.yml",
+                "logs",
+                TEST_DB_CONFIG["SERVICE_NAME"],
+            ],
+            cwd=TEST_DB_CONFIG["COMPOSE_PROJECT_DIR"],
+        )
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                f"{TEST_DB_CONFIG['COMPOSE_PROJECT_DIR']}/docker-compose.yml",
+                "down",
+            ],
+            cwd=TEST_DB_CONFIG["COMPOSE_PROJECT_DIR"],
+        )
+        raise RuntimeError("API did not start in time")
+
+    yield  # Provide the fixture to the test functions
+
+    # Teardown: stop the service
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            f"{TEST_DB_CONFIG['COMPOSE_PROJECT_DIR']}/docker-compose.yml",
+            "down",
+        ],
+        cwd=TEST_DB_CONFIG["COMPOSE_PROJECT_DIR"],
+    )
 
 
 # =============================================================================

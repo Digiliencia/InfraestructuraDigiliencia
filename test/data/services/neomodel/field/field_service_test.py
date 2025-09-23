@@ -1,6 +1,7 @@
+from typing import List, Tuple
+
 import pytest
 from neomodel import db
-from typing import List, Tuple
 
 from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.services.neomodel.field.field_service import FieldService
@@ -224,7 +225,7 @@ def test_get_subfields_by_field_instance(field_service: FieldService):
     """Test getting subfields by parent Field instance."""
     # Create parent and child fields
     parent_field = field_service.create_field("Physics", "Physics parent")
-    child_field = field_service.create_field("Quantum Physics", "QP subfield")
+    field_service.create_field("Quantum Physics", "QP subfield")
 
     # Create relationship using helper
     create_subfield_relationship("Quantum Physics", "Physics")
@@ -247,7 +248,7 @@ def test_get_subfields_multiple_levels(field_service: FieldService):
     # Create a three-level hierarchy
     grandparent = field_service.create_field("Science", "Science field")
     parent = field_service.create_field("Biology", "Biology field")
-    child = field_service.create_field("Genetics", "Genetics field")
+    field_service.create_field("Genetics", "Genetics field")
 
     # Create relationships using helper
     relationships = [("Biology", "Science"), ("Genetics", "Biology")]
@@ -266,7 +267,7 @@ def test_get_subfields_mixed_field_types(field_service: FieldService):
     """Test getting subfields with mixed field input types."""
     # Create fields
     parent_field = field_service.create_field("Engineering", "Engineering field")
-    child_field = field_service.create_field("Software Engineering", "SE field")
+    field_service.create_field("Software Engineering", "SE field")
 
     # Create relationship using helper
     create_subfield_relationship("Software Engineering", "Engineering")
@@ -466,9 +467,9 @@ def test_get_fields_with_relationships(field_service: FieldService):
 def test_get_fields_multiple_levels_hierarchy(field_service: FieldService):
     """Test getting parent fields with multiple hierarchy levels."""
     # Create a three-level hierarchy
-    grandparent = field_service.create_field("Science", "Science field")
-    parent = field_service.create_field("Biology", "Biology field")
-    child = field_service.create_field("Genetics", "Genetics field")
+    field_service.create_field("Science", "Science field")
+    field_service.create_field("Biology", "Biology field")
+    field_service.create_field("Genetics", "Genetics field")
 
     # Create relationships using helper
     relationships = [("Biology", "Science"), ("Genetics", "Biology")]
