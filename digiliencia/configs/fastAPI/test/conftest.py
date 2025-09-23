@@ -1,5 +1,4 @@
 # /tests/conftest.py
-from main import app  # Import the FastAPI app instance
 import pytest_asyncio
 import httpx
 import time
@@ -12,13 +11,13 @@ from sqlalchemy import insert
 from faker import Faker
 import json
 
-
 from pathlib import Path
 import sys
 
 from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
+from main import app  # Import the FastAPI app instance
 from core.config import settings
 
 from db.models import User, Chat, Message, IAPrompt, Model
