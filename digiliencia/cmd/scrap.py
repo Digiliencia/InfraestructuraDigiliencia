@@ -1,31 +1,63 @@
 from typing import List
-from configs.env import Env
+
 from loguru import logger
-from typing import List
 
 from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNewsModel
-from digiliencia.data.daos.news_dao import NewsDAO
+from digiliencia.data.models.news_model import ScrapedNews
+from digiliencia.data.scrapping.cyber_canadian import CanadianScraper
 from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
-from digiliencia.exc.dao_create_exc import DAOCreateError
+from digiliencia.data.services.neomodel.news_service import NewsService
 
 
-def scrap(from_days_ago: int = 365):
+def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
 
     Env()
-    news_dao = NewsDAO()
-    scrapers = [WEForumScraper, IncibeScraper]
+
+    news_service = NewsService()
+    # topics_class_service = TopicClassificationService()
+    # fields_class_service = FieldClassificationService()
+
+    # scrapers = [WEForumScraper, CanadianScraper, IncibeScraper, Ncsc]
+    scrapers = [WEForumScraper]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)
             for news in scraped_news:
                 try:
-                    news_dao.create_from_scrap(news)
-                except DAOCreateError:
-                    pass
+                    # Convert ScrapedNews to ScrapedNews for validation
+                    validated_data = ScrapedNews(
+                        header=news.header,
+                        date=news.date,
+                        source=news.source,
+                        content=news.content,
+                        url=news.url,
+                        authors=news.authors,
+                        topics=news.topics,
+                    )
+                    created_news = news_service.create_from_scraped_data(validated_data)
+                    """
+                    # Classify news into topics
+                    topics = topics_class_service.classify_news_topics(created_news)
+                    news_service.set_topics_relations(created_news, topics)
+                    logger.info(
+                        f"Classified news '{created_news.header}' into {len(topics)} topics"
+                    )
+
+                    # Classify news into fields
+                    fields = fields_class_service.classify_news_fields(created_news)
+                    news_service.set_fields_relations(created_news, fields)
+                    logger.info(
+                        f"Classified news '{created_news.header}' into {len(fields)} fields"
+                    )
+                    """
+                    # Generate chunks and embeddings
+                    news_service.generate_chunk_embeddings_for_news(created_news)
+
+                except Exception as create_error:
+                    logger.error(f"Error creating news: {create_error}")
         except Exception as e:
             logger.error(f"Error scraping with {scraper.__class__.__name__}: {e}")
 
