@@ -90,7 +90,7 @@ async def setup_database(db_session: AsyncSession):
         {
             "prompt": faker.text(max_nb_chars=100),
             "prompt_description": faker.sentence(),
-            "ia_name": faker.unique.user_name(),  # CORREGIDO: "IA_name" a "ia_name"
+            "ia_name": faker.unique.user_name(),
         }
         for _ in range(3)
     ]
@@ -101,7 +101,7 @@ async def setup_database(db_session: AsyncSession):
 
     # MODELS
     models = [
-        {"ia_name": faker.unique.word()}  # CORREGIDO: "IA_name" a "ia_name"
+        {"ia_name": faker.unique.word()}
         for _ in range(3)
     ]
     result_models = await db_session.execute(
@@ -117,7 +117,6 @@ async def setup_database(db_session: AsyncSession):
                 {
                     "order_number": order,
                     "content": faker.paragraph(),
-                    # CORREGIDO: Convertir el dict a una cadena JSON
                     "statistics": json.dumps({"tokens": faker.random_int(1, 100)}),
                     "chat_id": chat_id,
                     "model_id": faker.random_element(model_ids),
@@ -125,18 +124,15 @@ async def setup_database(db_session: AsyncSession):
                 }
             )
     await db_session.execute(insert(Message), messages)
-    await db_session.commit()
-
 
 @pytest_asyncio.fixture(scope="session", autouse=False)
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provides a clean database session for each test."""
     async with TestingSessionLocal() as session:
         trans = await session.begin()
-        try:
-            yield session
-        finally:
-            pass#await trans.rollback()  # To revert any changes made during the test
+        yield session
+        await trans.commit()
+            
 
 
 @pytest_asyncio.fixture(scope="function", autouse=False)
@@ -150,7 +146,6 @@ async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
 @pytest_asyncio.fixture
 async def fake_user(scope="function", autouse=False) -> dict:
     """Generate a fake user with random email and password."""
-    faker = Faker()
     email = faker.email()  # Generate a random email
     password = faker.password()  # Generate a random password
     return {"email": email, "password": password}

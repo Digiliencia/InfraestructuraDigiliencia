@@ -1,4 +1,5 @@
 # /api/routers/chats.py
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +28,7 @@ async def get_user_conversations(
 
 @router.get("/chats/{chat_id}", response_model=List[chat_schema.Texts])
 async def get_full_conversation(
-    chat_id: int,
+    chat_id: uuid.UUID,
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -43,7 +44,7 @@ async def get_full_conversation(
 
 @router.patch("/chats/{chat_id}", response_model=chat_schema.Texts)
 async def ask_question_to_chat(
-    chat_id: int,
+    chat_id: uuid.UUID,
     payload: chat_schema.Text,
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
@@ -77,7 +78,7 @@ async def ask_question_to_chat(
 
 @router.put("/chats/{chat_id}", response_model=List[chat_schema.Texts])
 async def import_conversation(
-    chat_id: int,
+    chat_id: uuid.UUID,
     payload: List[chat_schema.Texts],
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
@@ -96,7 +97,7 @@ async def import_conversation(
 
 @router.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
-    chat_id: int,
+    chat_id: uuid.UUID,
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
