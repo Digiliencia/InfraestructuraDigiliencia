@@ -170,9 +170,7 @@ async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
     assert "access_token" in response.json()
 
 
-async def test_protected_endpoint_with_invalid_token(
-    api_client: AsyncClient
-):
+async def test_protected_endpoint_with_invalid_token(api_client: AsyncClient):
     """
     Access to a protected endpoint with an invalid token should be rejected.
     """

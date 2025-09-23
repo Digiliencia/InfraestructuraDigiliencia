@@ -1,4 +1,5 @@
 # /tests/conftest.py
+from main import app  # Import the FastAPI app instance
 import pytest_asyncio
 import httpx
 import time
@@ -11,7 +12,6 @@ from sqlalchemy import insert
 from faker import Faker
 import json
 
-faker = Faker()
 
 from pathlib import Path
 import sys
@@ -19,11 +19,11 @@ import sys
 from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from main import app  # Import the FastAPI app instance
 from core.config import settings
 
 from db.models import User, Chat, Message, IAPrompt, Model
 
+faker = Faker()
 # Cargar variables de entorno desde el .env del proyecto
 dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(dotenv_path)
@@ -70,19 +70,18 @@ async def setup_database(db_session: AsyncSession):
         {"email": faker.unique.email(), "hashed_password": faker.password(length=12)}
         for _ in range(5)
     ]
-    result_users = await db_session.execute(
-        insert(User).returning(User.id), users
-    )
+    result_users = await db_session.execute(insert(User).returning(User.id), users)
     user_ids = [row.id for row in result_users]
 
     # CHATS
     chats = [
-        {"titulo": faker.sentence(nb_words=3), "user_id": faker.random_element(user_ids)}
+        {
+            "titulo": faker.sentence(nb_words=3),
+            "user_id": faker.random_element(user_ids),
+        }
         for _ in range(10)
     ]
-    result_chats = await db_session.execute(
-        insert(Chat).returning(Chat.id), chats
-    )
+    result_chats = await db_session.execute(insert(Chat).returning(Chat.id), chats)
     chat_ids = [row.id for row in result_chats]
 
     # IA_PROMPTS
@@ -100,13 +99,8 @@ async def setup_database(db_session: AsyncSession):
     prompt_ids = [row.id for row in result_prompts]
 
     # MODELS
-    models = [
-        {"ia_name": faker.unique.word()}
-        for _ in range(3)
-    ]
-    result_models = await db_session.execute(
-        insert(Model).returning(Model.id), models
-    )
+    models = [{"ia_name": faker.unique.word()} for _ in range(3)]
+    result_models = await db_session.execute(insert(Model).returning(Model.id), models)
     model_ids = [row.id for row in result_models]
 
     # MESSAGES
@@ -125,6 +119,7 @@ async def setup_database(db_session: AsyncSession):
             )
     await db_session.execute(insert(Message), messages)
 
+
 @pytest_asyncio.fixture(scope="session", autouse=False)
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provides a clean database session for each test."""
@@ -132,7 +127,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         trans = await session.begin()
         yield session
         await trans.commit()
-            
 
 
 @pytest_asyncio.fixture(scope="function", autouse=False)
