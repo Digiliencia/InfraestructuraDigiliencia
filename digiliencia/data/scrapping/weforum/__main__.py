@@ -193,7 +193,7 @@ class WEForumScraper(AbstractScraper):
 
         # Configuración inicial
         aside_div = self.driver.find_element(
-            By.CLASS_NAME, "TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
+            By.CLASS_NAME, "TopicDetailPanel__StyledTopContainer-sc-d83f56b5-2"  # TODO mirrar esta linea 
         )
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
@@ -214,10 +214,13 @@ class WEForumScraper(AbstractScraper):
 
         logger.debug("Starting articles scanning")
 
+        #time.sleep(9999)
+
         while not found_old_article:
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
-                By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
+                #By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
+                By.CLASS_NAME, "ListItemBox-sc-12bd4bb8-0"
             )
 
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
