@@ -191,21 +191,23 @@ class WEForumScraper(AbstractScraper):
         processed_articles = []
         processed_urls = set()  # Para evitar artículos duplicados
 
-        # Configuración inicial
+        # Configuración inicial # TODO mirrar esta linea 
         aside_div = self.driver.find_element(
-            By.CLASS_NAME, "TopicDetailPanel__StyledTopContainer-sc-d83f56b5-2"  # TODO mirrar esta linea 
+            # By.CLASS_NAME, "TopicDetailPanel__StyledTopContainer-sc-d83f56b5-2"  
+            # By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"  
+            By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
         )
-        self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
+        self.driver.execute_script("arguments[0].scrollTo(0, 2500);", aside_div)
         time.sleep(self.load_time)
 
         # Cambiar a artículos recientes
-        self.driver.find_element(
+        self.driver.find_element(   
             By.CSS_SELECTOR, "label[for='knowledge-toggle-latest']"
-        ).click()
+        ).click()   # En esta linea seleccionamos y clickamos el botón "Latest"
         time.sleep(self.load_time)
 
         latest_articles_div = self.driver.find_element(
-            By.CSS_SELECTOR, "div[data-test-id='latest-knowledge-feed']"
+            By.CSS_SELECTOR, "div[data-test-id='latest-knowledge-feed']" 
         )
 
         found_old_article = False
@@ -214,28 +216,31 @@ class WEForumScraper(AbstractScraper):
 
         logger.debug("Starting articles scanning")
 
-        #time.sleep(9999)
-
         while not found_old_article:
             # Obtener todos los artículos actualmente visibles
             current_articles = latest_articles_div.find_elements(
                 #By.CLASS_NAME, "ListItemBox-sc-99b5f2ba-0"
-                By.CLASS_NAME, "ListItemBox-sc-12bd4bb8-0"
-            )
+                By.CSS_SELECTOR, ".ListItemBox-sc-12bd4bb8-0.kmHIbq"
+            )                     
 
             # Solo procesar los nuevos artículos (los que aún no hemos visto)
             new_articles_count = len(current_articles) - last_articles_count
 
+            logger.debug(f"last_articles_count: {last_articles_count}, current_articles: {len(current_articles)} ")
+
             if new_articles_count > 0:
                 logger.debug(f"Processing {new_articles_count} new articles")
                 no_new_articles_count = 0  # Reiniciar contador de intentos
+
+                time.sleep(self.load_time)
 
                 # Procesar solo los nuevos artículos
                 for article in current_articles[last_articles_count:]:
                     try:
                         # Check article date
                         age_element = article.find_element(
-                            By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
+                            # By.CLASS_NAME, "SourceLabel__StyledDate-sc-dca16eb8-4"
+                            By.CSS_SELECTOR, ".SourceLabel__StyledDate-sc-89cb5bef-4.eRQjjK"
                         )
                         age = age_element.text
 
@@ -257,14 +262,14 @@ class WEForumScraper(AbstractScraper):
 
                         if article_type == "publication":
                             publisher = article.find_element(
-                                By.CLASS_NAME, "SourceLabel__StyledText-sc-dca16eb8-2"
-                            ).text
+                                By.CLASS_NAME, "SourceLabel__StyledText-sc-89cb5bef-2.fVuvIs"
+                            ).text              
                             title = article.find_element(
                                 By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
-                            ).text
+                            ).text           
                             link_element = article.find_element(
-                                By.CLASS_NAME,
-                                "UIActionButton__StyledButton-sc-bc4b16c4-2",
+                                # By.CLASS_NAME, "UIActionButton__StyledButton-sc-bc4b16c4-2",
+                                By.CSS_SELECTOR, ".KnowledgeDetailButton__StyledSeeDetailButton-sc-df858e0-0.ioVxeb.PublicationCardHead__StyledKnowledgeDetailButton-sc-ab7b6bb9-3.gHUPBX",
                             )
                             title_attr = link_element.get_attribute("title")
                             href = link_element.get_attribute("href")
