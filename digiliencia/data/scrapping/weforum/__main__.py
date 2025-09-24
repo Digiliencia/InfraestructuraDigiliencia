@@ -193,11 +193,11 @@ class WEForumScraper(AbstractScraper):
 
         # Configuración inicial # TODO mirrar esta linea 
         aside_div = self.driver.find_element(
-            # By.CLASS_NAME, "TopicDetailPanel__StyledTopContainer-sc-d83f56b5-2"  
+            By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"  
             # By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"  
-            By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
+            # By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
         )
-        self.driver.execute_script("arguments[0].scrollTo(0, 2500);", aside_div)
+        self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
 
         # Cambiar a artículos recientes
@@ -266,19 +266,24 @@ class WEForumScraper(AbstractScraper):
                             ).text              
                             title = article.find_element(
                                 By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
-                            ).text           
+                            ).text   
+
+                            type_publication = article.find_element(
+                                # By.CSS_SELECTOR, ".UIActionButton__StyledButton-sc-c1d51331-2",
+                                By.CSS_SELECTOR, ".KnowledgeButtons__StyledButtonRow-sc-10cef3ff-0 span",
+                            ).text
+
                             link_element = article.find_element(
-                                # By.CLASS_NAME, "UIActionButton__StyledButton-sc-bc4b16c4-2",
-                                By.CSS_SELECTOR, ".KnowledgeDetailButton__StyledSeeDetailButton-sc-df858e0-0.ioVxeb.PublicationCardHead__StyledKnowledgeDetailButton-sc-ab7b6bb9-3.gHUPBX",
+                                By.CSS_SELECTOR, ".UIActionButton__StyledButton-sc-c1d51331-2"
                             )
-                            title_attr = link_element.get_attribute("title")
                             href = link_element.get_attribute("href")
 
                             if (
-                                title_attr == "Open"
+                                type_publication == "Open"
                                 and href
                                 and href not in processed_urls
                             ):
+                                logger.debug("pasooooo")
                                 processed_urls.add(href)  # Evitar duplicados
                                 processed_articles.append(
                                     {
