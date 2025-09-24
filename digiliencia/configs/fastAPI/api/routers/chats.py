@@ -12,11 +12,84 @@ from db.session import get_db
 router = APIRouter()
 
 
-@router.get("/conversations", response_model=chat_schema.ConversationList)
+@router.get(
+    "/conversations",
+    response_model=chat_schema.ConversationList,
+    summary="List User Conversations",
+    description="Retrieve a list of all conversations for the authenticated user",
+    response_description="Dictionary of conversations with their IDs and titles",
+    responses={
+        200: {
+            "description": "List of user's conversations",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "conversations": {
+                            "conversation1": {
+                                "idChat": "550e8400-e29b-41d4-a716-446655440000",
+                                "Título": "General Questions"
+                            },
+                            "conversation2": {
+                                "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                                "Título": "Technical Support"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Not authenticated",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated"}
+                }
+            }
+        }
+    }
+)
 async def get_user_conversations(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Retrieve all conversations for the authenticated user.
+    
+    This endpoint returns a list of all chat conversations associated with the
+    authenticated user, including their IDs and titles. The conversations are
+    sorted by their creation date.
+    
+    Security:
+    - Requires authentication
+    - Users can only see their own conversations
+    - Active account required
+    
+    Parameters:
+        user (User): Current authenticated user (injected)
+        db (AsyncSession): Database session (injected)
+        
+    Returns:
+        ConversationList: Dictionary containing:
+            - conversations (dict): Map of conversation IDs to their details
+                - idChat (UUID): Unique identifier for the chat
+                - Título (str): Title/name of the conversation
+                
+    Example:
+        ```json
+        {
+            "conversations": {
+                "conversation1": {
+                    "idChat": "550e8400-e29b-41d4-a716-446655440000",
+                    "Título": "General Questions"
+                },
+                "conversation2": {
+                    "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                    "Título": "Technical Support"
+                }
+            }
+        }
+        ```
+    """
     result = await db.execute(select(Chat).where(Chat.user_id == user.id))
     chats = result.scalars().all()
     convs = {
@@ -32,6 +105,20 @@ async def get_full_conversation(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Retrieve a full conversation by its ID.
+    
+    Parameters:
+        chat_id (UUID): The unique identifier of the chat
+        user (User): Current authenticated user (injected by dependency)
+        db (AsyncSession): Database session (injected by dependency)
+    
+    Returns:
+        List[Texts]: List of messages in the conversation
+        
+    Raises:
+        HTTPException: If chat is not found or user is not authorized
+    """
     chat = await db.get(Chat, chat_id)
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -49,6 +136,21 @@ async def ask_question_to_chat(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Send a question to a specific chat and get an AI-generated response.
+    
+    Parameters:
+        chat_id (UUID): The unique identifier of the chat
+        payload (Text): Contains the question text and model configuration
+        user (User): Current authenticated user (injected by dependency)
+        db (AsyncSession): Database session (injected by dependency)
+        
+    Returns:
+        Texts: The AI-generated response
+        
+    Raises:
+        HTTPException: If chat is not found or user is not authorized
+    """
     chat = await db.get(Chat, chat_id)
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -83,6 +185,21 @@ async def import_conversation(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Import a full conversation, replacing any existing messages.
+    
+    Parameters:
+        chat_id (UUID): The unique identifier of the chat
+        payload (List[Texts]): List of messages to import into the chat
+        user (User): Current authenticated user (injected by dependency)
+        db (AsyncSession): Database session (injected by dependency)
+        
+    Returns:
+        List[Texts]: The imported messages
+        
+    Raises:
+        HTTPException: If chat is not found or user is not authorized
+    """
     chat = await db.get(Chat, chat_id)
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -101,6 +218,20 @@ async def delete_conversation(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Delete a specific chat conversation and all its messages.
+    
+    Parameters:
+        chat_id (UUID): The unique identifier of the chat to delete
+        user (User): Current authenticated user (injected by dependency)
+        db (AsyncSession): Database session (injected by dependency)
+        
+    Returns:
+        None: Returns 204 No Content on success
+        
+    Raises:
+        HTTPException: If chat is not found or user is not authorized
+    """
     chat = await db.get(Chat, chat_id)
     if not chat or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")

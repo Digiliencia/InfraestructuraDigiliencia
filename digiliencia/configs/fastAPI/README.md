@@ -2,7 +2,11 @@
 
 This document provides details on the structure, setup and endpoints of the Chat Service API built with FastAPI.
 
----
+## Quick Start
+
+Run the server: `uvicorn main:app --host 0.0.0.0 --port 8080 --reload`
+
+The API will be available at http://0.0.0.0:8080 with interactive docs at `/docs`
 
 ## Project structure (overview)
 
@@ -56,25 +60,36 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
 The API will be available at http://0.0.0.0:8080. Interactive documentation (Swagger UI) is available at http://0.0.0.0:8080/docs.
 
-## Example `.env` values
+## Configuration
 
-Here is a minimal example of the variables expected by the application. A copy of this file is available as `.env_example` in this folder.
+### Environment Variables
 
-```
+The application requires several environment variables to be set. Copy `.env_example` to `.env` and configure:
+
+```ini
+# Database Configuration
 DB_OWNER_USER=your_db_user
 DB_OWNER_PASSWORD=your_db_password
-DB_HOST=localhost
-DB_PORT=5432
-APP_DB_NAME=your_database_name
+DB_HOST=localhost            # Database host
+DB_PORT=5432                # PostgreSQL default port
+APP_DB_NAME=your_database   # Database name
 
-# JWT settings
-JWT_SECRET_KEY=replace_with_a_long_random_secret
-JWT_ALGORITHM=HS256
+# Security Settings
+JWT_SECRET_KEY=replace_with_a_long_random_secret  # Min 32 characters recommended
+JWT_ALGORITHM=HS256         # JWT signing algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-# CORS origins as a JSON list, e.g. ["http://localhost:3000"]
-ALLOWED_ORIGINS=["http://localhost:3000"]
+# CORS Configuration
+ALLOWED_ORIGINS=["http://localhost:3000"]  # List of allowed origins
 ```
+
+### Security Configuration
+
+1. Generate a secure JWT secret:
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Configure CORS origins in `.env` for your frontend domains
 
 ## Health check
 
@@ -90,46 +105,117 @@ If the service is healthy the command prints:
 {"status":"ok"}
 ```
 
-## API Endpoints
+## API Documentation
 
-All endpoints are mounted under the `/api` prefix by default.
+All endpoints are mounted under the `/api` prefix. Authentication uses JWT tokens.
 
-### Authentication (`/auth`)
+### Base Endpoints
 
-| Method | Route                    | Requires Auth | Description                                         |
-| :----- | :------------------------ | :------------ | :-------------------------------------------------- |
-| `POST` | `/auth/login`             | No            | Log in with email and password. Returns a token.    |
-| `POST` | `/auth/logout`            | Yes           | Logs out the user.                                  |
-| `POST` | `/auth/register`          | No            | Registers a new user.                               |
-| `POST` | `/auth/verify/{token}`    | No            | Verifies the user's email with a token.             |
-| `POST` | `/auth/forgot-password`   | No            | Starts the password recovery process.               |
-| `POST` | `/auth/reset-password/{token}` | No       | Sets a new password using a token.                   |
+| Method | Route | Description | Response |
+|:-------|:------|:------------|:---------|
+| GET | `/` | Welcome message | `{"message": "Welcome to the Chat API"}` |
+| GET | `/health` | Health check | `{"status": "ok"}` |
 
-### Users (`/users`)
+### Authentication
 
-| Method   | Route                 | Requires Auth | Description                                         |
-| :------- | :--------------------- | :------------ | :-------------------------------------------------- |
-| `GET`    | `/users/me`            | Yes           | Gets the authenticated user's data.                 |
-| `PATCH`  | `/users/me`            | Yes           | Updates the authenticated user's data.              |
-| `DELETE` | `/users/me`            | Yes           | Deletes the current user's account.                 |
-| `GET`    | `/users/{id}/export`   | Yes           | **(Custom)** Exports the user's data.               |
+All authentication endpoints are under `/api/auth`
 
-### Chats and conversations
+| Method | Endpoint | Description | Request Body | Response |
+|:-------|:---------|:------------|:------------|:---------|
+| POST | `/auth/login` | Email/password login | `{"email": "user@example.com", "password": "secret"}` | `{"access_token": "jwt", "token_type": "bearer"}` |
+| POST | `/auth/jwt/login` | JWT token login | `{"username": "user@example.com", "password": "secret"}` | `{"access_token": "jwt", "token_type": "bearer"}` |
+| POST | `/register` | Create account | `{"email": "user@example.com", "password": "secret"}` | Created user object |
+| POST | `/verify` | Verify email | `{"token": "verification_token"}` | Success message |
 
-| Method  | Route                   | Requires Auth | Description                                         |
-| :------ | :---------------------- | :------------ | :-------------------------------------------------- |
-| `GET`   | `/api/conversations`    | Yes           | Returns the list of the user's conversations.       |
-| `GET`   | `/api/chats/{chat_id}`  | Yes           | Returns the full content of a conversation.         |
-| `PATCH` | `/api/chats/{chat_id}`  | Yes           | Sends a question to the chat and gets a response.   |
-| `PUT`   | `/api/chats/{chat_id}`  | Yes           | Imports/replaces a complete conversation.           |
-| `DELETE`| `/api/chats/{chat_id}`  | Yes           | Deletes a conversation.                             |
+### User Management
 
----
+All user endpoints are under `/api/users`
 
-If you want, I can also:
+| Method | Endpoint | Auth Required | Description | Response |
+|:-------|:---------|:--------------|:------------|:---------|
+| DELETE | `/me` | Yes | Delete account | `204 No Content` |
+| GET | `/{id}/export` | Yes | Export user data | User data object |
 
-- add a minimal example `.env_example` file to this folder,
-- add a short HEALTH endpoint description or an example curl request to test the server,
-- or translate the entire README to Spanish.
+### Chat Operations
 
-Finished: README updated to reflect current run configuration and practical instructions.
+All chat endpoints are under `/api/chats`
+
+| Method | Endpoint | Request Body | Response | Description |
+|:-------|:---------|:-------------|:---------|:------------|
+| GET | `/conversations` | - | `{"conversations": {...}}` | List all chats |
+| GET | `/{chat_id}` | - | `[{"text": "message"}]` | Get chat history |
+| PATCH | `/{chat_id}` | `{"text": "question", "model": "model_name"}` | `{"text": "AI response"}` | Send question |
+| PUT | `/{chat_id}` | `[{"text": "message"}]` | Imported messages | Import chat |
+| DELETE | `/{chat_id}` | - | `204 No Content` | Delete chat |
+
+### Example API Usage
+
+1. Register a new user:
+```bash
+curl -X POST http://localhost:8080/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "secure_password"}'
+```
+
+2. Login and get token:
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "secure_password"}'
+```
+
+3. Use the API with token:
+```bash
+curl http://localhost:8080/api/conversations \
+  -H "Authorization: Bearer your_token_here"
+```
+
+## Security Features
+
+1. **Authentication**
+   - JWT-based token authentication
+   - Email verification flow
+   - Secure password hashing
+
+2. **Rate Limiting**
+   - 100 requests per minute per IP
+   - Configurable rate limits per endpoint
+
+3. **Security Headers**
+   - Strict Transport Security (HSTS)
+   - Content Type Options
+   - Frame Options (anti-clickjacking)
+
+4. **CORS Protection**
+   - Configurable allowed origins
+   - Secure cross-origin policy
+
+## Development Tools
+
+### Interactive Documentation
+- Swagger UI: `/docs`
+- ReDoc: `/redoc`
+
+### Testing
+Run the test suite:
+```bash
+pytest tests/ -v
+```
+
+### Code Quality
+Format code with black:
+```bash
+black .
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -am 'Add feature'`
+4. Push to branch: `git push origin feature-name`
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
