@@ -83,7 +83,7 @@ app.include_router(chats.router, prefix=api_prefix, tags=["Chats"])
 def read_root():
     """
     Root endpoint that provides a welcome message.
-    
+
     Returns:
         dict: A welcome message for the Chat API
     """

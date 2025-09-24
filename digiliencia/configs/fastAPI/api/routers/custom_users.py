@@ -14,26 +14,20 @@ router = APIRouter()
     summary="Delete Own Account",
     description="Permanently delete the authenticated user's account",
     responses={
-        204: {
-            "description": "Account successfully deleted"
-        },
+        204: {"description": "Account successfully deleted"},
         401: {
             "description": "Not authenticated",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Not authenticated"}
-                }
-            }
+                "application/json": {"example": {"detail": "Not authenticated"}}
+            },
         },
         403: {
             "description": "Token expired",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Token has expired"}
-                }
-            }
-        }
-    }
+                "application/json": {"example": {"detail": "Token has expired"}}
+            },
+        },
+    },
 )
 async def delete_own_user(
     user: User = Depends(fastapi_users.current_user(active=True)),
@@ -41,27 +35,27 @@ async def delete_own_user(
 ):
     """
     Permanently delete the authenticated user's account.
-    
+
     This endpoint allows users to delete their own account. This action is irreversible
     and will delete all associated data including chats and preferences.
-    
+
     Security:
     - Requires authentication
     - Can only delete own account
     - Active account required
-    
+
     Parameters:
         user (User): Current authenticated user (injected)
         user_manager: User management service (injected)
-        
+
     Returns:
         None: Returns 204 No Content on successful deletion
-        
+
     Raises:
         HTTPException:
             - 401: Not authenticated
             - 403: Token expired
-            
+
     Note:
         This operation cannot be undone. All user data will be permanently deleted.
     """
@@ -83,28 +77,20 @@ async def delete_own_user(
                         "id": "550e8400-e29b-41d4-a716-446655440000",
                         "email": "user@example.com",
                         "is_active": True,
-                        "chats_count": 5
+                        "chats_count": 5,
                     }
                 }
-            }
+            },
         },
         403: {
             "description": "Not authorized to access this data",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Not authorized"}
-                }
-            }
+            "content": {"application/json": {"example": {"detail": "Not authorized"}}},
         },
         404: {
             "description": "User not found",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "User not found"}
-                }
-            }
-        }
-    }
+            "content": {"application/json": {"example": {"detail": "User not found"}}},
+        },
+    },
 )
 async def export_user_data(
     user_id: uuid.UUID,
@@ -112,31 +98,31 @@ async def export_user_data(
 ):
     """
     Export all data associated with a user account (GDPR compliance).
-    
+
     This endpoint allows users to export all their personal data stored in the system,
     including account details and usage statistics. Users can only export their own data.
-    
+
     Security:
     - Requires authentication
     - Users can only export their own data
     - Active account required
-    
+
     Parameters:
         user_id (UUID): The ID of the user whose data is being exported
         current_user (User): Current authenticated user (injected)
-        
+
     Returns:
         dict: User's data including:
             - id (UUID): User's unique identifier
             - email (str): User's email address
             - is_active (bool): Account status
             - chats_count (int): Number of chat conversations
-        
+
     Raises:
-        HTTPException: 
+        HTTPException:
             - 403: Attempting to access another user's data
             - 404: User not found
-            
+
     Example:
         ```json
         {
@@ -146,7 +132,7 @@ async def export_user_data(
             "chats_count": 5
         }
         ```
-        
+
     Note:
         This endpoint is provided for GDPR compliance, allowing users
         to access all their personal data stored in the system.

@@ -27,26 +27,24 @@ router = APIRouter()
                         "conversations": {
                             "conversation1": {
                                 "idChat": "550e8400-e29b-41d4-a716-446655440000",
-                                "Título": "General Questions"
+                                "Título": "General Questions",
                             },
                             "conversation2": {
                                 "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-                                "Título": "Technical Support"
-                            }
+                                "Título": "Technical Support",
+                            },
                         }
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Not authenticated",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Not authenticated"}
-                }
-            }
-        }
-    }
+                "application/json": {"example": {"detail": "Not authenticated"}}
+            },
+        },
+    },
 )
 async def get_user_conversations(
     user: User = Depends(fastapi_users.current_user(active=True)),
@@ -54,26 +52,26 @@ async def get_user_conversations(
 ):
     """
     Retrieve all conversations for the authenticated user.
-    
+
     This endpoint returns a list of all chat conversations associated with the
     authenticated user, including their IDs and titles. The conversations are
     sorted by their creation date.
-    
+
     Security:
     - Requires authentication
     - Users can only see their own conversations
     - Active account required
-    
+
     Parameters:
         user (User): Current authenticated user (injected)
         db (AsyncSession): Database session (injected)
-        
+
     Returns:
         ConversationList: Dictionary containing:
             - conversations (dict): Map of conversation IDs to their details
                 - idChat (UUID): Unique identifier for the chat
                 - Título (str): Title/name of the conversation
-                
+
     Example:
         ```json
         {
@@ -107,15 +105,15 @@ async def get_full_conversation(
 ):
     """
     Retrieve a full conversation by its ID.
-    
+
     Parameters:
         chat_id (UUID): The unique identifier of the chat
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
-    
+
     Returns:
         List[Texts]: List of messages in the conversation
-        
+
     Raises:
         HTTPException: If chat is not found or user is not authorized
     """
@@ -138,16 +136,16 @@ async def ask_question_to_chat(
 ):
     """
     Send a question to a specific chat and get an AI-generated response.
-    
+
     Parameters:
         chat_id (UUID): The unique identifier of the chat
         payload (Text): Contains the question text and model configuration
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
-        
+
     Returns:
         Texts: The AI-generated response
-        
+
     Raises:
         HTTPException: If chat is not found or user is not authorized
     """
@@ -187,16 +185,16 @@ async def import_conversation(
 ):
     """
     Import a full conversation, replacing any existing messages.
-    
+
     Parameters:
         chat_id (UUID): The unique identifier of the chat
         payload (List[Texts]): List of messages to import into the chat
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
-        
+
     Returns:
         List[Texts]: The imported messages
-        
+
     Raises:
         HTTPException: If chat is not found or user is not authorized
     """
@@ -220,15 +218,15 @@ async def delete_conversation(
 ):
     """
     Delete a specific chat conversation and all its messages.
-    
+
     Parameters:
         chat_id (UUID): The unique identifier of the chat to delete
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
-        
+
     Returns:
         None: Returns 204 No Content on success
-        
+
     Raises:
         HTTPException: If chat is not found or user is not authorized
     """
