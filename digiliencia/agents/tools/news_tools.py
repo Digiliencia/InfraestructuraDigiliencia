@@ -38,3 +38,22 @@ def get_news(
         end_date=end_date,
         organization=organization,
     )
+
+def search_by_content(
+    content: str,
+    limit: int = 10,   
+) -> list[News]:
+    """
+    Searches for news items containing similar content. 
+    Internally uses embeddings.
+
+    Args:
+        content (str): The content to search for within news items.
+        limit (int): Maximum number of news items to retrieve.
+
+    Returns:
+        List of news items containing the specified content.
+    """
+
+    news_service = NewsService()
+    return news_service.search_by_content(content=content, limit=limit)
