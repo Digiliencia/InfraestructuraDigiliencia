@@ -179,7 +179,7 @@ class CircuitBreaker:
     def call(self, func, *args, **kwargs):
         """Call a function through the circuit breaker."""
         if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout: # type: ignore
+            if time.time() - self.last_failure_time > self.recovery_timeout:  # type: ignore
                 self.state = "HALF_OPEN"
             else:
                 raise Exception("Circuit breaker is OPEN - too many recent failures")
