@@ -175,6 +175,7 @@ async def ask_question_to_chat(
     await db.refresh(response_message)
     return {"text": respuesta}
 
+
 @router.patch("/chats/", response_model=chat_schema.Texts)
 async def create_chat(
     payload: chat_schema.Text,
@@ -199,7 +200,11 @@ async def create_chat(
     db.add(chat)
     # Guardar la pregunta
     n_orden = (
-        (await db.execute(select(Message.order_number).where(Message.chat_id == chat.id)))
+        (
+            await db.execute(
+                select(Message.order_number).where(Message.chat_id == chat.id)
+            )
+        )
         .scalars()
         .all()
     )
@@ -208,10 +213,12 @@ async def create_chat(
     stmt = select(Model).where(Model.ia_name == payload.model)
     result = await db.execute(stmt)
     model = result.scalars().first()
-    
+
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
-    message = Message(chat_id=chat.id, order_number=n_orden, content=payload.text, model_id=model.id)
+    message = Message(
+        chat_id=chat.id, order_number=n_orden, content=payload.text, model_id=model.id
+    )
     db.add(message)
     # Llamada a servicio externo (placeholder)
     respuesta = (

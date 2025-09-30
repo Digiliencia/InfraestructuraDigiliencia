@@ -20,11 +20,11 @@ async def test_get_unauthenticated(api_client: AsyncClient):
     response = await api_client.get("/chats/1")
     assert response.status_code == 401
 
+
 async def test_get_chat_messages(authenticated_client: AsyncClient):
     """Tests retrieving messages from a specific chat."""
     # Create test chat
-    chat_response = await authenticated_client.patch(
-        "/chats")
+    chat_response = await authenticated_client.patch("/chats")
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
 
@@ -32,11 +32,11 @@ async def test_get_chat_messages(authenticated_client: AsyncClient):
     question1 = {"model": "test-model", "text": "Message 1"}
     response1 = await authenticated_client.patch(f"/chats/{chat_id}", json=question1)
     assert response1.status_code == 200
-    
+
     question2 = {"model": "test-model", "text": "Message 2"}
     response2 = await authenticated_client.patch(f"/chats/{chat_id}", json=question2)
     assert response2.status_code == 200
-    
+
     # Get messages
     response = await authenticated_client.get(f"/chats/{chat_id}")
     assert response.status_code == 200
@@ -44,6 +44,7 @@ async def test_get_chat_messages(authenticated_client: AsyncClient):
     assert len(messages) == 4  # 2 preguntas + 2 respuestas
     assert messages[0]["text"] == "Message 1"
     assert messages[2]["text"] == "Message 2"
+
 
 async def test_get_conversations_with_data(authenticated_client: AsyncClient):
     """Tests retrieving conversations when the user has existing chats."""
@@ -67,6 +68,7 @@ async def test_get_conversations_with_data(authenticated_client: AsyncClient):
         conv["Título"] in ["Test Chat 1", "Test Chat 2"]
         for conv in conversations.values()
     )
+
 
 async def test_get_nonexistent_chat(authenticated_client: AsyncClient):
     """Tests retrieving a chat that doesn't exist."""
