@@ -8,16 +8,10 @@ Scrapping of website: https://www.ncsc.gov.uk/
 
 import time
 from datetime import datetime
-
 from loguru import logger
-from pydantic import HttpUrl
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-
-from digiliencia.configs.env import Env
-from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
-from digiliencia.exc.ncsc_exec import NcscExec
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.ncsc_exec import NcscExec
@@ -131,7 +125,7 @@ class Ncsc(AbstractScraper):
                 date=date_dt,
                 source="NCSC",
                 content=content,
-                url=HttpUrl(url),
+                url=url,
                 authors=[author],
                 topics=None,
             )
