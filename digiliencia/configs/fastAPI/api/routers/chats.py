@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from db.models import User, Chat, Message
+from db.models import Model, User, Chat, Message
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db
@@ -124,7 +124,7 @@ async def get_full_conversation(
         select(Message).where(Message.chat_id == chat_id).order_by(Message.n_orden)
     )
     messages = result.scalars().all()
-    return [{"text": m.contenido} for m in messages]
+    return [{"text": m.content} for m in messages]
 
 
 @router.patch("/chats/{chat_id}", response_model=chat_schema.Texts)
@@ -146,7 +146,7 @@ async def ask_question_to_chat(
     Returns:
         Texts: The AI-generated response
 
-    Raises:
+    Raises:contenido
         HTTPException: If chat is not found or user is not authorized
     """
     chat = await db.get(Chat, chat_id)
@@ -159,7 +159,7 @@ async def ask_question_to_chat(
         .all()
     )
     n_orden = max(n_orden) + 1 if n_orden else 1
-    message = Message(chat_id=chat_id, n_orden=n_orden, contenido=payload.text)
+    message = Message(chat_id=chat_id, order_number=n_orden, content=payload.text)
     db.add(message)
     await db.commit()
     await db.refresh(message)
@@ -169,45 +169,90 @@ async def ask_question_to_chat(
     )
     # Guardar la respuesta
     n_orden += 1
-    response_message = Message(chat_id=chat_id, n_orden=n_orden, contenido=respuesta)
+    response_message = Message(chat_id=chat_id, order_number=n_orden, content=respuesta)
+    db.add(response_message)
+    await db.commit()
+    await db.refresh(response_message)
+    return {"text": respuesta}
+
+@router.patch("/chats/", response_model=chat_schema.Texts)
+async def create_chat(
+    payload: chat_schema.Text,
+    user: User = Depends(fastapi_users.current_user(active=True)),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Send a question, create a conversation and get an AI-generated response.
+
+    Parameters:
+        payload (Text): Contains the question text and model configuration
+        user (User): Current authenticated user (injected by dependency)
+        db (AsyncSession): Database session (injected by dependency)
+
+    Returns:
+        Texts: The AI-generated response
+
+    Raises:
+        HTTPException: If user is not authorized
+    """
+    chat = Chat(user_id=user.id)
+    db.add(chat)
+    # Guardar la pregunta
+    n_orden = (
+        (await db.execute(select(Message.order_number).where(Message.chat_id == chat.id)))
+        .scalars()
+        .all()
+    )
+    n_orden = max(n_orden) + 1 if n_orden else 1
+
+    stmt = select(Model).where(Model.ia_name == payload.model)
+    result = await db.execute(stmt)
+    model = result.scalars().first()
+    
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    message = Message(chat_id=chat.id, order_number=n_orden, content=payload.text, model_id=model.id)
+    db.add(message)
+    # Llamada a servicio externo (placeholder)
+    respuesta = (
+        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model}"
+    )
+    # Guardar la respuesta
+    n_orden += 1
+    response_message = Message(chat_id=chat.id, order_number=n_orden, content=respuesta)
     db.add(response_message)
     await db.commit()
     await db.refresh(response_message)
     return {"text": respuesta}
 
 
-@router.put("/chats/{chat_id}", response_model=List[chat_schema.Texts])
+@router.put("/chats", response_model=List[chat_schema.Texts])
 async def import_conversation(
-    chat_id: uuid.UUID,
     payload: List[chat_schema.Texts],
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Import a full conversation, replacing any existing messages.
+    Import a full conversation.
 
     Parameters:
-        chat_id (UUID): The unique identifier of the chat
         payload (List[Texts]): List of messages to import into the chat
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
 
     Returns:
-        List[Texts]: The imported messages
+        Tuple[UUID, List[Texts]]: The ID of the new chat and the imported messages
 
     Raises:
-        HTTPException: If chat is not found or user is not authorized
+
     """
-    chat = await db.get(Chat, chat_id)
-    if not chat or chat.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    # Borrar mensajes anteriores
-    await db.execute(Message.__table__.delete().where(Message.chat_id == chat_id))
+    chat = Chat(user_id=user.id, titulo="Imported Chat")
+    db.add(chat)
     # Insertar nuevos mensajes
     for i, msg in enumerate(payload, start=1):
-        db.add(Message(chat_id=chat_id, n_orden=i, contenido=msg.text))
+        db.add(Message(chat_id=chat.id, order_number=i, content=msg.text))
     await db.commit()
-    return payload
+    return chat.id, payload
 
 
 @router.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)

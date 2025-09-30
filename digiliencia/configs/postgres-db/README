@@ -66,6 +66,7 @@ Stores system prompt templates for the AI.
 | Column | Type | Description |
 | :---- | :---- | :---- |
 | id | UUID | **Primary Key**, default `gen_random_uuid()`. |
+| prompt_name | TEXT | **Not Null**. Name of template. |
 | prompt | TEXT | **Not Null**. The text of the system prompt. |
 | prompt_description | TEXT | Description of the prompt's purpose. |
 | ia_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |

@@ -28,6 +28,7 @@ CREATE TABLE CHATS (
 -- Create the IA_PROMPTS table
 CREATE TABLE IA_PROMPTS (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    prompt_name VARCHAR(255) NOT NULL,
     prompt TEXT NOT NULL, -- Use TEXT for potentially longer prompt strings
     prompt_description TEXT,
     IA_name VARCHAR(255) UNIQUE NOT NULL -- Assuming prompt names should be unique

@@ -56,6 +56,7 @@ class IAPrompt(Base):
     __tablename__ = "ia_prompts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    prompt_name = Column(String(255), nullable=False)
     prompt = Column(Text, nullable=False)
     prompt_description = Column(Text, nullable=True)
     ia_name = Column(String(255), nullable=False, unique=True)
