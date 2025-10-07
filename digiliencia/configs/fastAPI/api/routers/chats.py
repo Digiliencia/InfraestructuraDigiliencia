@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get(
     "/conversations",
-    response_model=chat_schema.ConversationList,
+    response_model=chat_schema.ConversationSummaryList,
     summary="List User Conversations",
     description="Retrieve a list of all conversations for the authenticated user",
     response_description="Dictionary of conversations with their IDs and titles",
@@ -46,14 +46,15 @@ router = APIRouter()
         },
     },
 )
-async def get_user_conversations(
+
+async def get_user_chat_list(
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
-):
+) -> chat_schema.ConversationSummaryList:
     """
-    Retrieve all conversations for the authenticated user.
+    Retrieve a summary for the authenticated user.
 
-    This endpoint returns a list of all chat conversations associated with the
+    This endpoint returns a list of chat summaries associated with the
     authenticated user, including their IDs and titles. The conversations are
     sorted by their creation date.
 
@@ -67,10 +68,11 @@ async def get_user_conversations(
         db (AsyncSession): Database session (injected)
 
     Returns:
-        ConversationList: Dictionary containing:
+        ConversationSummaryList: Dictionary containing:
             - conversations (dict): Map of conversation IDs to their details
                 - idChat (UUID): Unique identifier for the chat
-                - Título (str): Title/name of the conversation
+                - tittle (str): Title/name of the conversation
+                - ia_prompt (str): IA prompt associated with the conversation
 
     Example:
         ```json
@@ -78,11 +80,13 @@ async def get_user_conversations(
             "conversations": {
                 "conversation1": {
                     "idChat": "550e8400-e29b-41d4-a716-446655440000",
-                    "Título": "General Questions"
+                    "tittle": "General Questions",
+                    "ia_prompt": "What is the capital of France?"
                 },
                 "conversation2": {
                     "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-                    "Título": "Technical Support"
+                    "tittle": "Technical Support",
+                    "ia_prompt": "How do I reset my password?"
                 }
             }
         }
@@ -90,19 +94,20 @@ async def get_user_conversations(
     """
     result = await db.execute(select(Chat).where(Chat.user_id == user.id))
     chats = result.scalars().all()
-    convs = {
-        f"conversation{chat.id}": {"idChat": str(chat.id), "Título": chat.titulo}
+    summary = [
+        chat_schema.ConversationSummary(
+            idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=chat.ia_prompt
+        )
         for chat in chats
-    }
-    return {"conversations": convs}
-
+    ]
+    return chat_schema.ConversationSummaryList(conversations=summary)
 
 @router.get("/chats/{chat_id}", response_model=List[chat_schema.Texts])
 async def get_full_conversation(
     chat_id: uuid.UUID,
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
-):
+) -> chat_schema.ConversationList:
     """
     Retrieve a full conversation by its ID.
 
@@ -112,7 +117,7 @@ async def get_full_conversation(
         db (AsyncSession): Database session (injected by dependency)
 
     Returns:
-        List[Texts]: List of messages in the conversation
+        ConversationList: List of messages in the conversation
 
     Raises:
         HTTPException: If chat is not found or user is not authorized
@@ -124,7 +129,14 @@ async def get_full_conversation(
         select(Message).where(Message.chat_id == chat_id).order_by(Message.n_orden)
     )
     messages = result.scalars().all()
-    return [{"text": m.content} for m in messages]
+    conversations = chat_schema.ConversationFull(
+        idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=chat.ia_prompt, messages=[
+            chat_schema.message(
+                id=str(msg.id), order_number=msg.n_orden, content=str(msg.content), model=msg.model
+            ) for msg in messages
+        ]
+    )
+    return chat_schema.ConversationList(conversations=[conversations])
 
 
 @router.patch("/chats/{chat_id}", response_model=chat_schema.Texts)
@@ -178,59 +190,28 @@ async def ask_question_to_chat(
 
 @router.patch("/chats/", response_model=chat_schema.Texts)
 async def create_chat(
-    payload: chat_schema.Text,
+    payload: chat_schema.ChatCreate,
     user: User = Depends(fastapi_users.current_user(active=True)),
     db: AsyncSession = Depends(get_db),
-):
+) -> chat_schema.ConversationSummary:
     """
-    Send a question, create a conversation and get an AI-generated response.
+    Create a conversation.
 
     Parameters:
-        payload (Text): Contains the question text and model configuration
+        payload (ChatCreate): Contains the template for the AI prompt and title.
         user (User): Current authenticated user (injected by dependency)
         db (AsyncSession): Database session (injected by dependency)
 
     Returns:
-        Texts: The AI-generated response
+        chat_id: chat id
 
     Raises:
         HTTPException: If user is not authorized
     """
-    chat = Chat(user_id=user.id)
+    chat = Chat(user_id=user.id, ia_prompt=payload.ia_prompt, tittle=payload.tittle)
     db.add(chat)
-    # Guardar la pregunta
-    n_orden = (
-        (
-            await db.execute(
-                select(Message.order_number).where(Message.chat_id == chat.id)
-            )
-        )
-        .scalars()
-        .all()
-    )
-    n_orden = max(n_orden) + 1 if n_orden else 1
-
-    stmt = select(Model).where(Model.ia_name == payload.model)
-    result = await db.execute(stmt)
-    model = result.scalars().first()
-
-    if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
-    message = Message(
-        chat_id=chat.id, order_number=n_orden, content=payload.text, model_id=model.id
-    )
-    db.add(message)
-    # Llamada a servicio externo (placeholder)
-    respuesta = (
-        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model}"
-    )
-    # Guardar la respuesta
-    n_orden += 1
-    response_message = Message(chat_id=chat.id, order_number=n_orden, content=respuesta)
-    db.add(response_message)
     await db.commit()
-    await db.refresh(response_message)
-    return {"text": respuesta}
+    return chat_schema.ConversationSummary(idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=payload.ia_prompt)
 
 
 @router.put("/chats", response_model=List[chat_schema.Texts])
@@ -253,7 +234,7 @@ async def import_conversation(
     Raises:
 
     """
-    chat = Chat(user_id=user.id, titulo="Imported Chat")
+    chat = Chat(user_id=user.id, tittle="Imported Chat")
     db.add(chat)
     # Insertar nuevos mensajes
     for i, msg in enumerate(payload, start=1):

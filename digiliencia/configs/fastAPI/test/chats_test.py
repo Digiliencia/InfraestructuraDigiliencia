@@ -9,7 +9,7 @@ async def test_get_conversations_empty(authenticated_client: AsyncClient):
     """Tests that a new user has no conversations."""
     response = await authenticated_client.get("/conversations")
     assert response.status_code == 200
-    assert response.json()["conversations"] == {}
+    assert response.json()["conversations"] == []
 
 
 async def test_get_unauthenticated(api_client: AsyncClient):
@@ -20,6 +20,11 @@ async def test_get_unauthenticated(api_client: AsyncClient):
     response = await api_client.get("/chats/1")
     assert response.status_code == 401
 
+async def test_get_nonexistent_chat(authenticated_client: AsyncClient):
+    """Tests retrieving a chat that doesn't exist."""
+    random_uuid = str(uuid.uuid4())
+    response = await authenticated_client.get(f"/chats/{random_uuid}")
+    assert response.status_code == 404
 
 async def test_get_chat_messages(authenticated_client: AsyncClient):
     """Tests retrieving messages from a specific chat."""
@@ -50,12 +55,12 @@ async def test_get_conversations_with_data(authenticated_client: AsyncClient):
     """Tests retrieving conversations when the user has existing chats."""
     # Create test chats using the API
     chat1_response = await authenticated_client.get(
-        "/chats", json={"titulo": "Test Chat 1"}
+        "/chats", json={"tittle": "Test Chat 1"}
     )
     assert chat1_response.status_code == 201
 
     chat2_response = await authenticated_client.get(
-        "/chats", json={"titulo": "Test Chat 2"}
+        "/chats", json={"tittle": "Test Chat 2"}
     )
     assert chat2_response.status_code == 201
 
@@ -68,14 +73,6 @@ async def test_get_conversations_with_data(authenticated_client: AsyncClient):
         conv["Título"] in ["Test Chat 1", "Test Chat 2"]
         for conv in conversations.values()
     )
-
-
-async def test_get_nonexistent_chat(authenticated_client: AsyncClient):
-    """Tests retrieving a chat that doesn't exist."""
-    random_uuid = str(uuid.uuid4())
-    response = await authenticated_client.get(f"/chats/{random_uuid}")
-    assert response.status_code == 404
-
 
 async def test_get_other_user_chat(
     authenticated_client: AsyncClient,
@@ -105,7 +102,7 @@ async def test_get_other_user_chat(
 
     # Crear un chat con el segundo usuario
     chat_response = await api_client.post(
-        "/chats", json={"titulo": "Other User's Chat"}
+        "/chats", json={"tittle": "Other User's Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -123,7 +120,7 @@ async def test_ask_question_to_chat(authenticated_client: AsyncClient):
     """Tests asking a question to a chat."""
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -148,7 +145,7 @@ async def test_import_conversation(authenticated_client: AsyncClient):
     """Tests importing a conversation."""
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -178,7 +175,7 @@ async def test_delete_conversation(authenticated_client: AsyncClient):
     """Tests deleting a conversation."""
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -235,7 +232,7 @@ async def test_delete_other_user_chat(
 
     # Crear un chat con el segundo usuario
     chat_response = await api_client.post(
-        "/chats", json={"titulo": "Other User's Chat"}
+        "/chats", json={"tittle": "Other User's Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -263,14 +260,14 @@ async def test_ask_question_with_invalid_data(authenticated_client: AsyncClient)
     """Tests asking a question with invalid data."""
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
 
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]
@@ -299,7 +296,7 @@ async def test_import_conversation_validation(authenticated_client: AsyncClient)
     """Tests validation when importing conversations."""
     # Create test chat
     chat_response = await authenticated_client.post(
-        "/chats", json={"titulo": "Test Chat"}
+        "/chats", json={"tittle": "Test Chat"}
     )
     assert chat_response.status_code == 201
     chat_id = chat_response.json()["id"]

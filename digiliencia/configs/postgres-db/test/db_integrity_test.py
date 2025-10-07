@@ -42,7 +42,7 @@ def test_not_null_constraints(populated_db):
 
     with pytest.raises(NotNullViolation):
         cursor.execute(
-            "INSERT INTO chats (titulo, user_id) VALUES ('Test Chat', NULL);"
+            "INSERT INTO chats (tittle, user_id) VALUES ('Test Chat', NULL);"
         )
     conn.rollback()
 
@@ -60,7 +60,7 @@ def test_foreign_key_constraints(populated_db):
     non_existent_user_id = str(uuid.uuid4())
     with pytest.raises(ForeignKeyViolation):
         cursor.execute(
-            "INSERT INTO chats (titulo, user_id) VALUES ('Ghost Chat', %s);",
+            "INSERT INTO chats (tittle, user_id) VALUES ('Ghost Chat', %s);",
             (non_existent_user_id,),
         )
 

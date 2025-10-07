@@ -37,8 +37,10 @@ class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    titulo = Column(String(255), index=True)
+    tittle = Column(String(255), index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    ia_prompt_id = Column(UUID(as_uuid=True), ForeignKey("ia_prompts.id"))
 
     # Relationship back to User
     owner = relationship("User", back_populates="chats")
@@ -46,6 +48,7 @@ class Chat(Base):
     messages = relationship(
         "Message", back_populates="chat", cascade="all, delete-orphan"
     )
+    ia_prompt = relationship("IAPrompt", back_populates="chats")
 
 
 class IAPrompt(Base):
@@ -61,8 +64,8 @@ class IAPrompt(Base):
     prompt_description = Column(Text, nullable=True)
     ia_name = Column(String(255), nullable=False, unique=True)
 
-    # Relationship to Message: one prompt can be used in many messages
-    messages = relationship("Message", back_populates="ia_prompt")
+    # Relationship to Chat: one prompt can be used in many chats
+    chats = relationship("Chat", back_populates="ia_prompt")
 
 
 class Model(Base):
@@ -94,9 +97,7 @@ class Message(Base):
     # Foreign Keys
     chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"), nullable=False)
     model_id = Column(UUID(as_uuid=True), ForeignKey("models.id"))
-    ia_prompt_id = Column(UUID(as_uuid=True), ForeignKey("ia_prompts.id"))
 
     # Relationships back to parent tables
     chat = relationship("Chat", back_populates="messages")
     model = relationship("Model", back_populates="messages")
-    ia_prompt = relationship("IAPrompt", back_populates="messages")

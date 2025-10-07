@@ -123,7 +123,7 @@ def populated_db(get_db_connection_for_role):
         chat_ids = []
         for user_id in user_ids:
             cursor.execute(
-                "INSERT INTO CHATS (titulo, user_id) VALUES (%s, %s) RETURNING ID;",
+                "INSERT INTO CHATS (tittle, user_id) VALUES (%s, %s) RETURNING ID;",
                 (f"Chat for {user_id}", user_id),
             )
             chat_ids.append(cursor.fetchone()[0])

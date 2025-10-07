@@ -75,7 +75,7 @@ async def setup_database(db_session: AsyncSession):
     # CHATS
     chats = [
         {
-            "titulo": faker.sentence(nb_words=3),
+            "tittle": faker.sentence(nb_words=3),
             "user_id": faker.random_element(user_ids),
         }
         for _ in range(10)
@@ -86,6 +86,7 @@ async def setup_database(db_session: AsyncSession):
     # IA_PROMPTS
     prompts = [
         {
+            "prompt_name": faker.text(max_nb_chars=100),
             "prompt": faker.text(max_nb_chars=100),
             "prompt_description": faker.sentence(),
             "ia_name": faker.unique.user_name(),

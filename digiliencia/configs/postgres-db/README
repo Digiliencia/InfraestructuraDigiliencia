@@ -56,7 +56,7 @@ Stores conversations or chats, associated with a user.
 | Column | Type | Description |
 | :---- | :---- | :---- |
 | id | UUID | **Primary Key**, default `gen_random_uuid()`. Unique chat identifier. |
-| titulo | VARCHAR(255) | Title or name of the chat. |
+| tittle | VARCHAR(255) | Title or name of the chat. |
 | user_id | UUID | **Not Null**, **Foreign Key** to `users(id)`. `ON DELETE CASCADE`, `ON UPDATE CASCADE`. |
 
 #### **IA_PROMPTS**

@@ -98,7 +98,7 @@ def test_app_user_permissions(get_db_connection_for_role):
     cursor.execute("SELECT id FROM users_id_email_view LIMIT 1;")
     user_id = cursor.fetchone()[0]
     cursor.execute(
-        "INSERT INTO chats (titulo, user_id) VALUES ('Test Chat', %s);", (user_id,)
+        "INSERT INTO chats (tittle, user_id) VALUES ('Test Chat', %s);", (user_id,)
     )
 
     # INSERT into USERS - should fail
