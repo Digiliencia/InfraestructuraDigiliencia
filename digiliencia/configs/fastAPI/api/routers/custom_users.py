@@ -1,11 +1,13 @@
 # /api/routers/custom_users.py
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
-from main import fastapi_users
-
+from auth.users import fastapi_users
 from db.models import User
 
-router = APIRouter()
+# Crear una dependencia reutilizable para el usuario actual
+current_user = fastapi_users.current_user(active=True)
+
+router = APIRouter(dependencies=[Depends(current_user)])
 
 
 @router.delete(
@@ -30,7 +32,7 @@ router = APIRouter()
     },
 )
 async def delete_own_user(
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     user_manager=Depends(fastapi_users.get_user_manager),
 ):
     """
@@ -64,7 +66,7 @@ async def delete_own_user(
 
 
 @router.get(
-    "/users/{user_id}/export",
+    "/users/export",
     summary="Export User Data",
     description="Export all data associated with a user account (GDPR compliance)",
     response_description="User's personal data and usage statistics",
@@ -93,8 +95,7 @@ async def delete_own_user(
     },
 )
 async def export_user_data(
-    user_id: uuid.UUID,
-    current_user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
 ):
     """
     Export all data associated with a user account (GDPR compliance).
@@ -108,7 +109,6 @@ async def export_user_data(
     - Active account required
 
     Parameters:
-        user_id (UUID): The ID of the user whose data is being exported
         current_user (User): Current authenticated user (injected)
 
     Returns:
@@ -121,8 +121,6 @@ async def export_user_data(
     Raises:
         HTTPException:
             - 403: Attempting to access another user's data
-            - 404: User not found
-
     Example:
         ```json
         {
@@ -137,14 +135,9 @@ async def export_user_data(
         This endpoint is provided for GDPR compliance, allowing users
         to access all their personal data stored in the system.
     """
-    if user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
-        )
-
     return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "is_active": current_user.is_active,
-        "chats_count": len(current_user.chats) if current_user.chats else 0,
+        "id": user.id,
+        "email": user.email,
+        "is_active": user.is_active,
+        "chats_count": len(user.chats) if user.chats else 0,
     }

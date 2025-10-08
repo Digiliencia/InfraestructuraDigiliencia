@@ -1,6 +1,7 @@
 # /tests/test_middleware.py
 import pytest
 from httpx import AsyncClient
+from starlette import status
 
 pytestmark = pytest.mark.asyncio
 
@@ -14,7 +15,7 @@ async def test_security_headers_are_present(api_client: AsyncClient):
     response = await api_client.get("/")  # The root endpoint is fine for this
 
     # Assert: Check for the presence and content of key security headers
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert "Strict-Transport-Security" in response.headers
     assert "X-Content-Type-Options" in response.headers
     assert response.headers["X-Content-Type-Options"] == "nosniff"
@@ -35,6 +36,9 @@ async def test_cors_headers_are_present(api_client: AsyncClient):
     response = await api_client.get("/", headers=headers)
 
     # Assert
-    assert response.status_code == 200
-    assert "access-control-allow-origin" in response.headers
+    assert response.status_code == status.HTTP_200_OK
+    assert (
+        "content-security-policy"
+        in response.headers.get("content-security-policy", "").lower()
+    )
     assert response.headers["access-control-allow-origin"] == allowed_origin

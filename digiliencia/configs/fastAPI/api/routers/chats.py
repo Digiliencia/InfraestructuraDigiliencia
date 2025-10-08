@@ -4,12 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from db.models import Model, User, Chat, Message
+from sqlalchemy import exc as sqlalchemy_exc
+from db.models import Model, User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db
+from sqlalchemy.exc import IntegrityError
 
-router = APIRouter()
+
+# Crear una dependencia reutilizable para el usuario actual
+current_user = fastapi_users.current_user(active=True)
+
+router = APIRouter(dependencies=[Depends(current_user)])
 
 
 @router.get(
@@ -46,9 +52,8 @@ router = APIRouter()
         },
     },
 )
-
 async def get_user_chat_list(
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.ConversationSummaryList:
     """
@@ -102,10 +107,11 @@ async def get_user_chat_list(
     ]
     return chat_schema.ConversationSummaryList(conversations=summary)
 
+
 @router.get("/chats/{chat_id}", response_model=List[chat_schema.Texts])
 async def get_full_conversation(
     chat_id: uuid.UUID,
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.ConversationList:
     """
@@ -130,11 +136,18 @@ async def get_full_conversation(
     )
     messages = result.scalars().all()
     conversations = chat_schema.ConversationFull(
-        idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=chat.ia_prompt, messages=[
+        idChat=str(chat.id),
+        tittle=str(chat.tittle),
+        ia_prompt=chat.ia_prompt,
+        messages=[
             chat_schema.message(
-                id=str(msg.id), order_number=msg.n_orden, content=str(msg.content), model=msg.model
-            ) for msg in messages
-        ]
+                id=str(msg.id),
+                order_number=msg.n_orden,
+                content=str(msg.content),
+                model=msg.model,
+            )
+            for msg in messages
+        ],
     )
     return chat_schema.ConversationList(conversations=[conversations])
 
@@ -143,7 +156,7 @@ async def get_full_conversation(
 async def ask_question_to_chat(
     chat_id: uuid.UUID,
     payload: chat_schema.Text,
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -162,8 +175,12 @@ async def ask_question_to_chat(
         HTTPException: If chat is not found or user is not authorized
     """
     chat = await db.get(Chat, chat_id)
-    if not chat or chat.user_id != user.id:
+    if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
+    if chat.user_id != user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this chat"
+        )
     # Guardar la pregunta
     n_orden = (
         (await db.execute(select(Message.n_orden).where(Message.chat_id == chat_id)))
@@ -188,10 +205,10 @@ async def ask_question_to_chat(
     return {"text": respuesta}
 
 
-@router.patch("/chats/", response_model=chat_schema.Texts)
+@router.patch("/chats", response_model=chat_schema.Texts)
 async def create_chat(
     payload: chat_schema.ChatCreate,
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.ConversationSummary:
     """
@@ -208,16 +225,27 @@ async def create_chat(
     Raises:
         HTTPException: If user is not authorized
     """
+    ia_prompt = await db.execute(
+        select(IAPrompt).where(IAPrompt.prompt_name == payload.ia_prompt)
+    )
+    ia_prompt = ia_prompt.scalars().first()
+    if not ia_prompt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid ia_prompt: The specified prompt does not exist",
+        )
     chat = Chat(user_id=user.id, ia_prompt=payload.ia_prompt, tittle=payload.tittle)
     db.add(chat)
     await db.commit()
-    return chat_schema.ConversationSummary(idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=payload.ia_prompt)
+    return chat_schema.ConversationSummary(
+        idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=ia_prompt
+    )
 
 
 @router.put("/chats", response_model=List[chat_schema.Texts])
 async def import_conversation(
     payload: List[chat_schema.Texts],
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -246,7 +274,7 @@ async def import_conversation(
 @router.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
     chat_id: uuid.UUID,
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -265,7 +293,9 @@ async def delete_conversation(
     """
     chat = await db.get(Chat, chat_id)
     if not chat or chat.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Chat not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+        )
     await db.delete(chat)
     await db.commit()
     return None
