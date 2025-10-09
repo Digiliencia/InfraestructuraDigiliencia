@@ -1,77 +1,140 @@
-import time
-from typing import Any, Dict, List, Optional
+"""
+Conversational Agent implementation for general cybersecurity education.
 
-from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.tools import FunctionTool
+This agent handles general questions, explanations, and educational conversations
+without requiring tool usage.
+"""
+
+from typing import Optional
+
+from llama_index.core.chat_engine import SimpleChatEngine
 from loguru import logger
 
-from digiliencia.agents.base_agent import BaseAgent
-from digiliencia.agents.memory_manager import MemoryManager
+from digiliencia.agents.base_agent import ConversationalAgentBase
+from digiliencia.agents.prompts import CONVERSATIONAL_AGENT_SYSTEM_PROMPT
 
 
-class ConversationalAgent(BaseAgent):
-    """Agente especializado en mantener conversaciones con memoria contextual."""
-
+class ConversationalAgent(ConversationalAgentBase):
+    """
+    Specialized agent for general cybersecurity education and conversations.
+    
+    This agent uses only the LLM's knowledge to answer questions about
+    cybersecurity concepts, best practices, and provide educational guidance.
+    """
+    
     def __init__(
         self,
-        model_name: str,
-        tools: Optional[List[FunctionTool]] = None,
-        temperature: float = 0.2,
+        model_name: str = "llama3.1:8b",
+        temperature: float = 0.7,  # Higher temperature for more conversational responses
         verbose: bool = False,
-        memory_token_limit: int = 10000,
-        max_history_messages: int = 20,
     ):
-        super().__init__(model_name, tools, temperature, verbose=verbose)
-        self.memory = MemoryManager(
-            token_limit=memory_token_limit, max_messages=max_history_messages
+        """
+        Initialize the Conversational Agent.
+        
+        Args:
+            model_name: Name of the Ollama model to use
+            temperature: LLM temperature (higher = more creative)
+            verbose: Enable detailed logging
+        """
+        super().__init__(
+            name="ConversationalAgent",
+            description="Provides cybersecurity education and answers general questions",
+            model_name=model_name,
+            temperature=temperature,
+            verbose=verbose,
         )
-        self.conversation_turns = 0
-
-    def async_send_msg(self, message: str) -> str:
-        start_time = time.time()
-        self.conversation_turns += 1
-
+        
+        # Initialize simple chat engine
+        self._chat_engine = self._initialize_chat_engine()
+        
+        logger.info("ConversationalAgent initialized with SimpleChatEngine")
+    
+    def _initialize_chat_engine(self) -> SimpleChatEngine:
+        """
+        Initialize the simple chat engine for conversations.
+        
+        Returns:
+            Configured SimpleChatEngine instance
+        """
+        chat_engine = SimpleChatEngine.from_defaults(
+            llm=self._llm,
+            system_prompt=self.get_system_prompt(),
+        )
+        
+        return chat_engine
+    
+    def get_system_prompt(self) -> str:
+        """
+        Get the system prompt for the Conversational Agent.
+        
+        Returns:
+            System prompt string
+        """
+        return CONVERSATIONAL_AGENT_SYSTEM_PROMPT
+    
+    def process_query(self, query: str, **kwargs) -> str:
+        """
+        Process a general query using the chat engine.
+        
+        Args:
+            query: User's question or conversation input
+            **kwargs: Additional parameters (e.g., include_history)
+            
+        Returns:
+            Agent's educational and helpful response
+        """
         try:
-            # Guardar mensaje usuario
-            self.memory.add_message(MessageRole.USER, message)
-
-            # Recuperar historial
-            chat_history = self.memory.get_history()
-
-            if self.verbose:
-                for msg in chat_history[-3:]:
-                    logger.debug(f"{msg.role.value}: {msg.content[:60]}")  # type: ignore
-
-            # Llamada al LLM
-            response = self.llm.chat(chat_history)
-            response_content = response.message.content or "No se generó respuesta."
-
-            # Guardar respuesta
-            self.memory.add_message(MessageRole.ASSISTANT, response_content)
-
-            elapsed = time.time() - start_time
-            self.metrics.log_request(elapsed)
-
-            return response_content
-
+            logger.info(f"ConversationalAgent processing query: {query[:100]}...")
+            
+            # Get response from chat engine
+            response = self._chat_engine.chat(query)
+            
+            # Add to conversation history
+            self.add_to_history("user", query)
+            self.add_to_history("assistant", str(response))
+            
+            self.record_query(success=True)
+            logger.debug("ConversationalAgent query processed successfully")
+            
+            return str(response)
+            
         except Exception as e:
-            elapsed = time.time() - start_time
-            self.metrics.log_request(elapsed, error=True)
-            logger.error(f"Error en ConversationalAgent: {e}")
-            return "Ocurrió un error procesando tu mensaje."
-
-    # Interfaz síncrona estándar para compatibilidad con Streamlit y RouterAgent
-    def send_msg(self, message: str) -> str:
-        """Wrapper síncrono (mismo comportamiento que async_send_msg)."""
-        return self.async_send_msg(message)
-
-    def get_summary(self) -> Dict[str, Any]:
-        return {
-            "turns": self.conversation_turns,
-            "memory": self.memory.summarize(),
-            "metrics": self.metrics.report(),
-        }
-
-    def clear_history(self):
-        self.memory.reset()
-        self.conversation_turns = 0
+            logger.error(f"Error in ConversationalAgent.process_query: {e}")
+            self.record_query(success=False)
+            
+            return (
+                f"I encountered an error while processing your question: {str(e)}. "
+                "Could you please rephrase your question?"
+            )
+    
+    def reset_conversation(self):
+        """Reset the conversation history and chat engine."""
+        self.clear_history()
+        self._chat_engine.reset()
+        logger.debug("ConversationalAgent conversation reset")
+    
+    def get_conversation_summary(self) -> str:
+        """
+        Get a summary of the conversation history.
+        
+        Returns:
+            Formatted conversation summary
+        """
+        history = self.get_history()
+        
+        if not history:
+            return "No conversation history available."
+        
+        summary_parts = ["Conversation Summary:\n"]
+        
+        for idx, message in enumerate(history, 1):
+            role = message['role'].capitalize()
+            content = message['content']
+            
+            # Truncate long messages
+            if len(content) > 200:
+                content = content[:200] + "..."
+            
+            summary_parts.append(f"{idx}. {role}: {content}")
+        
+        return "\n".join(summary_parts)
