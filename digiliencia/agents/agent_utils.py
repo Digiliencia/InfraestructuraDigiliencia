@@ -1,351 +1,286 @@
 """
-Configuration and utility functions for the improved agent system.
-Provides centralized configuration management and helper functions.
+Utility functions and configuration management for the agent system.
+
+This module provides shared utilities, configuration classes, and helper
+functions used across all agents.
 """
 
-import json
 import time
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
-class LogLevel(Enum):
-    """Logging levels for the agent system."""
-
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
+from loguru import logger
 
 
 @dataclass
 class AgentConfig:
-    """Configuration class for agent system."""
-
-    # Model configuration
-    model_name: str = "llama3.2:3b"
-    conversational_temperature: float = 0.2
-    tool_calling_temperature: float = 0.0
-
-    # Performance limits
-    max_iterations: int = 5
-    timeout_seconds: int = 180
-    memory_token_limit: int = 10000
-    max_history_messages: int = 20
-
-    # Logging configuration
-    log_level: LogLevel = LogLevel.INFO
+    """
+    Configuration class for agent initialization.
+    
+    Centralizes all agent configuration parameters.
+    """
+    model_name: str = "llama3.1:8b"
+    temperature: float = 0.7
     verbose: bool = False
+    max_iterations: int = 10
+    timeout_seconds: float = 600.0  # 10 minutos para sistemas lentos
+    request_timeout: float = 600.0  # 10 minutos para sistemas lentos
+    
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        if self.temperature < 0.0 or self.temperature > 1.0:
+            logger.warning(f"Temperature {self.temperature} outside recommended range [0.0, 1.0]")
+        
+        if self.max_iterations < 1:
+            logger.warning(f"max_iterations {self.max_iterations} too low, setting to 1")
+            self.max_iterations = 1
+        
+        if self.timeout_seconds < 10:
+            logger.warning(f"timeout_seconds {self.timeout_seconds} too low, setting to 10")
+            self.timeout_seconds = 10
 
-    # Tool configuration
-    enable_parallel_tools: bool = False
-    max_concurrent_tools: int = 3
 
-    # Safety and reliability
-    max_retries: int = 2
-    enable_fallback: bool = True
-    rate_limit_requests_per_minute: int = 60
+@dataclass
+class PerformanceMetrics:
+    """
+    Data class for tracking agent performance metrics.
+    """
+    total_requests: int = 0
+    successful_requests: int = 0
+    failed_requests: int = 0
+    total_response_time: float = 0.0
+    min_response_time: float = float('inf')
+    max_response_time: float = 0.0
+    agent_type: str = "unknown"
+    
+    def record_request(self, success: bool, response_time: float):
+        """
+        Record a request's metrics.
+        
+        Args:
+            success: Whether the request was successful
+            response_time: Time taken for the request in seconds
+        """
+        self.total_requests += 1
+        
+        if success:
+            self.successful_requests += 1
+        else:
+            self.failed_requests += 1
+        
+        self.total_response_time += response_time
+        self.min_response_time = min(self.min_response_time, response_time)
+        self.max_response_time = max(self.max_response_time, response_time)
+    
+    def get_average_response_time(self) -> float:
+        """Get average response time in seconds."""
+        if self.total_requests == 0:
+            return 0.0
+        return self.total_response_time / self.total_requests
+    
+    def get_success_rate(self) -> float:
+        """Get success rate as a percentage."""
+        if self.total_requests == 0:
+            return 0.0
+        return (self.successful_requests / self.total_requests) * 100
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metrics to dictionary format."""
+        return {
+            "agent_type": self.agent_type,
+            "total_requests": self.total_requests,
+            "successful_requests": self.successful_requests,
+            "failed_requests": self.failed_requests,
+            "success_rate": round(self.get_success_rate(), 2),
+            "average_response_time": round(self.get_average_response_time(), 2),
+            "min_response_time": round(self.min_response_time, 2) if self.min_response_time != float('inf') else 0.0,
+            "max_response_time": round(self.max_response_time, 2),
+        }
 
 
 class PerformanceMonitor:
-    """Monitor and track agent performance metrics."""
-
+    """
+    Singleton class for monitoring agent performance across the system.
+    """
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
     def __init__(self):
-        self.metrics = {
-            "total_requests": 0,
-            "total_errors": 0,
-            "total_response_time": 0.0,
-            "average_response_time": 0.0,
-            "error_rate": 0.0,
-            "requests_per_minute": 0.0,
-            "start_time": time.time(),
-            "agent_usage": {},
-            "tool_usage": {},
-            "error_types": {},
-        }
-        self.request_timestamps = []
-
+        if self._initialized:
+            return
+        
+        self._metrics: Dict[str, PerformanceMetrics] = {}
+        self._start_time = time.time()
+        self._initialized = True
+        logger.debug("PerformanceMonitor initialized")
+    
     def record_request(
         self,
         agent_type: str,
         response_time: float,
-        success: bool,
-        error_type: Optional[str] = None,
+        success: bool = True,
     ):
-        """Record a request for performance tracking."""
-        current_time = time.time()
-
-        # Update basic metrics
-        self.metrics["total_requests"] += 1
-        self.metrics["total_response_time"] += response_time
-        self.metrics["average_response_time"] = (
-            self.metrics["total_response_time"] / self.metrics["total_requests"]
-        )
-
-        if not success:
-            self.metrics["total_errors"] += 1
-            if error_type:
-                self.metrics["error_types"][error_type] = (
-                    self.metrics["error_types"].get(error_type, 0) + 1
-                )
-
-        self.metrics["error_rate"] = (
-            self.metrics["total_errors"] / self.metrics["total_requests"]
-        ) * 100
-
-        # Track agent usage
-        self.metrics["agent_usage"][agent_type] = (
-            self.metrics["agent_usage"].get(agent_type, 0) + 1
-        )
-
-        # Track request rate (requests per minute)
-        self.request_timestamps.append(current_time)
-        # Keep only timestamps from the last minute
-        minute_ago = current_time - 60
-        self.request_timestamps = [
-            ts for ts in self.request_timestamps if ts > minute_ago
-        ]
-        self.metrics["requests_per_minute"] = len(self.request_timestamps)
-
-    def record_tool_usage(self, tool_name: str, execution_time: float, success: bool):
-        """Record tool usage for monitoring."""
-        if tool_name not in self.metrics["tool_usage"]:
-            self.metrics["tool_usage"][tool_name] = {
-                "count": 0,
-                "total_time": 0.0,
-                "errors": 0,
-                "average_time": 0.0,
-            }
-
-        tool_stats = self.metrics["tool_usage"][tool_name]
-        tool_stats["count"] += 1
-        tool_stats["total_time"] += execution_time
-        tool_stats["average_time"] = tool_stats["total_time"] / tool_stats["count"]
-
-        if not success:
-            tool_stats["errors"] += 1
-
-    def get_metrics(self) -> Dict[str, Any]:
-        """Get current performance metrics."""
-        uptime = time.time() - self.metrics["start_time"]
-
-        # Calculate additional derived metrics
-        derived_metrics = {
-            "uptime_seconds": uptime,
-            "uptime_hours": uptime / 3600,
-            "requests_per_hour": (
-                self.metrics["total_requests"] / max(uptime / 3600, 0.01)
-            ),
-            "success_rate": 100 - self.metrics["error_rate"],
-            "most_used_agent": (
-                max(self.metrics["agent_usage"], key=self.metrics["agent_usage"].get)
-                if self.metrics["agent_usage"]
-                else None
-            ),
-            "most_used_tool": (
-                max(
-                    self.metrics["tool_usage"],
-                    key=lambda k: self.metrics["tool_usage"][k]["count"],
-                )
-                if self.metrics["tool_usage"]
-                else None
-            ),
+        """
+        Record a request's performance metrics.
+        
+        Args:
+            agent_type: Type of agent that handled the request
+            response_time: Time taken in seconds
+            success: Whether the request was successful
+        """
+        if agent_type not in self._metrics:
+            self._metrics[agent_type] = PerformanceMetrics(agent_type=agent_type)
+        
+        self._metrics[agent_type].record_request(success, response_time)
+        logger.debug(f"Recorded request for {agent_type}: {response_time:.2f}s, success={success}")
+    
+    def get_metrics(self, agent_type: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get performance metrics.
+        
+        Args:
+            agent_type: Specific agent type (None = all agents)
+            
+        Returns:
+            Dictionary with performance metrics
+        """
+        if agent_type and agent_type in self._metrics:
+            return self._metrics[agent_type].to_dict()
+        
+        # Return aggregated metrics for all agents
+        total_requests = sum(m.total_requests for m in self._metrics.values())
+        total_successful = sum(m.successful_requests for m in self._metrics.values())
+        total_failed = sum(m.failed_requests for m in self._metrics.values())
+        total_time = sum(m.total_response_time for m in self._metrics.values())
+        
+        uptime_seconds = time.time() - self._start_time
+        requests_per_minute = (total_requests / uptime_seconds * 60) if uptime_seconds > 0 else 0
+        
+        return {
+            "total_requests": total_requests,
+            "successful_requests": total_successful,
+            "failed_requests": total_failed,
+            "success_rate": round((total_successful / total_requests * 100) if total_requests > 0 else 0.0, 2),
+            "average_response_time": round((total_time / total_requests) if total_requests > 0 else 0.0, 2),
+            "uptime_seconds": round(uptime_seconds, 2),
+            "requests_per_minute": round(requests_per_minute, 2),
+            "agent_metrics": {
+                agent_type: metrics.to_dict()
+                for agent_type, metrics in self._metrics.items()
+            },
         }
-
-        return {**self.metrics, **derived_metrics}
-
-    def reset_metrics(self):
-        """Reset all performance metrics."""
-        self.__init__()
-
-    def export_metrics(self, filepath: str):
-        """Export metrics to a JSON file."""
-        metrics = self.get_metrics()
-        with open(filepath, "w") as f:
-            json.dump(metrics, f, indent=2, default=str)
-
-
-class CircuitBreaker:
-    """Simple circuit breaker for agent reliability."""
-
-    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.failure_count = 0
-        self.last_failure_time = None
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def call(self, func, *args, **kwargs):
-        """Call a function through the circuit breaker."""
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:  # type: ignore
-                self.state = "HALF_OPEN"
-            else:
-                raise Exception("Circuit breaker is OPEN - too many recent failures")
-
-        try:
-            result = func(*args, **kwargs)
-
-            if self.state == "HALF_OPEN":
-                self.state = "CLOSED"
-                self.failure_count = 0
-
-            return result
-
-        except Exception as e:
-            self.failure_count += 1
-            self.last_failure_time = time.time()
-
-            if self.failure_count >= self.failure_threshold:
-                self.state = "OPEN"
-
-            raise e
-
-    def reset(self):
-        """Reset the circuit breaker."""
-        self.failure_count = 0
-        self.last_failure_time = None
-        self.state = "CLOSED"
+    
+    def reset_metrics(self, agent_type: Optional[str] = None):
+        """
+        Reset performance metrics.
+        
+        Args:
+            agent_type: Specific agent type (None = reset all)
+        """
+        if agent_type and agent_type in self._metrics:
+            self._metrics[agent_type] = PerformanceMetrics(agent_type=agent_type)
+            logger.debug(f"Reset metrics for {agent_type}")
+        else:
+            self._metrics.clear()
+            self._start_time = time.time()
+            logger.debug("Reset all metrics")
 
 
-class RateLimiter:
-    """Simple rate limiter for API calls."""
-
-    def __init__(self, max_requests_per_minute: int = 60):
-        self.max_requests = max_requests_per_minute
-        self.requests = []
-
-    def is_allowed(self) -> bool:
-        """Check if a request is allowed based on rate limiting."""
-        current_time = time.time()
-
-        # Remove requests older than 1 minute
-        minute_ago = current_time - 60
-        self.requests = [
-            req_time for req_time in self.requests if req_time > minute_ago
-        ]
-
-        # Check if under limit
-        if len(self.requests) < self.max_requests:
-            self.requests.append(current_time)
-            return True
-
-        return False
-
-    def time_until_next_request(self) -> float:
-        """Get time in seconds until next request is allowed."""
-        if not self.requests:
-            return 0.0
-
-        oldest_request = min(self.requests)
-        return max(0.0, 60 - (time.time() - oldest_request))
+def get_performance_monitor() -> PerformanceMonitor:
+    """
+    Get the singleton PerformanceMonitor instance.
+    
+    Returns:
+        PerformanceMonitor instance
+    """
+    return PerformanceMonitor()
 
 
 def validate_config(config: AgentConfig) -> List[str]:
     """
-    Validate agent configuration and return list of warnings/errors.
-
+    Validate agent configuration and return any issues.
+    
     Args:
-        config: Agent configuration to validate
-
+        config: AgentConfig instance to validate
+        
     Returns:
-        List of validation messages
+        List of validation messages (empty if no issues)
     """
     issues = []
-
-    # Check model name
-    if not config.model_name:
-        issues.append("ERROR: Model name cannot be empty")
-
-    # Check temperature ranges
-    if not (0.0 <= config.conversational_temperature <= 1.0):
+    
+    if config.temperature < 0.0 or config.temperature > 2.0:
         issues.append(
-            "WARNING: Conversational temperature should be between 0.0 and 1.0"
+            f"WARNING: Temperature {config.temperature} is outside typical range [0.0, 2.0]"
         )
-
-    if not (0.0 <= config.tool_calling_temperature <= 1.0):
-        issues.append("WARNING: Tool calling temperature should be between 0.0 and 1.0")
-
-    # Check performance limits
-    if config.max_iterations < 1:
-        issues.append("ERROR: max_iterations must be at least 1")
-
+    
+    if config.max_iterations < 1 or config.max_iterations > 50:
+        issues.append(
+            f"WARNING: max_iterations {config.max_iterations} is outside recommended range [1, 50]"
+        )
+    
     if config.timeout_seconds < 10:
         issues.append(
-            "WARNING: timeout_seconds is very low, may cause premature timeouts"
+            f"WARNING: timeout_seconds {config.timeout_seconds} is very low and may cause failures"
         )
-
-    if config.memory_token_limit < 1000:
+    
+    if config.request_timeout < 30:
         issues.append(
-            "WARNING: memory_token_limit is very low, may limit conversation context"
+            f"WARNING: request_timeout {config.request_timeout} is low for complex queries"
         )
-
-    # Check safety limits
-    if config.max_retries < 0:
-        issues.append("ERROR: max_retries cannot be negative")
-
-    if config.rate_limit_requests_per_minute < 1:
-        issues.append("ERROR: rate_limit_requests_per_minute must be at least 1")
-
+    
+    if not config.model_name:
+        issues.append("ERROR: model_name cannot be empty")
+    
     return issues
 
 
-def create_default_config() -> AgentConfig:
-    """Create a default configuration with sensible defaults."""
-    return AgentConfig()
-
-
-def load_config_from_file(filepath: str) -> AgentConfig:
+def format_query_context(
+    query: str,
+    max_length: int = 500,
+    include_metadata: bool = False,
+) -> str:
     """
-    Load configuration from a JSON file.
-
+    Format a query for logging or display.
+    
     Args:
-        filepath: Path to configuration file
-
+        query: The query to format
+        max_length: Maximum length before truncation
+        include_metadata: Whether to include metadata
+        
     Returns:
-        Loaded configuration
+        Formatted query string
     """
-    try:
-        with open(filepath, "r") as f:
-            data = json.load(f)
-
-        # Convert log level string to enum
-        if "log_level" in data:
-            data["log_level"] = LogLevel(data["log_level"])
-
-        return AgentConfig(**data)
-
-    except Exception as e:
-        raise ValueError(f"Failed to load configuration from {filepath}: {e}")
+    formatted = query.strip()
+    
+    if len(formatted) > max_length:
+        formatted = formatted[:max_length] + "..."
+    
+    if include_metadata:
+        formatted = f"[Length: {len(query)}] {formatted}"
+    
+    return formatted
 
 
-def save_config_to_file(config: AgentConfig, filepath: str):
+def sanitize_agent_response(response: str) -> str:
     """
-    Save configuration to a JSON file.
-
+    Sanitize agent response for safe display.
+    
     Args:
-        config: Configuration to save
-        filepath: Path to save configuration
+        response: Raw agent response
+        
+    Returns:
+        Sanitized response string
     """
-    # Convert to dictionary
-    config_dict = {
-        field.name: getattr(config, field.name)
-        for field in config.__dataclass_fields__.values()
-    }
-
-    # Convert enum to string
-    if "log_level" in config_dict:
-        config_dict["log_level"] = config_dict["log_level"].value
-
-    with open(filepath, "w") as f:
-        json.dump(config_dict, f, indent=2)
-
-
-# Global performance monitor instance
-global_performance_monitor = PerformanceMonitor()
-
-
-def get_performance_monitor() -> PerformanceMonitor:
-    """Get the global performance monitor instance."""
-    return global_performance_monitor
+    # Remove any potential script tags or dangerous content
+    sanitized = response.replace("<script>", "").replace("</script>", "")
+    
+    # Ensure response is not empty
+    if not sanitized.strip():
+        sanitized = "I apologize, but I couldn't generate a proper response. Please try again."
+    
+    return sanitized.strip()
