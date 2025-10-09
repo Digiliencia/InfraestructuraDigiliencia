@@ -37,8 +37,12 @@ async def test_invalid_chat_operations(
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     # Test sending invalid message
+    response = await authenticated_client.get("/chats/template_list")
+    if response.status_code != status.HTTP_202_ACCEPTED:
+        raise Exception("Error getting templates. ", response.status_code)
+    template = response[0]
     chat_response = await authenticated_client.patch(
-        "/chats", json={"tittle": "Test Chat", "ia_prompt": "Test prompt"}
+        "/chats", json={"tittle": "Test Chat", "ia_prompt": template}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["id"]

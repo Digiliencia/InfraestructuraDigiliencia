@@ -62,7 +62,6 @@ class IAPrompt(Base):
     prompt_name = Column(String(255), nullable=False)
     prompt = Column(Text, nullable=False)
     prompt_description = Column(Text, nullable=True)
-    ia_name = Column(String(255), nullable=False, unique=True)
 
     # Relationship to Chat: one prompt can be used in many chats
     chats = relationship("Chat", back_populates="ia_prompt")

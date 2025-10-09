@@ -10,7 +10,7 @@ class Text(BaseModel):
 
 class ChatCreate(BaseModel):
     tittle: str
-    ia_prompt: str
+    ia_prompt: str = ""
 
 
 class Texts(BaseModel):
@@ -44,3 +44,7 @@ class ConversationSummaryList(BaseModel):
 
 class ConversationList(BaseModel):
     conversations: List[ConversationFull]
+
+
+class ModelList(BaseModel):
+    models: dict

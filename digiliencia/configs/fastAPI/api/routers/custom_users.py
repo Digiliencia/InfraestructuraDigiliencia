@@ -1,7 +1,9 @@
 # /api/routers/custom_users.py
+from typing import Dict
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from auth.users import fastapi_users
+from auth.manager import UserManager
 from db.models import User
 
 # Crear una dependencia reutilizable para el usuario actual
@@ -33,8 +35,8 @@ router = APIRouter(dependencies=[Depends(current_user)])
 )
 async def delete_own_user(
     user: User = Depends(current_user),
-    user_manager=Depends(fastapi_users.get_user_manager),
-):
+    user_manager: UserManager = Depends(fastapi_users.get_user_manager),
+) -> None:
     """
     Permanently delete the authenticated user's account.
 
@@ -96,7 +98,7 @@ async def delete_own_user(
 )
 async def export_user_data(
     user: User = Depends(current_user),
-):
+) -> Dict[str, uuid.UUID | str | bool | int]:
     """
     Export all data associated with a user account (GDPR compliance).
 

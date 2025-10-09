@@ -1,9 +1,11 @@
 # /api/routers/chats.py
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from typing import List, Tuple
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import and_, or_, not_
 from sqlalchemy import exc as sqlalchemy_exc
 from db.models import Model, User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
@@ -129,7 +131,7 @@ async def get_full_conversation(
         HTTPException: If chat is not found or user is not authorized
     """
     chat = await db.get(Chat, chat_id)
-    if not chat or chat.user_id != user.id:
+    if chat is None or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
     result = await db.execute(
         select(Message).where(Message.chat_id == chat_id).order_by(Message.n_orden)
@@ -158,7 +160,7 @@ async def ask_question_to_chat(
     payload: chat_schema.Text,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> chat_schema.Texts:
     """
     Send a question to a specific chat and get an AI-generated response.
 
@@ -177,7 +179,7 @@ async def ask_question_to_chat(
     chat = await db.get(Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
-    if chat.user_id != user.id:
+    if not chat.user_id.is_(user.id):
         raise HTTPException(
             status_code=403, detail="Not authorized to access this chat"
         )
@@ -202,7 +204,7 @@ async def ask_question_to_chat(
     db.add(response_message)
     await db.commit()
     await db.refresh(response_message)
-    return {"text": respuesta}
+    return chat_schema.Texts(text=respuesta)
 
 
 @router.patch("/chats", response_model=chat_schema.Texts)
@@ -247,7 +249,7 @@ async def import_conversation(
     payload: List[chat_schema.Texts],
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> tuple[UUID, List[chat_schema.Texts]]:
     """
     Import a full conversation.
 
@@ -268,15 +270,15 @@ async def import_conversation(
     for i, msg in enumerate(payload, start=1):
         db.add(Message(chat_id=chat.id, order_number=i, content=msg.text))
     await db.commit()
-    return chat.id, payload
+    return UUID(str(chat.id)), payload
 
 
 @router.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
-    chat_id: uuid.UUID,
+    chat_id: UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """
     Delete a specific chat conversation and all its messages.
 
@@ -292,10 +294,33 @@ async def delete_conversation(
         HTTPException: If chat is not found or user is not authorized
     """
     chat = await db.get(Chat, chat_id)
-    if not chat or chat.user_id != user.id:
+    if chat is None or not chat.user_id.is_(user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
         )
     await db.delete(chat)
     await db.commit()
     return None
+
+
+@router.get("/chats/model_list")
+async def get_ia_list(db: AsyncSession = Depends(get_db)):
+    models = await db.execute(select(Model))
+    models = models.fetchall()
+    model_list = [{"id": model.id, "model": model.nombre} for model in models]
+    return model_list
+
+
+@router.get("/chats/template_list", status_code=status.HTTP_202_ACCEPTED)
+async def get_template_list(db: AsyncSession = Depends(get_db)):
+    templates = await db.execute(select(IAPrompt))
+    templates = templates.fetchall()
+    template_list = [
+        {
+            "id": template.id,
+            "template_name": template.prompt_name,
+            "template_description": template.prompt_description,
+        }
+        for template in templates
+    ]
+    return template_list
