@@ -1,155 +1,275 @@
-import time
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+"""
+Router Agent implementation for intelligent query routing.
 
-from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.tools import FunctionTool
+This agent acts as an orchestrator, analyzing user queries and routing them
+to the appropriate specialized agent.
+"""
+
+import re
+from enum import Enum
+from typing import Any, Dict, Optional
+
 from loguru import logger
 
+from digiliencia.agents.base_agent import BaseAgent
 from digiliencia.agents.conversational_agent import ConversationalAgent
-from digiliencia.agents.memory_manager import MemoryManager
-from digiliencia.agents.metrics_tracker import MetricsTracker
-from digiliencia.agents.rag.news_agent import NewsAgent
+from digiliencia.agents.news_agent import NewsAgent
+from digiliencia.agents.prompts import ROUTER_SYSTEM_PROMPT
 
 
 class AgentType(Enum):
-    CONVERSATIONAL = "conversational"
-    NEWS = "news"
+    """Enumeration of available agent types."""
+    NEWS_AGENT = "NEWS_AGENT"
+    CONVERSATIONAL_AGENT = "CONVERSATIONAL_AGENT"
 
 
-class RouterAgent:
-    """Agente enrutador que delega en el LLM la decisión de qué subagente usar."""
-
+class RouterAgent(BaseAgent):
+    """
+    Orchestrator agent that routes queries to specialized agents.
+    
+    This agent uses an LLM to intelligently determine which specialized
+    agent should handle each user query, then delegates the work.
+    """
+    
     def __init__(
         self,
-        model_name: str,
-        tools: Optional[List[FunctionTool]] = None,
+        model_name: str = "llama3.1:8b",
+        temperature: float = 0.1,  # Very low temperature for consistent routing
         verbose: bool = False,
     ):
-        self.model_name = model_name
-        self.verbose = verbose
-
-        self.memory = MemoryManager()
-        self.metrics = MetricsTracker()
-
-        # Registro de agentes disponibles (fácil de ampliar)
-        self.agents: Dict[AgentType, Any] = {
-            AgentType.CONVERSATIONAL: ConversationalAgent(
-                model_name=model_name, verbose=verbose
-            ),
-            AgentType.NEWS: NewsAgent(
-                model_name=model_name, tools=tools, verbose=verbose
-            ),
+        """
+        Initialize the Router Agent.
+        
+        Args:
+            model_name: Name of the Ollama model to use
+            temperature: LLM temperature (very low for deterministic routing)
+            verbose: Enable detailed logging
+        """
+        super().__init__(
+            name="RouterAgent",
+            description="Routes user queries to appropriate specialized agents",
+            model_name=model_name,
+            temperature=temperature,
+            verbose=verbose,
+        )
+        
+        # Initialize specialized agents
+        self._agents: Dict[AgentType, BaseAgent] = {}
+        self._initialize_agents(model_name, verbose)
+        
+        # Routing statistics
+        self._routing_stats: Dict[str, int] = {
+            agent_type.value: 0 for agent_type in AgentType
         }
-
-        # LLM "ligero" solo para clasificación de routing
-        # Reutilizamos el ConversationalAgent internamente como LLM base
-        self.classifier = ConversationalAgent(model_name=model_name, verbose=verbose)
-
-    def _classify_query(self, message: str) -> AgentType:
+        
+        logger.info("RouterAgent initialized with specialized agents")
+    
+    def _initialize_agents(self, model_name: str, verbose: bool):
         """
-        Usa el LLM para decidir a qué agente enrutar la query.
+        Initialize all specialized agents.
+        
+        Args:
+            model_name: Model name to use for agents
+            verbose: Verbose flag for agents
         """
-        system_prompt = """
-        You are a router that decides which specialized agent should handle the query.
-        Available agents:
-        - conversational: for general chit-chat, casual dialogue, greetings, or general knowledge.
-        - news: for questions about cybersecurity news, threat intelligence, vulnerabilities, or security updates.
-
-        Respond with only one word: conversational or news.
-        """
-
         try:
-            chat_messages = [
-                ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
-                ChatMessage(role=MessageRole.USER, content=message),
-            ]
-            response = self.classifier.llm.chat(chat_messages)
-            decision = response.message.content.strip().lower()
-
-            if "news" in decision:
-                return AgentType.NEWS
-            return AgentType.CONVERSATIONAL
+            self._agents[AgentType.NEWS_AGENT] = NewsAgent(
+                model_name=model_name,
+                verbose=verbose,
+            )
+            logger.debug("NewsAgent initialized")
         except Exception as e:
-            logger.error(f"Fallo en clasificación con LLM: {e}")
-            # fallback simple
-            return AgentType.CONVERSATIONAL
-
-    def send_msg(self, message: str) -> Union[str, Dict[str, Any]]:
-        start = time.time()
+            logger.error(f"Failed to initialize NewsAgent: {e}")
+        
         try:
-            self.memory.add_message(MessageRole.USER, message)
+            self._agents[AgentType.CONVERSATIONAL_AGENT] = ConversationalAgent(
+                model_name=model_name,
+                verbose=verbose,
+            )
+            logger.debug("ConversationalAgent initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize ConversationalAgent: {e}")
+    
+    def get_system_prompt(self) -> str:
+        """
+        Get the system prompt for routing decisions.
+        
+        Returns:
+            System prompt string
+        """
+        return ROUTER_SYSTEM_PROMPT
+    
+    def _route_query(self, query: str) -> AgentType:
+        """
+        Determine which agent should handle the query.
+        
+        Args:
+            query: User's input query
+            
+        Returns:
+            Selected AgentType
+        """
+        try:
+            # Create routing prompt
+            routing_prompt = f"{self.get_system_prompt()}\n\nUser Query: {query}\n\nSelected Agent:"
+            
+            # Get LLM decision
+            response = self._llm.complete(routing_prompt)
+            decision = str(response).strip().upper()
 
-            agent_type = self._classify_query(message)
-            if self.verbose:
-                logger.info(f"Routing query to agent: {agent_type.value}")
-
-            agent = self.agents.get(agent_type)
-            if not agent:
-                raise ValueError(f"No agent available for type {agent_type}")
-
-            response = agent.send_msg(message)
-            self.memory.add_message(MessageRole.ASSISTANT, str(response))
-
-            elapsed = time.time() - start
-            self.metrics.log_request(elapsed)
+            # Remove any "think" or reasoning text, keep only the last line/word
+            if "\n" in decision:
+                decision = decision.splitlines()[-1].strip()
+            elif " " in decision:
+                decision = decision.split()[-1].strip()
+            
+            logger.debug(f"LLM routing decision: {decision}")
+            
+            # Parse the decision
+            if "NEWS_AGENT" in decision or "NEWS" in decision:
+                return AgentType.NEWS_AGENT
+            elif "CONVERSATIONAL_AGENT" in decision or "CONVERSATIONAL" in decision:
+                return AgentType.CONVERSATIONAL_AGENT
+            else:
+                # Default to conversational for ambiguous cases
+                logger.warning(f"Ambiguous routing decision: {decision}. Defaulting to CONVERSATIONAL_AGENT")
+                return AgentType.CONVERSATIONAL_AGENT
+                
+        except Exception as e:
+            logger.error(f"Error during query routing: {e}")
+            # Default to conversational agent on error
+            return AgentType.CONVERSATIONAL_AGENT
+    
+    def process_query(self, query: str, **kwargs) -> str:
+        """
+        Route the query to the appropriate agent and return the response.
+        
+        Args:
+            query: User's input query
+            **kwargs: Additional parameters
+            
+        Returns:
+            Response from the specialized agent
+        """
+        try:
+            logger.info(f"RouterAgent received query: {query[:100]}...")
+            
+            # Determine which agent to use
+            selected_agent_type = self._route_query(query)
+            
+            # Update routing statistics
+            self._routing_stats[selected_agent_type.value] += 1
+            
+            # Get the selected agent
+            selected_agent = self._agents.get(selected_agent_type)
+            
+            if not selected_agent:
+                logger.error(f"Agent {selected_agent_type} not available")
+                return "I'm sorry, but the requested service is currently unavailable. Please try again later."
+            
+            logger.info(f"Query routed to: {selected_agent_type.value}")
+            
+            # Process with the selected agent
+            response = selected_agent.process_query(query, **kwargs)
+            
+            self.record_query(success=True)
+            logger.debug("RouterAgent query completed successfully")
+            
             return response
+            
         except Exception as e:
-            elapsed = time.time() - start
-            self.metrics.log_request(elapsed, error=True)
-            logger.error(f"Error en RouterAgent: {e}")
-            return {"error": str(e)}
-
-    def get_system_summary(self) -> Dict[str, Any]:
-        return {
-            "router_metrics": self.metrics.report(),
-            "memory_summary": self.memory.summarize(),
-            "agent_summaries": {
-                name.value: agent.metrics.report()
-                for name, agent in self.agents.items()
-                if hasattr(agent, "metrics")
-            },
-        }
-
-    def reset(self):
-        self.memory.reset()
-        for agent in self.agents.values():
-            if hasattr(agent, "clear_history"):
-                agent.clear_history()
-        logger.info("RouterAgent reseteado")
-
-    # Métodos utilitarios esperados por la UI
-    def get_available_tools(self) -> List[Dict[str, str]]:
-        try:
-            news_agent = self.agents.get(AgentType.NEWS)
-            return news_agent.get_available_tools() if news_agent else []
-        except Exception:
-            return []
-
-    def get_agent_metrics(self) -> Dict[str, Any]:
-        return {
-            "router": self.metrics.report(),
-            **{
-                agent_type.value: agent.metrics.report()
-                for agent_type, agent in self.agents.items()
-                if hasattr(agent, "metrics")
-            },
-        }
-
+            logger.error(f"Error in RouterAgent.process_query: {e}")
+            self.record_query(success=False)
+            
+            return (
+                f"I encountered an error while processing your request: {str(e)}. "
+                "Please try again or rephrase your question."
+            )
+    
+    def send_msg(self, message: str) -> str:
+        """
+        Alias for process_query for backwards compatibility.
+        
+        Args:
+            message: User's message
+            
+        Returns:
+            Agent's response
+        """
+        return self.process_query(message)
+    
     def get_routing_stats(self) -> Dict[str, Any]:
-        try:
-            total = self.metrics.total_requests
-            usage = {
-                agent_type.value: f"{(agent.metrics.total_requests / max(total, 1)) * 100:.1f}%"
-                for agent_type, agent in self.agents.items()
-                if hasattr(agent, "metrics")
-            }
-            return {"total_queries": total, "agent_usage_percentage": usage}
-        except Exception:
-            return {"total_queries": 0, "agent_usage_percentage": {}}
-
+        """
+        Get routing statistics.
+        
+        Returns:
+            Dictionary with routing statistics
+        """
+        total_queries = sum(self._routing_stats.values())
+        
+        percentages = {}
+        for agent_type, count in self._routing_stats.items():
+            percentages[agent_type] = (
+                round((count / total_queries * 100), 2)
+                if total_queries > 0
+                else 0.0
+            )
+        
+        return {
+            "total_queries": total_queries,
+            "agent_usage_count": self._routing_stats.copy(),
+            "agent_usage_percentage": percentages,
+        }
+    
+    def get_agent_metrics(self) -> Dict[str, Any]:
+        """
+        Get metrics from all agents.
+        
+        Returns:
+            Dictionary with metrics from all agents
+        """
+        metrics = {
+            "router": self.get_metrics(),
+            "routing_stats": self.get_routing_stats(),
+            "agents": {},
+        }
+        
+        for agent_type, agent in self._agents.items():
+            metrics["agents"][agent_type.value] = agent.get_metrics()
+        
+        return metrics
+    
+    def get_available_tools(self) -> list:
+        """
+        Get all available tools from all agents.
+        
+        Returns:
+            List of tool descriptions
+        """
+        tools = []
+        
+        for agent_type, agent in self._agents.items():
+            # Check if agent has the method
+            if hasattr(agent, 'get_tool_descriptions') and callable(getattr(agent, 'get_tool_descriptions')):
+                agent_tools = agent.get_tool_descriptions()
+                for tool in agent_tools:
+                    tool['agent'] = agent_type.value
+                    tools.append(tool)
+        
+        return tools
+    
     def reset_conversation(self):
-        self.reset()
-        for agent in self.agents.values():
-            if hasattr(agent, "clear_history"):
-                agent.clear_history()
+        """Reset all agents' conversation states."""
+        for agent in self._agents.values():
+            # Check if agent has reset_conversation method
+            if hasattr(agent, 'reset_conversation') and callable(getattr(agent, 'reset_conversation')):
+                agent.reset_conversation()
+        
+        logger.debug("All agent conversations reset")
+    
+    def reset_routing_stats(self):
+        """Reset routing statistics."""
+        self._routing_stats = {
+            agent_type.value: 0 for agent_type in AgentType
+        }
+        logger.debug("Routing statistics reset")
