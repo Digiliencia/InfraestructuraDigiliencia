@@ -30,6 +30,13 @@ async def test_invalid_chat_operations(
         "ia_prompt": "dfdsfdsgfh",  # Invalid prompt
     }
     response = await authenticated_client.patch("/chats", json=invalid_chat_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    invalid_chat_data = {
+        "tittle": "",  # Empty title
+        "ia_prompt": "b0081876-19de-4e00-b1e5-824b39de290e",  # Invalid prompt
+    }
+    response = await authenticated_client.patch("/chats", json=invalid_chat_data)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     invalid_chat_data = {}  # Missing required fields
@@ -42,10 +49,11 @@ async def test_invalid_chat_operations(
         raise Exception("Error getting templates. ", response.status_code)
     template = response.json()[0]
     chat_response = await authenticated_client.patch(
-        "/chats", json={"tittle": "Test Chat", "ia_prompt": next(iter(template))}
+        "/chats", json={"tittle": "Test Chat", "ia_prompt": next(iter(template.items()))[1]}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
-    chat_id = chat_response.json()["id"]
+
+    chat_id = chat_response.json()["idChat"]
 
     invalid_message = {"text": ""}  # Empty message
     response = await authenticated_client.patch(
@@ -71,7 +79,7 @@ async def test_chat_creation_and_messages(authenticated_client: AsyncClient):
     """Tests creating a chat and sending/receiving messages."""
     # Create new chat
     chat_data = {"tittle": "Test Chat", "ia_prompt": "You are a helpful assistant"}
-    chat_response = await authenticated_client.post("/chats", json=chat_data)
+    chat_response = await authenticated_client.patch("/chats", json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["id"]
 

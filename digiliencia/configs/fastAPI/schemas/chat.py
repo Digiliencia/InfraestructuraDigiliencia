@@ -1,7 +1,7 @@
 # /schemas/chat.py
 from pydantic import BaseModel
-from typing import List
-
+from typing import List, Optional
+from uuid import UUID
 
 class Text(BaseModel):
     model: str
@@ -10,7 +10,7 @@ class Text(BaseModel):
 
 class ChatCreate(BaseModel):
     tittle: str
-    ia_prompt: str = ""
+    ia_prompt: Optional[UUID] = None
 
 
 class Texts(BaseModel):
@@ -18,7 +18,7 @@ class Texts(BaseModel):
 
 
 class message(BaseModel):
-    id: str
+    id: UUID
     order_number: int
     content: str
     model: str
@@ -29,9 +29,9 @@ class Captcha(BaseModel):
 
 
 class ConversationSummary(BaseModel):
-    idChat: str
+    idChat: UUID
     tittle: str
-    ia_prompt: str = ""
+    ia_prompt: UUID
 
 
 class ConversationFull(ConversationSummary):
@@ -47,7 +47,7 @@ class ConversationList(BaseModel):
 
 
 class ModelSummary(BaseModel):
-    idModel: str
+    idModel: UUID
     model_name: str
 
 
@@ -56,7 +56,7 @@ class ModelList(BaseModel):
 
 
 class TemplateSummary(BaseModel):
-    idTemplate: str
+    idTemplate: UUID
     template_name: str
     template_description: str
 

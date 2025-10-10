@@ -204,7 +204,7 @@ async def ask_question_to_chat(
     return chat_schema.Texts(text=respuesta)
 
 
-@router.patch("/chats", response_model=chat_schema.Texts)
+@router.patch("/chats", status_code=status.HTTP_201_CREATED, response_model=chat_schema.ConversationSummary)
 async def create_chat(
     payload: chat_schema.ChatCreate,
     user: User = Depends(current_user),
@@ -219,22 +219,26 @@ async def create_chat(
         db (AsyncSession): Database session (injected by dependency)
 
     Returns:
-        chat_id: chat id
+        ConversationSummary: a summary of the chat
 
     Raises:
         HTTPException: If user is not authorized
     """
-    ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
+    
+    if not payload.ia_prompt:
+        ia_prompt = await db.get(IAPrompt, "76f81605-08ac-4694-8122-18f6958c8797") # default
+    else:
+        ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
     if not ia_prompt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ia_prompt: The specified prompt does not exist",
         )
-    chat = Chat(user_id=user.id, ia_prompt=payload.ia_prompt, tittle=payload.tittle)
+    chat = Chat(user_id=user.id, ia_prompt=ia_prompt, tittle=payload.tittle)
     db.add(chat)
     await db.commit()
     return chat_schema.ConversationSummary(
-        idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=ia_prompt
+        idChat=UUID(str(chat.id)), tittle=str(chat.tittle), ia_prompt=UUID(str(ia_prompt.id))
     )
 
 
