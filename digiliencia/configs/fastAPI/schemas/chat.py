@@ -46,5 +46,20 @@ class ConversationList(BaseModel):
     conversations: List[ConversationFull]
 
 
+class ModelSummary(BaseModel):
+    idModel: str
+    model_name: str
+
+
 class ModelList(BaseModel):
-    models: dict
+    models: tuple[ModelSummary]
+
+
+class TemplateSummary(BaseModel):
+    idTemplate: str
+    template_name: str
+    template_description: str
+
+
+class TemplateList(BaseModel):
+    templates: tuple[TemplateSummary]

@@ -9,7 +9,7 @@ from auth.transport import auth_backend
 
 
 from schemas import user as user_schema
-from api.routers import chats, custom_users, custom_auth
+from api.routers import chats, custom_users, custom_auth, models, templates
 from core.config import settings
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
@@ -74,7 +74,11 @@ app.include_router(
     tags=["Auth"],
 )
 
+# Public
+app.include_router(models.router, prefix=api_prefix, tags=["Models"])
+app.include_router(templates.router, prefix=api_prefix, tags=["templates"])
 
+# Authentication required
 app.include_router(custom_users.router, prefix=api_prefix, tags=["Users"])
 app.include_router(chats.router, prefix=api_prefix, tags=["Chats"])
 

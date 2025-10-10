@@ -21,7 +21,7 @@ CREATE TABLE USERS (
 -- Create the IA_PROMPTS table
 CREATE TABLE IA_PROMPTS (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    prompt_name VARCHAR(255) NOT NULL,
+    prompt_name VARCHAR(255) NOT NULL UNIQUE,
     prompt TEXT NOT NULL, -- Use TEXT for potentially longer prompt strings
     prompt_description TEXT
 );

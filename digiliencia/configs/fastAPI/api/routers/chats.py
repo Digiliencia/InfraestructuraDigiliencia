@@ -1,17 +1,14 @@
 # /api/routers/chats.py
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Tuple
+from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import and_, or_, not_
-from sqlalchemy import exc as sqlalchemy_exc
-from db.models import Model, User, Chat, Message, IAPrompt
+from db.models import User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db
-from sqlalchemy.exc import IntegrityError
 
 
 # Crear una dependencia reutilizable para el usuario actual
@@ -227,10 +224,7 @@ async def create_chat(
     Raises:
         HTTPException: If user is not authorized
     """
-    ia_prompt = await db.execute(
-        select(IAPrompt).where(IAPrompt.prompt_name == payload.ia_prompt)
-    )
-    ia_prompt = ia_prompt.scalars().first()
+    ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
     if not ia_prompt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -301,26 +295,3 @@ async def delete_conversation(
     await db.delete(chat)
     await db.commit()
     return None
-
-
-@router.get("/chats/model_list")
-async def get_ia_list(db: AsyncSession = Depends(get_db)):
-    models = await db.execute(select(Model))
-    models = models.fetchall()
-    model_list = [{"id": model.id, "model": model.nombre} for model in models]
-    return model_list
-
-
-@router.get("/chats/template_list", status_code=status.HTTP_202_ACCEPTED)
-async def get_template_list(db: AsyncSession = Depends(get_db)):
-    templates = await db.execute(select(IAPrompt))
-    templates = templates.fetchall()
-    template_list = [
-        {
-            "id": template.id,
-            "template_name": template.prompt_name,
-            "template_description": template.prompt_description,
-        }
-        for template in templates
-    ]
-    return template_list

@@ -40,9 +40,9 @@ async def test_invalid_chat_operations(
     response = await authenticated_client.get("/chats/template_list")
     if response.status_code != status.HTTP_202_ACCEPTED:
         raise Exception("Error getting templates. ", response.status_code)
-    template = response[0]
+    template = response.json()[0]
     chat_response = await authenticated_client.patch(
-        "/chats", json={"tittle": "Test Chat", "ia_prompt": template}
+        "/chats", json={"tittle": "Test Chat", "ia_prompt": next(iter(template))}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["id"]
@@ -107,13 +107,13 @@ async def test_create_and_list_chats(authenticated_client: AsyncClient):
     chat1_data = {"tittle": "Test Chat 1", "ia_prompt": "You are a helpful assistant"}
     chat1_response = await authenticated_client.post("/chats", json=chat1_data)
     assert chat1_response.status_code == status.HTTP_201_CREATED
-    chat1_id = chat1_response.json()["id"]
+    #chat1_id = chat1_response.json()["id"]
 
     # Create second chat
     chat2_data = {"tittle": "Test Chat 2", "ia_prompt": "You are a technical expert"}
     chat2_response = await authenticated_client.post("/chats", json=chat2_data)
     assert chat2_response.status_code == status.HTTP_201_CREATED
-    chat2_id = chat2_response.json()["id"]
+    #chat2_id = chat2_response.json()["id"]
 
     # Get conversations list
     response = await authenticated_client.get("/conversations")

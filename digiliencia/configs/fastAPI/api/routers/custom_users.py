@@ -1,7 +1,7 @@
 # /api/routers/custom_users.py
 from typing import Dict
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from auth.users import fastapi_users
 from auth.manager import UserManager
 from db.models import User
