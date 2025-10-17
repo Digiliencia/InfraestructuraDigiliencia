@@ -131,19 +131,19 @@ async def get_full_conversation(
     if chat is None or chat.user_id != user.id:
         raise HTTPException(status_code=404, detail="Chat not found")
     result = await db.execute(
-        select(Message).where(Message.chat_id == chat_id).order_by(Message.n_orden)
+        select(Message).where(Message.chat_id == chat_id).order_by(Message.order_number)
     )
     messages = result.scalars().all()
     conversations = chat_schema.ConversationFull(
-        idChat=str(chat.id),
+        idChat=UUID(str(chat.id)),
         tittle=str(chat.tittle),
         ia_prompt=chat.ia_prompt,
         messages=[
             chat_schema.message(
-                id=str(msg.id),
-                order_number=msg.n_orden,
+                id=UUID(str(msg.id)),
+                order_number=int(msg.order_number),
                 content=str(msg.content),
-                model=msg.model,
+                model_id=UUID(msg.model_id),
             )
             for msg in messages
         ],
@@ -176,40 +176,50 @@ async def ask_question_to_chat(
     chat = await db.get(Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
-    if not chat.user_id.is_(user.id):
+    if not chat.user_id == user.id:
         raise HTTPException(
             status_code=403, detail="Not authorized to access this chat"
         )
     # Guardar la pregunta
-    n_orden = (
-        (await db.execute(select(Message.n_orden).where(Message.chat_id == chat_id)))
+    order_number = (
+        (
+            await db.execute(
+                select(Message.order_number).where(Message.chat_id == chat_id)
+            )
+        )
         .scalars()
         .all()
     )
-    n_orden = max(n_orden) + 1 if n_orden else 1
-    message = Message(chat_id=chat_id, order_number=n_orden, content=payload.text)
+    order_number = max(order_number) + 1 if order_number else 1
+    message = Message(chat_id=chat_id, order_number=order_number, content=payload.text)
     db.add(message)
     await db.commit()
     await db.refresh(message)
     # Llamada a servicio externo (placeholder)
     respuesta = (
-        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model}"
+        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model_id}"
     )
     # Guardar la respuesta
-    n_orden += 1
-    response_message = Message(chat_id=chat_id, order_number=n_orden, content=respuesta)
+    order_number += 1
+    response_message = Message(
+        chat_id=chat_id, order_number=order_number, content=respuesta
+    )
     db.add(response_message)
     await db.commit()
     await db.refresh(response_message)
     return chat_schema.Texts(text=respuesta)
 
 
-@router.patch("/chats", status_code=status.HTTP_201_CREATED, response_model=chat_schema.ConversationSummary)
+@router.patch(
+    "/chats",
+    status_code=status.HTTP_201_CREATED,
+    response_model=chat_schema.ConversationSummary,
+)
 async def create_chat(
     payload: chat_schema.ChatCreate,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-) -> chat_schema.ConversationSummary:
+):
     """
     Create a conversation.
 
@@ -224,9 +234,11 @@ async def create_chat(
     Raises:
         HTTPException: If user is not authorized
     """
-    
+
     if not payload.ia_prompt:
-        ia_prompt = await db.get(IAPrompt, "76f81605-08ac-4694-8122-18f6958c8797") # default
+        ia_prompt = await db.get(
+            IAPrompt, "76f81605-08ac-4694-8122-18f6958c8797"
+        )  # default
     else:
         ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
     if not ia_prompt:
@@ -238,7 +250,9 @@ async def create_chat(
     db.add(chat)
     await db.commit()
     return chat_schema.ConversationSummary(
-        idChat=UUID(str(chat.id)), tittle=str(chat.tittle), ia_prompt=UUID(str(ia_prompt.id))
+        idChat=UUID(str(chat.id)),
+        tittle=str(chat.tittle),
+        ia_prompt=UUID(str(ia_prompt.id)),
     )
 
 

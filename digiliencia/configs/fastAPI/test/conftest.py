@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import insert
 from faker import Faker
 import json
+from httpx import AsyncClient
 
 from pathlib import Path
 import sys
@@ -21,6 +22,9 @@ from main import app  # Import the FastAPI app instance
 from core.config import settings
 
 from db.models import User, Chat, Message, IAPrompt, Model
+from schemas.chat import TemplateList, ModelList
+from starlette import status
+
 
 faker = Faker()
 # Cargar variables de entorno desde el .env del proyecto
@@ -176,3 +180,21 @@ async def authenticated_client(
         response = await auth_client.delete("/users/me")
         if response.status_code != 204:
             raise Exception("User delete failed in fixture authenticated_client.")
+
+
+@pytest_asyncio.fixture(scope="function", autouse=False)
+async def templates(authenticated_client: AsyncClient) -> TemplateList:
+    response = await authenticated_client.get("/chats/template_list")
+    if response.status_code != status.HTTP_202_ACCEPTED:
+        raise Exception("Error getting templates. ", response.status_code)
+    templates = response.json()[0]
+    return templates
+
+
+@pytest_asyncio.fixture(scope="function", autouse=False)
+async def models(authenticated_client: AsyncClient) -> ModelList:
+    response = await authenticated_client.get("/chats/model_list")
+    if response.status_code != status.HTTP_202_ACCEPTED:
+        raise Exception("Error getting models. ", response.status_code)
+    models = response.json()[0]
+    return models

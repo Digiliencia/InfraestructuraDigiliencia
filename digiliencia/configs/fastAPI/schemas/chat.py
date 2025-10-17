@@ -3,8 +3,9 @@ from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
 
+
 class Text(BaseModel):
-    model: str
+    model_id: Optional[UUID]
     text: str
 
 
@@ -21,7 +22,7 @@ class message(BaseModel):
     id: UUID
     order_number: int
     content: str
-    model: str
+    model_id: Optional[UUID]
 
 
 class Captcha(BaseModel):
