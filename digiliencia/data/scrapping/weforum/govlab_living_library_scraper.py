@@ -10,6 +10,11 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-18 16:57:42.450 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://thelivinglib.org/proprietary-data-open-data-data-commons-who-owns-the-data-how-to-best-reconcile-conflicting-interests-in-exploiting-the-value-of-data-and-protecting-against-its-risks/:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"h1.entry-title"}
+  (Session info: chrome=141.0.7390.77); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+'''
 
 class GovlabLivingLibraryScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

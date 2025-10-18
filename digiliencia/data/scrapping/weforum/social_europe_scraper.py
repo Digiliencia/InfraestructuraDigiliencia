@@ -12,6 +12,11 @@ from digiliencia.utils.time import TimeUtils
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-18 16:59:35.742 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.socialeurope.eu/europes-social-innovation-revolution-from-crisis-response-to-systemic-transformation:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":".entry-title"}   
+  (Session info: chrome=141.0.7390.77); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+'''
 
 class SocialEuropeScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

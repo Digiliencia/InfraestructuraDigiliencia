@@ -20,7 +20,7 @@ def scrap(from_days_ago: int = 5):
     # topics_class_service = TopicClassificationService()
     # fields_class_service = FieldClassificationService()
 
-    scrapers = [WEForumScraper, CanadianScraper, IncibeScraper, Ncsc]
+    scrapers = [WEForumScraper]#, CanadianScraper, IncibeScraper, Ncsc]
 
     for scraper in scrapers:
         try:

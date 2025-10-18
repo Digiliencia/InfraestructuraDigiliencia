@@ -190,7 +190,7 @@ class WEForumScraper(AbstractScraper):
         age_words = TimeUtils.format_days_ago(max_age_date)
         processed_articles = []
         processed_urls = set()  # Para evitar artículos duplicados
-
+        '''
         # Configuración inicial # TODO mirrar esta linea
         aside_div = self.driver.find_element(
             By.CSS_SELECTOR,
@@ -198,6 +198,8 @@ class WEForumScraper(AbstractScraper):
             # By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
             # By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
         )
+        '''
+        aside_div = self.driver.find_element(By.ID, "topic-content")
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
 
@@ -287,8 +289,7 @@ class WEForumScraper(AbstractScraper):
                             href = link_element.get_attribute("href")
 
                             if (
-                                type_publication == "Open"
-                                and href
+                                href
                                 and href not in processed_urls
                             ):
                                 logger.debug("pasooooo")
@@ -571,3 +572,10 @@ class WEForumScraper(AbstractScraper):
         self._close()
         logger.info("WEForum scraping finished")
         return scraped_publications
+
+'''
+WARNINGs
+
+2025-10-18 16:59:01.940 | WARNING  | digiliencia.data.scrapping.weforum.__main__:scrap_news:567 - No scrapper function found for publisher: World Economic Forum
+2025-10-18 16:59:01.940 | WARNING  | digiliencia.data.scrapping.weforum.__main__:scrap_news:567 - No scrapper function found for publisher: Igarapé Institute
+'''

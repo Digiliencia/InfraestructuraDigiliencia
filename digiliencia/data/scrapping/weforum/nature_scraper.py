@@ -1,15 +1,12 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
-
 from .abc_news_scraper import AbstractNewsScraper
-
+from utils.scrap import ScrapUtils
 
 class NatureScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -29,20 +26,7 @@ class NatureScraper(AbstractNewsScraper):
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
         # TODO ERROR: articles con varios identificadores diferentes
-        if "https://www.nature.com/" in url:
-            if "articles" in url:
-                elems["title"] = "h1.c-article-title"
-                elems["date"] = "li.c-article-identifiers__item time"
-                elems["author"] = "//li[@class='c-article-author-list__item']/a"
-                elems["content"] = "div.c-article-body p"
-            else:
-                elems["title"] = (
-                    "h1.c-article-magazine-title"  # https://www.nature.com/articles/d41586-025-01034-x
-                )
-                elems["date"] = "li time"
-                elems["author"] = "//li[@class='c-article-author-list__item']/a"
-                elems["content"] = "div.main-content p"
-        else:
+        if "https://www.nature.com/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Nature article scrapper"
             )
@@ -50,6 +34,23 @@ class NatureScraper(AbstractNewsScraper):
         # Access the URL
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
+
+        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1.c-article-title"): # type: ignore
+            elems["title"] = "h1.c-article-title"
+        else:
+            elems["title"] = "h1.c-article-magazine-title"
+
+        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "li.c-article-identifiers__item time"): # type: ignore
+            elems["date"] = "li.c-article-identifiers__item time"
+        else:
+            elems["date"] = "li time"
+
+        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "div.c-article-body p"): # type: ignore
+            elems["content"] = "div.c-article-body p"
+        else:
+            elems["content"] = "div.main-content p"
+
+        elems["author"] = "//li[@class='c-article-author-list__item']/a"
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
