@@ -1,22 +1,14 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
-
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
-2025-10-18 16:59:35.742 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.socialeurope.eu/europes-social-innovation-revolution-from-crisis-response-to-systemic-transformation:
- Message: no such element: Unable to locate element: {"method":"css selector","selector":".entry-title"}   
-  (Session info: chrome=141.0.7390.77); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
-'''
+from utils.scrap import ScrapUtils
 
 class SocialEuropeScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -44,16 +36,27 @@ class SocialEuropeScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
+        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-title"): # type: ignore
+            title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
+        else:
+            text_list = self.driver.find_elements(By.CSS_SELECTOR, ".gb-text")
+            title = text_list[0].text
 
-        authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
+        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-author"): # type: ignore
+            authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
+        else:
+            authors_line = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline").text
+        
         authors_line = authors_line.replace(",", " ").replace("and", " ")
         authors = [authors_line.strip()]
         author = "".join(authors)
 
-        time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
-        date_without_suffix = TimeUtils.format_suffix_date(time_elem)
+        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-time"): # type: ignore
+            time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
+        else:
+            time_elem = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline +div +p").text
 
+        date_without_suffix = TimeUtils.format_suffix_date(time_elem)
         date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore
 
         content_container = self.driver.find_element(By.CLASS_NAME, "entry-content")
