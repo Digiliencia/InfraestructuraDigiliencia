@@ -8,25 +8,6 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
 from digiliencia.utils.scrap import ScrapUtils
 
-'''
- Error scraping https://www.nature.com/articles/d41586-025-03221-2:
- Message: no such element: Unable to locate element: {"method":"xpath","selector":"//li[@class='c-article-author-list__item']/a"}
-  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
-Stacktrace:
-        GetHandleVerifier [0x0xe3fe83+66515]
-        GetHandleVerifier [0x0xe3fec4+66580]
-'''
-
-'''
-2025-10-20 09:35:08.887 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.nature.com/immersive/d41586-025-03086-5/index.html:
- Message: no such element: Unable to locate element: {"method":"css selector","selector":"h1.c-article-magazine-title"}
-  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
-Stacktrace:
-        GetHandleVerifier [0x0xe3fe83+66515]
-        GetHandleVerifier [0x0xe3fec4+66580]
-        (No symbol) [0x0xc2dc48]
-'''
-
 class NatureScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -44,7 +25,6 @@ class NatureScraper(AbstractNewsScraper):
         """
         logger.debug(f"Scraping Nature article: {url}")
         elems = {}
-        # TODO ERROR: articles con varios identificadores diferentes
         if "https://www.nature.com/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Nature article scrapper"
@@ -56,28 +36,36 @@ class NatureScraper(AbstractNewsScraper):
 
         if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1.c-article-title"): # type: ignore
             elems["title"] = "h1.c-article-title"
+        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1.Theme-StoryTitle"): # type: ignore
+            elems["title"] = "h1.Theme-StoryTitle"
         else:
             elems["title"] = "h1.c-article-magazine-title"
 
         if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "li.c-article-identifiers__item time"): # type: ignore
             elems["date"] = "li.c-article-identifiers__item time"
+        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, ".Theme-Byline p"): # type: ignore
+            elems["date"] = ".Theme-Byline p"
         else:
             elems["date"] = "li time"
 
         if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "div.c-article-body p"): # type: ignore
             elems["content"] = "div.c-article-body p"
-        else:
+        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "div.main-content p"): # type: ignore
             elems["content"] = "div.main-content p"
+        else:
+            elems["content"] = ".Theme-Layer-BodyText--inner p"
 
-        elems["author"] = "//li[@class='c-article-author-list__item']/a"
+        if ScrapUtils().if_element_exists(self.driver, By.XPATH, "//li[@class='c-article-author-list__item']/a"): # type: ignore
+            elems["author"] = "//li[@class='c-article-author-list__item']/a"
+            author = self.driver.find_element(By.XPATH, elems["author"]).text
+        else:
+            author = "" # There are not author
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
         date_ft = time_elem.replace("Published: ", "")
         date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
-
-        author = self.driver.find_element(By.XPATH, elems["author"]).text
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [contents.text for contents in content_container]
