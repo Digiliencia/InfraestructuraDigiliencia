@@ -1,24 +1,13 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
+from digiliencia.utils.time import TimeUtils
+from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
-
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
-Error scraping https://www.eco-business.com/news/asia-pacific-investment-in-smart-grids-could-free-up-us23-billion-by-2040-study/:
- time data '' does not match format '%B %d, %Y'
-'''
-
-'''
-2025-10-20 09:23:51.950 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.eco-business.com/research/sustainability-a-business-essential-for-asean-smes-amidst-escalating-global-volatility/:
- time data 'Oct. 13, 2025' does not match format '%B %d, %Y'
-'''
 
 class EcoBusinessScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -54,10 +43,16 @@ class EcoBusinessScraper(AbstractNewsScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        time_elem = self.driver.find_element(  # Esperar a que se carge
-            By.TAG_NAME, "time"
-        ).text
-        date = datetime.strptime(time_elem, "%B %d, %Y")  # type: ignore # TODO fix: time data '' does not match format '%B %d, %Y'
+        if ScrapUtils().if_element_exists(self.driver, By.TAG_NAME, "time"): # type: ignore
+            time_elem = self.driver.find_element(  # Esperar a que se carge
+                By.TAG_NAME, "time"
+            ).text
+        else:
+            time_elem = self.driver.find_element(
+                By.CSS_SELECTOR, ".eb-article__byline__publish-date"
+            ).text
+        fmt_date = TimeUtils().detect_fomat_date(time_elem)
+        date = datetime.strptime(time_elem, fmt_date)  # type: ignore 
 
         content_container = self.driver.find_elements(
             By.CSS_SELECTOR, "section.eb-article__body-content p"
