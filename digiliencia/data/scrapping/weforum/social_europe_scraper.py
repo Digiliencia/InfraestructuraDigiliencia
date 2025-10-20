@@ -8,7 +8,7 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
-from utils.scrap import ScrapUtils
+from digiliencia.utils.scrap import ScrapUtils
 
 class SocialEuropeScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

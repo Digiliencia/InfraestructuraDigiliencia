@@ -10,6 +10,29 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+Error scraping https://www.bankofengland.co.uk/report/2025/the-boes-approach-to-innovation-in-ai-dlt-quantum-computing:
+ Attempted to scrape invalid page for Bank of England article scrapper
+'''
+
+'''
+2025-10-20 09:21:57.153 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://blogs.lse.ac.uk/europpblog/2025/10/14/attention-is-all-you-need-europe-should-decouple-from-us-technology-eurostack/:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+        GetHandleVerifier [0x0xe3fec4+66580]
+        (No symbol) [0x0xc2dc48]
+        (No symbol) [0x0xc78704]
+'''
+
+'''
+2025-10-20 09:40:06.248 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://blogs.lse.ac.uk/usappblog/2025/09/19/geopolitics-isnt-killing-global-supply-chains-its-powering-them/:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+'''
 
 class BankEnglandScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

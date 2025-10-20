@@ -11,6 +11,13 @@ from digiliencia.utils.scrap import ScrapUtils
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-20 09:24:32.431 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://hbr.org/sponsored/2025/10/the-business-rewards-and-identity-risks-of-agentic-ai:   
+ Message: invalid selector: No selector specified
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidselectorexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+'''
 
 class HarvardBusinessReviewScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

@@ -11,6 +11,22 @@ from digiliencia.utils.scrap import ScrapUtils
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-20 09:33:18.425 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.oliverwyman.com/our-expertise/insights/2025/sep/operational-resilience-banks-southeast-asia.html:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.heading > div:first-child"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+        GetHandleVerifier [0x0xe3fec4+66580]
+'''
+
+'''
+2025-10-20 09:41:18.911 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.oliverwyman.com/our-expertise/perspectives/health/2025/september/from-ai-to-value-based-care-success-depends-on-execution.html:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.heading > div:first-child"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+'''
 
 class OliverWymanScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

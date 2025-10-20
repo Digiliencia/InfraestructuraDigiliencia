@@ -11,6 +11,10 @@ from digiliencia.utils.scrap import ScrapUtils
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-20 09:41:47.056 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://unidir.org/publication/evaluating-the-alignment-between-budgetary-allocations-and-national-security-priorities-exploratory-case-study-kenya/:
+ time data '' does not match format '%d %B %Y'
+'''
 
 class UnidirScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

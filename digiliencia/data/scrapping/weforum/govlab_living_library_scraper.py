@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
-from utils.scrap import ScrapUtils
+from digiliencia.utils.scrap import ScrapUtils
 
 class GovlabLivingLibraryScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

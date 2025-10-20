@@ -292,7 +292,6 @@ class WEForumScraper(AbstractScraper):
                                 href
                                 and href not in processed_urls
                             ):
-                                logger.debug("pasooooo")
                                 processed_urls.add(href)  # Evitar duplicados
                                 processed_articles.append(
                                     {

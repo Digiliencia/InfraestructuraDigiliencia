@@ -11,6 +11,15 @@ from digiliencia.utils.scrap import ScrapUtils
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+Error scraping https://www.rand.org/pubs/perspectives/PEA4261-1.html:
+ Attempted to scrape invalid page for Rand Corporation newsletter scrapper
+'''
+
+'''
+2025-10-20 09:28:14.120 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.rand.org/pubs/research_reports/RRA4159-1.html:
+ time data '5' does not match format '%b %d, %Y'
+'''
 
 class RandScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

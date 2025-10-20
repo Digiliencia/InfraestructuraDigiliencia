@@ -6,7 +6,26 @@ from selenium.webdriver.common.by import By
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
-from utils.scrap import ScrapUtils
+from digiliencia.utils.scrap import ScrapUtils
+
+'''
+ Error scraping https://www.nature.com/articles/d41586-025-03221-2:
+ Message: no such element: Unable to locate element: {"method":"xpath","selector":"//li[@class='c-article-author-list__item']/a"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+        GetHandleVerifier [0x0xe3fec4+66580]
+'''
+
+'''
+2025-10-20 09:35:08.887 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.nature.com/immersive/d41586-025-03086-5/index.html:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"h1.c-article-magazine-title"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0xe3fe83+66515]
+        GetHandleVerifier [0x0xe3fec4+66580]
+        (No symbol) [0x0xc2dc48]
+'''
 
 class NatureScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

@@ -14,4 +14,4 @@ if __name__ == "__main__":
     logger.info("Starting the application")
     set_up_logging()
     Env()
-    scrap(8)
+    scrap(80)

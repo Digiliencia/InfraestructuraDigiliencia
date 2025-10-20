@@ -10,6 +10,15 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+Error scraping https://www.eco-business.com/news/asia-pacific-investment-in-smart-grids-could-free-up-us23-billion-by-2040-study/:
+ time data '' does not match format '%B %d, %Y'
+'''
+
+'''
+2025-10-20 09:23:51.950 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.eco-business.com/research/sustainability-a-business-essential-for-asean-smes-amidst-escalating-global-volatility/:
+ time data 'Oct. 13, 2025' does not match format '%B %d, %Y'
+'''
 
 class EcoBusinessScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

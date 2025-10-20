@@ -10,6 +10,10 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-20 09:30:49.995 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.iris-france.org/cybersecurite-le-facteur-humain-en-est-il-le-centre-de-gravite/:
+ strptime() takes exactly 2 arguments (1 given)
+'''
 
 class IRISScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
