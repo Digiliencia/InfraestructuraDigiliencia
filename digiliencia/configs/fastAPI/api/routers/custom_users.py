@@ -1,145 +1,123 @@
 # /api/routers/custom_users.py
-from typing import Dict
-import uuid
-from fastapi import APIRouter, Depends, status
-from auth.users import fastapi_users
-from auth.manager import UserManager
-from db.models import User
+"""
+This module defines custom API routes for user account management.
 
-# Crear una dependencia reutilizable para el usuario actual
+It provides endpoints for authenticated users to retrieve, update, and delete
+their own account information. These endpoints are protected and require a valid
+JWT access token for authorization.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from auth.manager import get_user_manager, UserManager
+from schemas.user import UserRead, UserUpdate
+from db.models import User
+from auth.users import fastapi_users
+
+# Reusable dependency for the currently authenticated, active user.
 current_user = fastapi_users.current_user(active=True)
 
-router = APIRouter(dependencies=[Depends(current_user)])
+router = APIRouter()
+
+
+@router.get(
+    "/users/me",
+    response_model=UserRead,
+    summary="Get Current User Data",
+    description="Retrieve the profile information for the currently authenticated user.",
+    response_description="The authenticated user's profile data.",
+    responses={
+        200: {"description": "Successful retrieval of user data."},
+        401: {"description": "User is not authenticated."},
+    },
+)
+async def get_my_data(
+    user: User = Depends(current_user),
+):
+    """
+    Retrieves the data for the currently authenticated user.
+
+    Args:
+        user (User): The authenticated user object, injected by the
+                     `current_user` dependency.
+
+    Returns:
+        User: The user object, which will be serialized according to the
+              `UserRead` Pydantic model.
+    """
+    return user
+
+
+@router.patch(
+    "/users/me",
+    response_model=UserRead,
+    summary="Update Current User Data",
+    description="Update the profile information for the currently authenticated user. Note: Password updates should be handled via a dedicated password change endpoint.",
+    response_description="The updated user's profile data.",
+    responses={
+        200: {"description": "User data was successfully updated."},
+        400: {
+            "description": "The update payload is invalid (e.g., email already exists)."
+        },
+        401: {"description": "User is not authenticated."},
+    },
+)
+async def update_my_data(
+    payload: UserUpdate,
+    user: User = Depends(current_user),
+    user_manager: UserManager = Depends(get_user_manager),
+):
+    """
+    Updates the data for the currently authenticated user.
+
+    Args:
+        payload (UserUpdate): The request body containing the user data to update.
+        user (User): The authenticated user object to be updated.
+        user_manager (UserManager): The user management service, injected by dependency.
+
+    Returns:
+        User: The updated user object, serialized by the `UserRead` model.
+
+    Raises:
+        HTTPException: 400 Bad Request if the update fails (e.g., due to a
+                       duplicate email).
+    """
+    try:
+        user = await user_manager.update(
+            payload, user, safe=True
+        )  # safe=True prevents password updates
+        return user
+    except Exception as e:
+        # Catch potential exceptions from the user manager, like email conflicts.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.delete(
     "/users/me",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete Own Account",
-    description="Permanently delete the authenticated user's account",
+    summary="Delete Current User Account",
+    description="Permanently delete the account of the currently authenticated user.",
+    response_description="No content is returned on successful deletion.",
     responses={
-        204: {"description": "Account successfully deleted"},
-        401: {
-            "description": "Not authenticated",
-            "content": {
-                "application/json": {"example": {"detail": "Not authenticated"}}
-            },
-        },
-        403: {
-            "description": "Token expired",
-            "content": {
-                "application/json": {"example": {"detail": "Token has expired"}}
-            },
-        },
+        204: {"description": "The user account was successfully deleted."},
+        401: {"description": "User is not authenticated."},
     },
 )
-async def delete_own_user(
+async def delete_my_data(
     user: User = Depends(current_user),
-    user_manager: UserManager = Depends(fastapi_users.get_user_manager),
-) -> None:
+    user_manager: UserManager = Depends(get_user_manager),
+):
     """
-    Permanently delete the authenticated user's account.
+    Deletes the account of the currently authenticated user.
 
-    This endpoint allows users to delete their own account. This action is irreversible
-    and will delete all associated data including chats and preferences.
-
-    Security:
-    - Requires authentication
-    - Can only delete own account
-    - Active account required
-
-    Parameters:
-        user (User): Current authenticated user (injected)
-        user_manager: User management service (injected)
+    Args:
+        user (User): The authenticated user object to be deleted.
+        user_manager (UserManager): The user management service, injected by dependency.
 
     Returns:
-        None: Returns 204 No Content on successful deletion
-
-    Raises:
-        HTTPException:
-            - 401: Not authenticated
-            - 403: Token expired
-
-    Note:
-        This operation cannot be undone. All user data will be permanently deleted.
+        None
     """
     await user_manager.delete(user)
     return None
-
-
-@router.get(
-    "/users/export",
-    summary="Export User Data",
-    description="Export all data associated with a user account (GDPR compliance)",
-    response_description="User's personal data and usage statistics",
-    responses={
-        200: {
-            "description": "User data successfully exported",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "email": "user@example.com",
-                        "is_active": True,
-                        "chats_count": 5,
-                    }
-                }
-            },
-        },
-        403: {
-            "description": "Not authorized to access this data",
-            "content": {"application/json": {"example": {"detail": "Not authorized"}}},
-        },
-        404: {
-            "description": "User not found",
-            "content": {"application/json": {"example": {"detail": "User not found"}}},
-        },
-    },
-)
-async def export_user_data(
-    user: User = Depends(current_user),
-) -> Dict[str, uuid.UUID | str | bool | int]:
-    """
-    Export all data associated with a user account (GDPR compliance).
-
-    This endpoint allows users to export all their personal data stored in the system,
-    including account details and usage statistics. Users can only export their own data.
-
-    Security:
-    - Requires authentication
-    - Users can only export their own data
-    - Active account required
-
-    Parameters:
-        current_user (User): Current authenticated user (injected)
-
-    Returns:
-        dict: User's data including:
-            - id (UUID): User's unique identifier
-            - email (str): User's email address
-            - is_active (bool): Account status
-            - chats_count (int): Number of chat conversations
-
-    Raises:
-        HTTPException:
-            - 403: Attempting to access another user's data
-    Example:
-        ```json
-        {
-            "id": "550e8400-e29b-41d4-a716-446655440000",
-            "email": "user@example.com",
-            "is_active": true,
-            "chats_count": 5
-        }
-        ```
-
-    Note:
-        This endpoint is provided for GDPR compliance, allowing users
-        to access all their personal data stored in the system.
-    """
-    return {
-        "id": user.id,
-        "email": user.email,
-        "is_active": user.is_active,
-        "chats_count": len(user.chats) if user.chats else 0,
-    }

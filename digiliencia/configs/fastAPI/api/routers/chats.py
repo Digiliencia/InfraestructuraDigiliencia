@@ -1,17 +1,24 @@
 # /api/routers/chats.py
-import uuid
+"""
+This module defines the API routes for chat conversation management.
+
+It includes endpoints for creating, retrieving, updating, and deleting chats
+and their associated messages. All endpoints in this router require user
+authentication.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
+
 from db.models import User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db
 
-
-# Crear una dependencia reutilizable para el usuario actual
+# Reusable dependency for the currently authenticated, active user.
 current_user = fastapi_users.current_user(active=True)
 
 router = APIRouter(dependencies=[Depends(current_user)])
@@ -21,34 +28,26 @@ router = APIRouter(dependencies=[Depends(current_user)])
     "/conversations",
     response_model=chat_schema.ConversationSummaryList,
     summary="List User Conversations",
-    description="Retrieve a list of all conversations for the authenticated user",
-    response_description="Dictionary of conversations with their IDs and titles",
+    description="Retrieve a list of summaries for all conversations belonging to the authenticated user, sorted by creation date.",
+    response_description="A list of conversation summaries.",
     responses={
         200: {
-            "description": "List of user's conversations",
+            "description": "A list of the user's conversation summaries.",
             "content": {
                 "application/json": {
                     "example": {
-                        "conversations": {
-                            "conversation1": {
+                        "conversations": [
+                            {
                                 "idChat": "550e8400-e29b-41d4-a716-446655440000",
-                                "Título": "General Questions",
-                            },
-                            "conversation2": {
-                                "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-                                "Título": "Technical Support",
-                            },
-                        }
+                                "tittle": "General Questions",
+                                "ia_prompt": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                            }
+                        ]
                     }
                 }
             },
         },
-        401: {
-            "description": "Not authenticated",
-            "content": {
-                "application/json": {"example": {"detail": "Not authenticated"}}
-            },
-        },
+        401: {"description": "User is not authenticated."},
     },
 )
 async def get_user_chat_list(
@@ -56,85 +55,76 @@ async def get_user_chat_list(
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.ConversationSummaryList:
     """
-    Retrieve a summary for the authenticated user.
+    Retrieves a summary list of all chats for the authenticated user.
 
-    This endpoint returns a list of chat summaries associated with the
-    authenticated user, including their IDs and titles. The conversations are
-    sorted by their creation date.
-
-    Security:
-    - Requires authentication
-    - Users can only see their own conversations
-    - Active account required
-
-    Parameters:
-        user (User): Current authenticated user (injected)
-        db (AsyncSession): Database session (injected)
+    Args:
+        user (User): The currently authenticated user, injected by dependency.
+        db (AsyncSession): The database session, injected by dependency.
 
     Returns:
-        ConversationSummaryList: Dictionary containing:
-            - conversations (dict): Map of conversation IDs to their details
-                - idChat (UUID): Unique identifier for the chat
-                - tittle (str): Title/name of the conversation
-                - ia_prompt (str): IA prompt associated with the conversation
-
-    Example:
-        ```json
-        {
-            "conversations": {
-                "conversation1": {
-                    "idChat": "550e8400-e29b-41d4-a716-446655440000",
-                    "tittle": "General Questions",
-                    "ia_prompt": "What is the capital of France?"
-                },
-                "conversation2": {
-                    "idChat": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-                    "tittle": "Technical Support",
-                    "ia_prompt": "How do I reset my password?"
-                }
-            }
-        }
-        ```
+        chat_schema.ConversationSummaryList: An object containing a list of
+                                             conversation summaries.
     """
-    result = await db.execute(select(Chat).where(Chat.user_id == user.id))
+    stmt = select(Chat).where(Chat.user_id == user.id).order_by(Chat.id.desc())
+    result = await db.execute(stmt)
     chats = result.scalars().all()
-    summary = [
+
+    summaries = [
         chat_schema.ConversationSummary(
-            idChat=str(chat.id), tittle=str(chat.tittle), ia_prompt=chat.ia_prompt
+            idChat=chat.id, tittle=chat.tittle, ia_prompt=chat.ia_prompt_id
         )
         for chat in chats
     ]
-    return chat_schema.ConversationSummaryList(conversations=summary)
+    return chat_schema.ConversationSummaryList(conversations=summaries)
 
 
-@router.get("/chats/{chat_id}", response_model=chat_schema.ConversationFull)
+@router.get(
+    "/chats/{chat_id}",
+    response_model=chat_schema.ConversationFull,
+    summary="Get Full Conversation Details",
+    description="Retrieve the full details of a specific conversation, including all messages, by its unique ID.",
+    response_description="The full conversation object with its message history.",
+    responses={
+        200: {"description": "The full conversation object."},
+        401: {"description": "User is not authenticated."},
+        404: {
+            "description": "The chat was not found or the user is not authorized to view it."
+        },
+    },
+)
 async def get_full_conversation(
-    chat_id: uuid.UUID,
+    chat_id: UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.ConversationFull:
     """
-    Retrieve a full conversation by its ID.
+    Retrieves a full conversation, including its messages, by its ID.
 
-    Parameters:
-        chat_id (UUID): The unique identifier of the chat
-        user (User): Current authenticated user (injected by dependency)
-        db (AsyncSession): Database session (injected by dependency)
+    Args:
+        chat_id (UUID): The unique identifier of the chat to retrieve.
+        user (User): The currently authenticated user.
+        db (AsyncSession): The database session.
 
     Returns:
-        ConversationFull: List of messages in the conversation and the summary
+        chat_schema.ConversationFull: The complete conversation object.
 
     Raises:
-        HTTPException: If chat is not found or user is not authorized
+        HTTPException: 404 Not Found if the chat does not exist or does not
+                       belong to the authenticated user.
     """
     chat = await db.get(Chat, chat_id)
     if chat is None or chat.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    result = await db.execute(
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+        )
+
+    stmt = (
         select(Message).where(Message.chat_id == chat_id).order_by(Message.order_number)
     )
+    result = await db.execute(stmt)
     messages = result.scalars().all()
-    conversations = chat_schema.ConversationFull(
+
+    return chat_schema.ConversationFull(
         idChat=chat.id,
         tittle=chat.tittle,
         ia_prompt=chat.ia_prompt_id,
@@ -148,168 +138,245 @@ async def get_full_conversation(
             for msg in messages
         ],
     )
-    return conversations
 
 
-@router.patch("/chats/{chat_id}", response_model=chat_schema.Texts)
+@router.patch(
+    "/chats/{chat_id}",
+    response_model=chat_schema.Texts,
+    summary="Send Message to Chat",
+    description="Sends a user's message to an existing chat, gets a simulated AI response, and saves both to the conversation history.",
+    response_description="The AI-generated response text.",
+    responses={
+        200: {"description": "The AI-generated response."},
+        401: {"description": "User is not authenticated."},
+        404: {
+            "description": "The chat was not found or the user is not authorized to access it."
+        },
+    },
+)
 async def ask_question_to_chat(
-    chat_id: uuid.UUID,
+    chat_id: UUID,
     payload: chat_schema.Text,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.Texts:
     """
-    Send a question to a specific chat and get an AI-generated response.
+    Adds a user message to a chat and returns a simulated AI response.
 
-    Parameters:
-        chat_id (UUID): The unique identifier of the chat
-        payload (Text): Contains the question text and model configuration
-        user (User): Current authenticated user (injected by dependency)
-        db (AsyncSession): Database session (injected by dependency)
+    Args:
+        chat_id (UUID): The ID of the chat to add a message to.
+        payload (chat_schema.Text): The request body containing the user's text.
+        user (User): The currently authenticated user.
+        db (AsyncSession): The database session.
 
     Returns:
-        Texts: The AI-generated response
+        chat_schema.Texts: An object containing the simulated AI response text.
 
-    Raises:contenido
-        HTTPException: If chat is not found or user is not authorized
+    Raises:
+        HTTPException: 404 Not Found if the chat does not exist or does not
+                       belong to the authenticated user.
     """
     chat = await db.get(Chat, chat_id)
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    if not chat.user_id == user.id:
+    if chat is None or chat.user_id != user.id:
         raise HTTPException(
-            status_code=403, detail="Not authorized to access this chat"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
         )
-    # Guardar la pregunta
-    order_number = (
-        (
-            await db.execute(
-                select(Message.order_number).where(Message.chat_id == chat_id)
-            )
-        )
-        .scalars()
-        .all()
+
+    # Get the next available order number for the message
+    max_order_stmt = select(func.max(Message.order_number)).where(
+        Message.chat_id == chat_id
     )
-    order_number = max(order_number) + 1 if order_number else 1
-    message = Message(chat_id=chat_id, order_number=order_number, content=payload.text)
-    db.add(message)
+    last_order_result = await db.execute(max_order_stmt)
+    last_order = last_order_result.scalar_one_or_none() or 0
+
+    # Save the user's question
+    user_message = Message(
+        chat_id=chat_id,
+        order_number=last_order + 1,
+        content=payload.text,
+        model_id=payload.model_id,
+    )
+    db.add(user_message)
+
+    # Simulate external AI service call
+    ai_response_text = (
+        f"Simulated response to '{payload.text}' using model {payload.model_id}"
+    )
+
+    # Save the AI's response
+    ai_message = Message(
+        chat_id=chat_id, order_number=last_order + 2, content=ai_response_text
+    )
+    db.add(ai_message)
+
     await db.commit()
-    await db.refresh(message)
-    # Llamada a servicio externo (placeholder)
-    respuesta = (
-        f"Respuesta simulada a '{payload.text}' usando el modelo {payload.model_id}"
-    )
-    # Guardar la respuesta
-    order_number += 1
-    response_message = Message(
-        chat_id=chat_id, order_number=order_number, content=respuesta
-    )
-    db.add(response_message)
-    await db.commit()
-    await db.refresh(response_message)
-    return chat_schema.Texts(text=respuesta)
+    return chat_schema.Texts(text=ai_response_text)
 
 
 @router.patch(
     "/chats",
     status_code=status.HTTP_201_CREATED,
     response_model=chat_schema.ConversationSummary,
+    summary="Create New Chat",
+    description="Creates a new, empty chat conversation with a title and an associated AI prompt (template).",
+    response_description="A summary of the newly created chat.",
+    responses={
+        201: {"description": "The chat was created successfully."},
+        400: {"description": "The provided `ia_prompt` UUID does not exist."},
+        401: {"description": "User is not authenticated."},
+    },
 )
 async def create_chat(
     payload: chat_schema.ChatCreate,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> chat_schema.ConversationSummary:
     """
-    Create a conversation.
+    Creates a new chat for the authenticated user.
 
-    Parameters:
-        payload (ChatCreate): Contains the template for the AI prompt and title.
-        user (User): Current authenticated user (injected by dependency)
-        db (AsyncSession): Database session (injected by dependency)
+    If no `ia_prompt` is provided, a default prompt will be assigned.
+
+    Args:
+        payload (chat_schema.ChatCreate): The request body containing the title
+                                          and optional prompt ID.
+        user (User): The currently authenticated user.
+        db (AsyncSession): The database session.
 
     Returns:
-        ConversationSummary: a summary of the chat
+        chat_schema.ConversationSummary: A summary of the created chat.
 
     Raises:
-        HTTPException: If user is not authorized
+        HTTPException: 400 Bad Request if the provided `ia_prompt` ID is invalid.
     """
-
-    if not payload.ia_prompt:
-        ia_prompt = await db.get(
-            IAPrompt, "76f81605-08ac-4694-8122-18f6958c8797"
-        )  # default
-    else:
+    if payload.ia_prompt:
         ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
+    else:
+        stmt = select(IAPrompt).limit(1)
+        result = await db.execute(stmt)
+        ia_prompt = result.scalar_one_or_none()
+
     if not ia_prompt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid ia_prompt: The specified prompt does not exist",
+            detail="Invalid ia_prompt: The specified prompt does not exist or no default is available.",
         )
-    chat = Chat(user_id=user.id, ia_prompt=ia_prompt, tittle=payload.tittle)
+
+    chat = Chat(user_id=user.id, ia_prompt_id=ia_prompt.id, tittle=payload.tittle)
     db.add(chat)
     await db.commit()
+    await db.refresh(chat)
+
     return chat_schema.ConversationSummary(
-        idChat=UUID(str(chat.id)),
-        tittle=str(chat.tittle),
-        ia_prompt=UUID(str(ia_prompt.id)),
+        idChat=chat.id,
+        tittle=chat.tittle,
+        ia_prompt=ia_prompt.id,
     )
 
 
-@router.put("/chats", response_model=List[chat_schema.Texts])
+@router.put(
+    "/chats",
+    response_model=chat_schema.ConversationSummary,
+    summary="Import Conversation as New Chat",
+    description="Creates a new chat by importing a list of messages, a title, and an optional prompt.",
+    response_description="A summary of the newly created chat.",
+)
 async def import_conversation(
-    payload: List[chat_schema.Texts],
+    payload: chat_schema.ConversationImport,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-) -> tuple[UUID, List[chat_schema.Texts]]:
+) -> chat_schema.ConversationSummary:
     """
-    Import a full conversation.
+    Creates a new chat for the user by importing an existing conversation.
 
-    Parameters:
-        payload (List[Texts]): List of messages to import into the chat
-        user (User): Current authenticated user (injected by dependency)
-        db (AsyncSession): Database session (injected by dependency)
+    Args:
+        payload (chat_schema.ConversationImport): The object containing the title,
+                                                  a list of texts, and an
+                                                  optional prompt ID.
+        user (User): The currently authenticated user.
+        db (AsyncSession): The database session.
 
     Returns:
-        Tuple[UUID, List[Texts]]: The ID of the new chat and the imported messages
-
-    Raises:
-
+        chat_schema.ConversationSummary: A summary of the newly created chat.
     """
-    chat = Chat(user_id=user.id, tittle="Imported Chat")
+    if payload.ia_prompt:
+        ia_prompt = await db.get(IAPrompt, payload.ia_prompt)
+        if not ia_prompt:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The provided 'ia_prompt' UUID does not exist.",
+            )
+    else:
+        stmt = select(IAPrompt).limit(1)
+        result = await db.execute(stmt)
+        ia_prompt = result.scalar_one_or_none()
+        if not ia_prompt:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Default IA prompt not found. Database may not be seeded.",
+            )
+
+    chat = Chat(user_id=user.id, tittle=payload.tittle, ia_prompt_id=ia_prompt.id)
     db.add(chat)
-    # Insertar nuevos mensajes
-    for i, msg in enumerate(payload, start=1):
-        db.add(Message(chat_id=chat.id, order_number=i, content=msg.text))
+
+    try:
+        await db.flush()
+    except Exception:
+        await db.rollback()
+        raise
+
+    for i, msg in enumerate(payload.texts, start=1):
+        new_msg = Message(chat_id=chat.id, order_number=i, content=msg.text)
+        db.add(new_msg)
+
     await db.commit()
-    return UUID(str(chat.id)), payload
+    await db.refresh(chat)
+
+    return chat_schema.ConversationSummary(
+        idChat=chat.id, tittle=chat.tittle, ia_prompt=chat.ia_prompt_id
+    )
 
 
-@router.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/chats/{chat_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a Chat",
+    description="Permanently deletes a chat and all of its associated messages by its unique ID.",
+    response_description="No content is returned on successful deletion.",
+    responses={
+        204: {"description": "The chat was successfully deleted."},
+        401: {"description": "User is not authenticated."},
+        404: {
+            "description": "The chat was not found or the user is not authorized to delete it."
+        },
+    },
+)
 async def delete_conversation(
     chat_id: UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """
-    Delete a specific chat conversation and all its messages.
+    Deletes a specific chat conversation.
 
-    Parameters:
-        chat_id (UUID): The unique identifier of the chat to delete
-        user (User): Current authenticated user (injected by dependency)
-        db (AsyncSession): Database session (injected by dependency)
+    Args:
+        chat_id (UUID): The unique identifier of the chat to delete.
+        user (User): The currently authenticated user.
+        db (AsyncSession): The database session.
 
     Returns:
-        None: Returns 204 No Content on success
+        None
 
     Raises:
-        HTTPException: If chat is not found or user is not authorized
+        HTTPException: 404 Not Found if the chat does not exist or does not
+                       belong to the authenticated user.
     """
     chat = await db.get(Chat, chat_id)
-    if chat is None or not chat.user_id.is_(user.id):
+
+    if chat is None or chat.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
         )
+
     await db.delete(chat)
     await db.commit()
     return None
