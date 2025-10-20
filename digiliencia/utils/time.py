@@ -266,6 +266,7 @@ class TimeUtils:
             "%d %B %Y",          # 20 October 2025
             "%b %d, %Y",         # Oct 20, 2025
             "%B %d, %Y",         # October 20, 2025
+            "%Y-%m-%dEST%H:%M"
             "%Y-%m-%dT%H:%M:%S", # 2025-10-20T13:45:00
             "%Y-%m-%d %H:%M:%S", # 2025-10-20 13:45:00
             "%Y-%m-%dT%H:%M",    # 2025-10-20T13:45
@@ -273,6 +274,7 @@ class TimeUtils:
             "%d %B %Y %H:%M",    # 20 October 2025 13:45
             "%b. %d, %Y",        # Sept. 19, 2025
             "%b. %d, %Y, %I %p %Z", # Sept. 19, 2025, 5 AM EDT
+            "%b %d, %Y, %I %p %Z" # Sept 19, 2025, 5 AM EDT
         ]
 
         for fmt in fmts_commun:

@@ -1,13 +1,11 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
-
+from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
 '''
@@ -49,7 +47,18 @@ class ProPublicaScraper(AbstractNewsScraper):
                 time_elem = elm
                 break
         time_data = time_elem.get_attribute("datetime")  # type: ignore
-        date = datetime.strptime(time_data, "%Y-%m-%dEST%H:%M")  # type: ignore
+
+        if time_data is not None:
+            fmt_date = TimeUtils().detect_fomat_date(time_data)
+            if  fmt_date is not None:
+                date = datetime.strptime(time_data, fmt_date)  # type: ignore
+            else:
+                logger.warning("The format of date has not detected. By default, date is today.")
+                date = datetime.today()
+        else:
+            logger.warning("The format of date has not detected. By default, date is today.")
+            date = datetime.today()
+            
 
         # Get the author
         authors_elem = self.driver.find_element(
