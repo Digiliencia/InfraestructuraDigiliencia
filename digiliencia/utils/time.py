@@ -238,8 +238,8 @@ class TimeUtils:
 
         for month in meonth_abrev:
             if month in date:
-                return '%b'
+                return "%b"
         for month in month_compl:
             if month in date:
-                return '%B'
+                return "%B"
         return None  

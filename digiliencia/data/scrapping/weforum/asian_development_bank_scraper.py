@@ -8,18 +8,8 @@ from selenium.webdriver.common.by import By
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
-
+from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
-Error scraping https://blogs.adb.org/blog/other-half-internet-closing-asia-s-digital-gap:
- time data '20 October 2025' does not match format '%d %b %Y'
-'''
-
-'''
-2025-10-20 09:29:29.035 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://development.asia/insight/why-agricultural-education-investment-critical-global-food-security:
- time data '06 October 2025' does not match format '%d %b %Y'
-'''
 
 class AsianDevelopmentBankScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -68,8 +58,15 @@ class AsianDevelopmentBankScraper(AbstractNewsScraper):
             date = datetime.now()
         else:
             time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
-            date_ft = time_elem.replace("Published: ", "")
-            date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
+            if TimeUtils.detect_format_month(time_elem) == "%b":
+                date_ft = time_elem.replace("Published: ", "")
+                date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
+            elif TimeUtils.detect_format_month(time_elem) == "%B":
+                date_ft = time_elem.replace("Published: ", "")
+                date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
+            else:
+                logger.warning("Date has not detected. By default date is today.")
+                date = datetime.now()
 
         content_container = self.driver.find_elements(By.CSS_SELECTOR, elems["content"])
         content = [contents.text for contents in content_container]
