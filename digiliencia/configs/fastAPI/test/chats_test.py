@@ -7,7 +7,6 @@ from schemas.chat import TemplateList, ModelList
 pytestmark = pytest.mark.asyncio
 
 
-
 async def test_get_conversations_empty(authenticated_client: AsyncClient):
     """Tests that a new user has no conversations."""
     response = await authenticated_client.get("/conversations")
@@ -32,7 +31,7 @@ async def test_invalid_chat_operations(
         "ia_prompt": "dfdsfdsgfh",  # Invalid prompt
     }
     response = await authenticated_client.patch("/chats", json=invalid_chat_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     invalid_chat_data = {
         "tittle": "",  # Empty title
@@ -43,7 +42,7 @@ async def test_invalid_chat_operations(
 
     invalid_chat_data = {}  # Missing required fields
     response = await authenticated_client.patch("/chats", json=invalid_chat_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Test sending invalid message
     template = next(iter(templates.items()))[1]
@@ -58,13 +57,13 @@ async def test_invalid_chat_operations(
     response = await authenticated_client.patch(
         f"/chats/{chat_id}", json=invalid_message
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     invalid_message = {}  # Missing required field
     response = await authenticated_client.patch(
         f"/chats/{chat_id}", json=invalid_message
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 async def test_get_nonexistent_chat(authenticated_client: AsyncClient):
@@ -115,11 +114,11 @@ async def test_chat_creation_and_messages(
 
     # Verify message history
     assert len(messages) == 4  # 2 questions + 2 AI responses
-    assert messages[0]["text"] == "What is FastAPI?"
-    assert messages[2]["text"] == "How do I handle authentication?"
+    assert messages["messages"][0]["content"] == "What is FastAPI?"
+    assert messages["messages"][2]["content"] == "How do I handle authentication?"
     # Verify AI responses exist
-    assert messages[1]["text"]  # First AI response
-    assert messages[3]["text"]  # Second AI response
+    assert messages["messages"][1]["content"]  # First AI response
+    assert messages["messages"][3]["content"]  # Second AI response
 
 
 async def test_get_other_user_chat(
@@ -134,14 +133,15 @@ async def test_get_other_user_chat(
 
     # Registrar el segundo usuario
     register_response = await api_client.post(
-        "/auth/register", json={"email": other_email, "password": other_password}
+        "/register", json={"email": other_email, "password": other_password}
     )
     assert register_response.status_code == status.HTTP_201_CREATED
 
     # Autenticar al segundo usuario
     login_response = await api_client.post(
-        "/auth/login", data={"username": other_email, "password": other_password}
+        "/auth/login", json={"email": other_email, "password": other_password}
     )
+
     assert login_response.status_code == status.HTTP_200_OK
     other_token = login_response.json()["access_token"]
 
@@ -232,13 +232,13 @@ async def test_delete_other_user_chat(
 
     # Registrar el segundo usuario
     register_response = await api_client.post(
-        "/auth/register", json={"email": other_email, "password": other_password}
+        "/register", json={"email": other_email, "password": other_password}
     )
     assert register_response.status_code == status.HTTP_201_CREATED
 
     # Autenticar al segundo usuario
     login_response = await api_client.post(
-        "/auth/login", data={"username": other_email, "password": other_password}
+        "/auth/login", json={"email": other_email, "password": other_password}
     )
     assert login_response.status_code == status.HTTP_200_OK
     other_token = login_response.json()["access_token"]

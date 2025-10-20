@@ -59,11 +59,11 @@ async def test_register_invalid_data(api_client: AsyncClient, fake_user: dict):
     response_invalid_email = await api_client.post(
         "/register", json={"email": "not-an-email", "password": password}
     )
-    assert response_invalid_email.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response_invalid_email.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Missing password
     response_no_password = await api_client.post("/register", json={"email": email})
-    assert response_no_password.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response_no_password.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 # --- Custom Login Tests ---
@@ -130,7 +130,7 @@ async def test_login_invalid_email_format(api_client: AsyncClient, fake_user: di
     response = await api_client.post(
         "/auth/login", json={"email": "not-email", "password": fake_user["password"]}
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 async def test_login_malformed_payload(api_client: AsyncClient, fake_user: dict):
@@ -142,7 +142,7 @@ async def test_login_malformed_payload(api_client: AsyncClient, fake_user: dict)
     response = await api_client.post(
         "/auth/login", json={"usuario": email, "clave": password}
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 async def test_login_wrong_method(api_client: AsyncClient):

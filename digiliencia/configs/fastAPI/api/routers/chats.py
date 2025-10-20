@@ -107,12 +107,12 @@ async def get_user_chat_list(
     return chat_schema.ConversationSummaryList(conversations=summary)
 
 
-@router.get("/chats/{chat_id}", response_model=List[chat_schema.Texts])
+@router.get("/chats/{chat_id}", response_model=chat_schema.ConversationFull)
 async def get_full_conversation(
     chat_id: uuid.UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-) -> chat_schema.ConversationList:
+) -> chat_schema.ConversationFull:
     """
     Retrieve a full conversation by its ID.
 
@@ -122,7 +122,7 @@ async def get_full_conversation(
         db (AsyncSession): Database session (injected by dependency)
 
     Returns:
-        ConversationList: List of messages in the conversation
+        ConversationFull: List of messages in the conversation and the summary
 
     Raises:
         HTTPException: If chat is not found or user is not authorized
@@ -135,20 +135,20 @@ async def get_full_conversation(
     )
     messages = result.scalars().all()
     conversations = chat_schema.ConversationFull(
-        idChat=UUID(str(chat.id)),
-        tittle=str(chat.tittle),
-        ia_prompt=chat.ia_prompt,
+        idChat=chat.id,
+        tittle=chat.tittle,
+        ia_prompt=chat.ia_prompt_id,
         messages=[
             chat_schema.message(
-                id=UUID(str(msg.id)),
-                order_number=int(msg.order_number),
-                content=str(msg.content),
-                model_id=UUID(msg.model_id),
+                id=msg.id,
+                order_number=msg.order_number,
+                content=msg.content,
+                model_id=msg.model_id,
             )
             for msg in messages
         ],
     )
-    return chat_schema.ConversationList(conversations=[conversations])
+    return conversations
 
 
 @router.patch("/chats/{chat_id}", response_model=chat_schema.Texts)
