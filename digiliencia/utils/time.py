@@ -243,3 +243,43 @@ class TimeUtils:
             if month in date:
                 return "%B"
         return None  
+
+    @staticmethod
+    def detect_fomat_date(date: str = "") -> str | None:
+        """
+        Detect format date for object datetime
+
+        Param:
+            date: format string
+
+        Return:
+            An object string that it is format of date.
+            Or None, the format of date has not be to find.
+        """
+        fmts_commun = [
+            "%Y-%m-%d",          # 2025-10-20
+            "%d-%m-%Y",          # 20-10-2025
+            "%d/%m/%Y",          # 20/10/2025
+            "%m/%d/%Y",          # 10/20/2025
+            "%Y/%m/%d",          # 2025/10/20
+            "%d %b %Y",          # 20 Oct 2025
+            "%d %B %Y",          # 20 October 2025
+            "%b %d, %Y",         # Oct 20, 2025
+            "%B %d, %Y",         # October 20, 2025
+            "%Y-%m-%dT%H:%M:%S", # 2025-10-20T13:45:00
+            "%Y-%m-%d %H:%M:%S", # 2025-10-20 13:45:00
+            "%Y-%m-%dT%H:%M",    # 2025-10-20T13:45
+            "%d %b %Y %H:%M",    # 20 Oct 2025 13:45
+            "%d %B %Y %H:%M",    # 20 October 2025 13:45
+            "%b. %d, %Y",        # Sept. 19, 2025
+            "%b. %d, %Y, %I %p %Z", # Sept. 19, 2025, 5 AM EDT
+        ]
+
+        for fmt in fmts_commun:
+            try:
+                datetime.strptime(date, fmt)
+                return fmt
+            except ValueError:
+                continue
+
+        return None
