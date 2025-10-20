@@ -8,11 +8,6 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
-'''
-2025-10-20 09:40:14.749 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.propublica.org/article/pentagon-dod-microsoft-digital-escorts-china-ban-cybersecurity:
- time data '2025-09-19EDT05:00' does not match format '%Y-%m-%dEST%H:%M'
-'''
-
 class ProPublicaScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
