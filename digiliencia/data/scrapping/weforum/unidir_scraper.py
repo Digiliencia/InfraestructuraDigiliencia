@@ -1,20 +1,13 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
-
+from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
-2025-10-20 09:41:47.056 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://unidir.org/publication/evaluating-the-alignment-between-budgetary-allocations-and-national-security-priorities-exploratory-case-study-kenya/:
- time data '' does not match format '%d %B %Y'
-'''
 
 class UnidirScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -38,7 +31,8 @@ class UnidirScraper(AbstractNewsScraper):
             )
         # Access the URL
         self.driver.get(url)
-        time.sleep(self.load_time)  # Reject cookies if visible
+        # This website takes a long time to load
+        time.sleep(self.load_time + 1)  # Reject cookies if visible
 
         ScrapUtils.click_element(self.driver, "#cookiescript_reject")
 
@@ -49,7 +43,14 @@ class UnidirScraper(AbstractNewsScraper):
         time_elem = self.driver.find_element(
             By.CSS_SELECTOR, ".post-title__date-val"
         ).text
-        date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+
+        if TimeUtils().detect_format_month(time_elem) == "%B":
+            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
+        elif TimeUtils().detect_format_month(time_elem) == "%b":
+            date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
+        else:
+            logger.warning("Date has not detected. By default date is today.")
+            date = datetime.today()
 
         author = "UNIDIR"  # There are not author
 
