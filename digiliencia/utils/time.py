@@ -219,3 +219,27 @@ class TimeUtils:
             False: format date is not arabe
         """
         return bool(re.search(r"[٠-٩]", date))
+    
+    @staticmethod
+    def detect_format_month(date: str = "") -> str | None:
+        """
+        Detects whether a date string contains the abbreviated (%b) or full (%B) month.
+
+        Param:
+            date: format string
+
+        Returns:
+             '%b': date has got month abbreviated
+             '%B': date has not got month abbreviated
+              None: No recognizable month found
+        """
+        meonth_abrev = [datetime(2000, i, 1).strftime('%b') for i in range(1, 13)]
+        month_compl = [datetime(2000, i, 1).strftime('%B') for i in range(1, 13)]
+
+        for month in meonth_abrev:
+            if month in date:
+                return '%b'
+        for month in month_compl:
+            if month in date:
+                return '%B'
+        return None  
