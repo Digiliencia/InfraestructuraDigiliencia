@@ -1,19 +1,12 @@
 import time
-
 import dateparser
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
-
+from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
-2025-10-20 09:30:49.995 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:565 - Error scraping https://www.iris-france.org/cybersecurite-le-facteur-humain-en-est-il-le-centre-de-gravite/:
- strptime() takes exactly 2 arguments (1 given)
-'''
 
 class IRISScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -45,7 +38,7 @@ class IRISScraper(AbstractNewsScraper):
 
         time_elem = self.driver.find_element(By.CSS_SELECTOR, "p.article-date").text
         date_ft = dateparser.parse(time_elem, languages=["fr"])
-        date = date_ft.strptime("%d %b %Y")  # type: ignore
+        date = date_ft.strptime(time_elem, TimeUtils().detect_fomat_date(time_elem))  # type: ignore
 
         author = self.driver.find_element(
             By.CSS_SELECTOR, "div.card-content p.card-title"
