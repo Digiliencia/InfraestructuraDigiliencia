@@ -67,3 +67,20 @@ services:
       networks:
         - dev-network
       runtime: nvidia
+  fastapi-service:
+    build:
+      context: ../digiliencia/configs
+      dockerfile: fastAPI/DockerFile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - dev-network
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network

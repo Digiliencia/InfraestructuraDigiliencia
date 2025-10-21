@@ -1,0 +1,4 @@
+pycache/*.pyc *.pyo *.pyd
+tests/* .pytest_cache/ pytest.ini
+.env_example
+Dockerfile .dockerignore

@@ -17,6 +17,8 @@ from db.models import User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
 from db.session import get_db
+import redis.asyncio as redis
+from core.redis import get_redis
 
 # Reusable dependency for the currently authenticated, active user.
 current_user = fastapi_users.current_user(active=True)
@@ -154,11 +156,35 @@ async def get_full_conversation(
         },
     },
 )
+@router.patch(
+    "/chats/{chat_id}",
+    response_model=chat_schema.Texts,
+    summary="Send Message to Chat",
+    # --- DESCRIPCIÓN ACTUALIZADA ---
+    description=(
+        "Sends a user's message to an existing chat, gets a simulated AI "
+        "response, and saves both to the conversation history. This endpoint "
+        "uses a lock to prevent concurrent messages to the same chat. If a "
+        "message is already being processed, it will return a 409 Conflict."
+    ),
+    response_description="The AI-generated response text.",
+    # --- RESPONSES ACTUALIZADO ---
+    responses={
+        200: {"description": "The AI-generated response."},
+        401: {"description": "User is not authenticated."},
+        404: {
+            "description": "The chat was not found or the user is not authorized to access it."
+        },
+        # --- NUEVA LÍNEA AÑADIDA ---
+        409: {"description": "A request for this chat is already being processed."},
+    },
+)
 async def ask_question_to_chat(
     chat_id: UUID,
     payload: chat_schema.Text,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
 ) -> chat_schema.Texts:
     """
     Adds a user message to a chat and returns a simulated AI response.
@@ -168,6 +194,7 @@ async def ask_question_to_chat(
         payload (chat_schema.Text): The request body containing the user's text.
         user (User): The currently authenticated user.
         db (AsyncSession): The database session.
+        redis_client (redis.Redis): The Redis client for locking.
 
     Returns:
         chat_schema.Texts: An object containing the simulated AI response text.
@@ -175,42 +202,57 @@ async def ask_question_to_chat(
     Raises:
         HTTPException: 404 Not Found if the chat does not exist or does not
                        belong to the authenticated user.
+        HTTPException: 409 Conflict if a message to this chat is already
+                       being processed.
     """
-    chat = await db.get(Chat, chat_id)
-    if chat is None or chat.user_id != user.id:
+    lock_key = f"chat_lock:{chat_id}"
+    is_lock_acquired = await redis_client.set(lock_key, "processing", nx=True, ex=60)
+
+    if not is_lock_acquired:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A request for this chat is already being processed.",
+        )
+    try:
+        chat = await db.get(Chat, chat_id)
+        if chat is None or chat.user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+            )
+
+        # Get the next available order number for the message
+        max_order_stmt = select(func.max(Message.order_number)).where(
+            Message.chat_id == chat_id
+        )
+        last_order_result = await db.execute(max_order_stmt)
+        last_order = last_order_result.scalar_one_or_none() or 0
+
+        # Save the user's question
+        user_message = Message(
+            chat_id=chat_id,
+            order_number=last_order + 1,
+            content=payload.text,
+            model_id=payload.model_id,
+        )
+        db.add(user_message)
+
+        # Simulate external AI service call
+        ai_response_text = (
+            f"Simulated response to '{payload.text}' using model {payload.model_id}"
         )
 
-    # Get the next available order number for the message
-    max_order_stmt = select(func.max(Message.order_number)).where(
-        Message.chat_id == chat_id
-    )
-    last_order_result = await db.execute(max_order_stmt)
-    last_order = last_order_result.scalar_one_or_none() or 0
+        # Save the AI's response
+        ai_message = Message(
+            chat_id=chat_id, order_number=last_order + 2, content=ai_response_text
+        )
+        db.add(ai_message)
 
-    # Save the user's question
-    user_message = Message(
-        chat_id=chat_id,
-        order_number=last_order + 1,
-        content=payload.text,
-        model_id=payload.model_id,
-    )
-    db.add(user_message)
-
-    # Simulate external AI service call
-    ai_response_text = (
-        f"Simulated response to '{payload.text}' using model {payload.model_id}"
-    )
-
-    # Save the AI's response
-    ai_message = Message(
-        chat_id=chat_id, order_number=last_order + 2, content=ai_response_text
-    )
-    db.add(ai_message)
-
-    await db.commit()
-    return chat_schema.Texts(text=ai_response_text)
+        await db.commit()
+        return chat_schema.Texts(text=ai_response_text)
+    finally:
+        # Asegúrate de que el cliente de redis sea importado como 'redis'
+        # o ajusta esta línea.
+        await redis_client.delete(lock_key)
 
 
 @router.patch(

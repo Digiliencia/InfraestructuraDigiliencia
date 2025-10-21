@@ -11,9 +11,9 @@ import pytest
 import pytest_asyncio
 import httpx
 import time
-import uvicorn
 import multiprocessing
 import asyncio
+import os
 from typing import AsyncGenerator, Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -28,18 +28,19 @@ import sys
 from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from main import app
 from core.config import settings
 from db.models import User, Chat, Message, IAPrompt, Model, Base
 from starlette import status
 
 
 # Load environment variables from the project's .env file
-dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
+dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+if not os.path.exists(dotenv_path):
+    dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(dotenv_path)
 
 # --- Database Setup ---
-TEST_DATABASE_URL = settings.DATABASE_URL
+TEST_DATABASE_URL = settings.DATABASE_TEST_URL
 engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestingSessionLocal = sessionmaker(
     bind=engine,
@@ -52,13 +53,14 @@ TestingSessionLocal = sessionmaker(
 faker = Faker()
 
 # --- HTTP Client Fixtures ---
-API_URL = "http://127.0.0.1:8000/api"
-HEALTH_CHECK_URL = "http://127.0.0.1:8000/health"
+API_URL = "http://127.0.0.1:8080/api"
+HEALTH_CHECK_URL = "http://127.0.0.1:8080/api/health"
 
 
 def run_server():
     """Target function to run the Uvicorn server in a separate process."""
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # uvicorn.run(app, host="127.0.0.1", port=8080)
+    pass
 
 
 async def wait_for_server(url: str, timeout: int = 10):

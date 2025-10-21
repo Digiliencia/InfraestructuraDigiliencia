@@ -80,7 +80,7 @@ def get_db_connection_for_role():
             conn.close()
 
 
-# --- Database Population and Cleanup Fixture (MODIFIED) ---
+# --- Database Population and Cleanup Fixture ---
 @pytest.fixture(scope="function")
 def populated_db(get_db_connection_for_role):
     """

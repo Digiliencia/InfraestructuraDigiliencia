@@ -10,16 +10,18 @@ place for all application settings.
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List
+import os
 import json
 from pathlib import Path
 
 
 # Calculate the project's root directory (three levels up from this file)
 # /core/config.py -> /core -> / -> project_root
-project_root = Path(__file__).resolve().parent.parent.parent
 
 # Build the absolute path to the .env file located at the project root.
-dotenv_path = project_root / ".env"
+dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+if not os.path.exists(dotenv_path):
+    dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
@@ -35,6 +37,7 @@ class Settings(BaseSettings):
     DB_OWNER_USER: str
     DB_OWNER_PASSWORD: str
     DB_HOST: str = "localhost"
+    DB_HOST_TEST: str = "localhost"
     DB_PORT: int = 5432
     APP_DB_NAME: str
 
@@ -47,6 +50,16 @@ class Settings(BaseSettings):
             str: The complete `postgresql+asyncpg` connection string.
         """
         return f"postgresql+asyncpg://{self.DB_OWNER_USER}:{self.DB_OWNER_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.APP_DB_NAME}"
+
+    @property
+    def DATABASE_TEST_URL(self) -> str:
+        """
+        Constructs the full asynchronous database connection URL for testing.
+
+        Returns:
+            str: The complete `postgresql+asyncpg` connection string.
+        """
+        return f"postgresql+asyncpg://{self.DB_OWNER_USER}:{self.DB_OWNER_PASSWORD}@{self.DB_HOST_TEST}:{self.DB_PORT}/{self.APP_DB_NAME}"
 
     # --- JWT Authentication ---
     # Secret key and algorithm for encoding and decoding JWTs.
@@ -87,6 +100,11 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 raise ValueError("ALLOWED_ORIGINS is not valid JSON")
         return v
+
+    # Redis Configuration
+    REDIS_HOST: str = "localhost"
+    REDIS_HOST_TEST: str = "localhost"
+    REDIS_PORT: int = 6379
 
     # Pydantic model configuration.
     model_config = {
