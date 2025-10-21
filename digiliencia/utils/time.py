@@ -275,6 +275,8 @@ class TimeUtils:
             "%b. %d, %Y",        # Sept. 19, 2025
             "%b. %d, %Y, %I %p %Z", # Sept. 19, 2025, 5 AM EDT
             "%b %d, %Y, %I %p %Z" # Sept 19, 2025, 5 AM EDT
+            "%B %Y"
+            "%b %Y"
         ]
 
         for fmt in fmts_commun:
