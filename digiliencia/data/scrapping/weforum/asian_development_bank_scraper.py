@@ -1,21 +1,13 @@
 import time
 from datetime import datetime
-
 from loguru import logger
 from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
-
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
-
-'''
- 2025-10-21 16:29:21.176 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://blogs.adb.org/blog/building-resilient-ports-and-skilled-workforce-asia-s-maritime-transformation:
- time data '14 October 2025' does not match format '%d %b %Y'
- 
-'''
 
 class AsianDevelopmentBankScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
@@ -64,12 +56,10 @@ class AsianDevelopmentBankScraper(AbstractNewsScraper):
             date = datetime.now()
         else:
             time_elem = self.driver.find_element(By.CSS_SELECTOR, elems["date"]).text
-            if TimeUtils.detect_format_month(time_elem) == "%b":
-                date_ft = time_elem.replace("Published: ", "")
-                date = datetime.strptime(date_ft, "%d %b %Y")  # type: ignore
-            elif TimeUtils.detect_format_month(time_elem) == "%B":
-                date_ft = time_elem.replace("Published: ", "")
-                date = datetime.strptime(date_ft, "%d %B %Y")  # type: ignore
+            time_elem = time_elem.replace("Published: ", "")
+            fmt_date = TimeUtils().detect_fomat_date(time_elem)
+            if fmt_date is not None:
+                date = datetime.strptime(time_elem, fmt_date)  # type: ignore
             else:
                 logger.warning("Date has not detected. By default date is today.")
                 date = datetime.now()
