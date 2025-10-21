@@ -10,6 +10,17 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+ 2025-10-21 16:33:18.641 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.institutmontaigne.org/en/expressions/trump-tech-right-and-christian-nationalists-unnatural-coalition:
+ time data '' does not match format '%d/%m/%Y'
+'''
+
+'''
+2025-10-21 16:26:50.220 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.institutmontaigne.org/rencontres/usue-digital-ia-cloud-leurope-peut-elle-encore-reagir:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.date"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+'''
 
 class InstitutMontaigneScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

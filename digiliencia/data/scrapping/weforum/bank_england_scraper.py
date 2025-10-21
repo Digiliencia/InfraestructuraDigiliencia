@@ -9,6 +9,24 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+ 2025-10-21 16:32:49.891 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.bankofengland.co.uk/systemic-risk-survey/2025/2025-h2:
+ Attempted to scrape invalid page for Bank of England article scrapper
+'''
+
+'''
+ 2025-10-21 16:31:39.939 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://blogs.lse.ac.uk/internationaldevelopment/2025/10/10/the-united-nations-new-ai-infrastructure-is-africas-strategic-edge/:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+
+
+ 2025-10-21 16:28:41.194 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://blogs.lse.ac.uk/europpblog/2025/10/14/attention-is-all-you-need-europe-should-decouple-from-us-technology-eurostack/:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.mobile-post-main-image__date > h3:nth-of-type(4)"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+'''
+
 class BankEnglandScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

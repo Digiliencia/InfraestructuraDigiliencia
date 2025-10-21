@@ -9,6 +9,11 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+ 2025-10-21 16:30:37.287 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.rand.org/pubs/perspectives/PEA4261-1.html:
+ redefinition of group name 'Y' as group 6; was group 1 at position 133
+'''
+
 class RandScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

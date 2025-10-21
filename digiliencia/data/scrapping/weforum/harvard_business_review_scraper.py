@@ -9,6 +9,13 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-21 16:35:39.170 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://hbr.org/2025/10/make-better-strategic-decisions-amid-uncertainty:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.Title_standard__x_GEq.Title_standard__x_GEq"}   
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+'''
+
 class HarvardBusinessReviewScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

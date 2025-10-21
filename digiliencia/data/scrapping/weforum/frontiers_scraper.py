@@ -10,6 +10,18 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-21 16:40:14.995 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2025.1687708/full:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":"div.JournalAbstract__titleWrapper h1"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+'''
+'''
+ 2025-10-21 16:29:54.437 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1595310/full:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":".JournalAbstract__titleWrapper"}
+  (Session info: chrome=141.0.7390.108); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+'''
 
 class FrontiersScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:

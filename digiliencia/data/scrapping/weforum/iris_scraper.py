@@ -8,6 +8,11 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-21 16:35:14.004 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.iris-france.org/cybersecurite-le-facteur-humain-en-est-il-le-centre-de-gravite/:
+ redefinition of group name 'Y' as group 6; was group 1 at position 133
+'''
+
 class IRISScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

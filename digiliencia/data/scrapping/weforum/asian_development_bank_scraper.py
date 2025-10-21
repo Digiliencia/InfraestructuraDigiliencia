@@ -11,6 +11,12 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+ 2025-10-21 16:29:21.176 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://blogs.adb.org/blog/building-resilient-ports-and-skilled-workforce-asia-s-maritime-transformation:
+ time data '14 October 2025' does not match format '%d %b %Y'
+ 
+'''
+
 class AsianDevelopmentBankScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

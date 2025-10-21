@@ -9,6 +9,11 @@ from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+2025-10-21 16:30:51.162 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://www.eco-business.com/research/sustainability-a-business-essential-for-asean-smes-amidst-escalating-global-volatility/:
+ redefinition of group name 'Y' as group 6; was group 1 at position 133
+'''
+
 class EcoBusinessScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
