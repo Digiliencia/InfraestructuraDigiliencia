@@ -21,7 +21,7 @@ from starlette import status
 from schemas.chat import TemplateList, ModelList
 import asyncio
 
-from core.endpoints import CONVERSATIONS,CHATS_PATH,REGISTER,LOGIN,USERS_ME
+from core.endpoints import CONVERSATIONS, CHATS_PATH, REGISTER, LOGIN, USERS_ME
 
 pytestmark = pytest.mark.asyncio
 
@@ -165,13 +165,17 @@ async def test_chat_creation_and_messages(
 
     # Add first message
     question1 = {"text": "What is FastAPI?", "model_id": model_id}
-    response1 = await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=question1)
+    response1 = await authenticated_client.patch(
+        f"{CHATS_PATH}/{chat_id}", json=question1
+    )
     assert response1.status_code == status.HTTP_200_OK
     assert "text" in response1.json()
 
     # Add second message
     question2 = {"text": "How do I handle authentication?", "model_id": model_id}
-    response2 = await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=question2)
+    response2 = await authenticated_client.patch(
+        f"{CHATS_PATH}/{chat_id}", json=question2
+    )
     assert response2.status_code == status.HTTP_200_OK
     assert "text" in response2.json()
 
@@ -325,7 +329,9 @@ async def test_delete_conversation(
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
-    await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json={"text": "Test message"})
+    await authenticated_client.patch(
+        f"{CHATS_PATH}/{chat_id}", json={"text": "Test message"}
+    )
 
     # Delete the chat
     response = await authenticated_client.delete(f"{CHATS_PATH}/{chat_id}")
@@ -391,7 +397,9 @@ async def test_delete_other_user_chat(
 
     # Add a test message to verify content preservation
     test_message = {"text": "Test Message", "model_id": model_id}
-    message_response = await api_client.patch(f"{CHATS_PATH}/{chat_id}", json=test_message)
+    message_response = await api_client.patch(
+        f"{CHATS_PATH}/{chat_id}", json=test_message
+    )
     assert message_response.status_code == status.HTTP_200_OK
 
     # Get initial state of the chat
@@ -411,7 +419,9 @@ async def test_delete_other_user_chat(
 
     # Verify User 2 can still modify their chat
     new_message = {"text": "Another message", "model_id": model_id}
-    message_response = await api_client.patch(f"{CHATS_PATH}/{chat_id}", json=new_message)
+    message_response = await api_client.patch(
+        f"{CHATS_PATH}/{chat_id}", json=new_message
+    )
     assert message_response.status_code == status.HTTP_200_OK
 
     # Cleanup User 2
@@ -645,7 +655,9 @@ async def test_ask_question_to_nonexistent_chat(
 
     # Try to send message to nonexistent chat
     question = {"text": "What is FastAPI?", "model_id": model_id}
-    response = await authenticated_client.patch(f"{CHATS_PATH}/{random_uuid}", json=question)
+    response = await authenticated_client.patch(
+        f"{CHATS_PATH}/{random_uuid}", json=question
+    )
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify conversations list remained unchanged

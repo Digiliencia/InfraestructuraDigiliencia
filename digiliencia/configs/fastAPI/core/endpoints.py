@@ -33,6 +33,7 @@ HEALTH = f"{API_PREFIX}/health"  # Becomes /api/health
 # Rutas completas para uso en FastAPI directamente
 USERS_ME = f"{USERS_PATH}{USERS_ME_PATH}"
 
+
 def get_prefixed_router(
     prefix: str = "", tags: Optional[List[str | Enum]] = None, **kwargs
 ) -> APIRouter:
