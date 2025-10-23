@@ -21,6 +21,7 @@ from starlette import status
 from schemas.chat import TemplateList, ModelList
 import asyncio
 
+from core.endpoints import CONVERSATIONS,CHATS_PATH,REGISTER,LOGIN,USERS_ME
 
 pytestmark = pytest.mark.asyncio
 
@@ -36,7 +37,7 @@ async def test_get_conversations_empty(authenticated_client: AsyncClient):
         - The API returns a 200 OK status.
         - The response body is an empty list of conversations.
     """
-    response = await authenticated_client.get("/conversations")
+    response = await authenticated_client.get(CONVERSATIONS)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"conversations": []}
 
@@ -63,10 +64,10 @@ async def test_invalid_chat_operations(
         - Requests with a valid but nonexistent prompt UUID fail with 400 Bad Request.
     """
     # Test unauthenticated access
-    response = await api_client.get("/conversations")
+    response = await api_client.get(CONVERSATIONS)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    response = await api_client.get("/chats/1")
+    response = await api_client.get(f"{CHATS_PATH}/1")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     # Test invalid chat creation data (invalid UUID format)
@@ -74,7 +75,7 @@ async def test_invalid_chat_operations(
         "tittle": "Test",
         "ia_prompt": "not-a-uuid",
     }
-    response = await authenticated_client.patch("/chats", json=invalid_chat_data)
+    response = await authenticated_client.patch(CHATS_PATH, json=invalid_chat_data)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Test invalid chat creation data (nonexistent prompt UUID)
@@ -82,25 +83,25 @@ async def test_invalid_chat_operations(
         "tittle": "Test",
         "ia_prompt": str(uuid.uuid4()),
     }
-    response = await authenticated_client.patch("/chats", json=invalid_chat_data)
+    response = await authenticated_client.patch(CHATS_PATH, json=invalid_chat_data)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     # Test missing required fields
     invalid_chat_data = {}
-    response = await authenticated_client.patch("/chats", json=invalid_chat_data)
+    response = await authenticated_client.patch(CHATS_PATH, json=invalid_chat_data)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Test sending invalid message
     template_id = templates[0]["idTemplate"]
     chat_response = await authenticated_client.patch(
-        "/chats", json={"tittle": "Test Chat", "ia_prompt": template_id}
+        CHATS_PATH, json={"tittle": "Test Chat", "ia_prompt": template_id}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
     invalid_message = {"text": ""}
     response = await authenticated_client.patch(
-        f"/chats/{chat_id}", json=invalid_message
+        f"{CHATS_PATH}/{chat_id}", json=invalid_message
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -116,7 +117,7 @@ async def test_get_nonexistent_chat(authenticated_client: AsyncClient):
         - The API returns a 404 Not Found status.
     """
     random_uuid = str(uuid.uuid4())
-    response = await authenticated_client.get(f"/chats/{random_uuid}")
+    response = await authenticated_client.get(f"{CHATS_PATH}/{random_uuid}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -131,7 +132,7 @@ async def test_delete_nonexistent_chat(authenticated_client: AsyncClient):
         - The API returns a 404 Not Found status.
     """
     random_uuid = str(uuid.uuid4())
-    response = await authenticated_client.delete(f"/chats/{random_uuid}")
+    response = await authenticated_client.delete(f"{CHATS_PATH}/{random_uuid}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -158,24 +159,24 @@ async def test_chat_creation_and_messages(
 
     # Create new chat
     chat_data = {"tittle": "Test Chat", "ia_prompt": template_id}
-    chat_response = await authenticated_client.patch("/chats", json=chat_data)
+    chat_response = await authenticated_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
     # Add first message
     question1 = {"text": "What is FastAPI?", "model_id": model_id}
-    response1 = await authenticated_client.patch(f"/chats/{chat_id}", json=question1)
+    response1 = await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=question1)
     assert response1.status_code == status.HTTP_200_OK
     assert "text" in response1.json()
 
     # Add second message
     question2 = {"text": "How do I handle authentication?", "model_id": model_id}
-    response2 = await authenticated_client.patch(f"/chats/{chat_id}", json=question2)
+    response2 = await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=question2)
     assert response2.status_code == status.HTTP_200_OK
     assert "text" in response2.json()
 
     # Get conversation history
-    chat_response = await authenticated_client.get(f"/chats/{chat_id}")
+    chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_200_OK
     conversation = chat_response.json()
 
@@ -216,12 +217,12 @@ async def test_get_other_user_chat(
     other_password = fake_user["password"]
 
     reg_resp = await api_client.post(
-        "/register", json={"email": other_email, "password": other_password}
+        REGISTER, json={"email": other_email, "password": other_password}
     )
     assert reg_resp.status_code == status.HTTP_201_CREATED
 
     login_resp = await api_client.post(
-        "/auth/login", json={"email": other_email, "password": other_password}
+        LOGIN, json={"email": other_email, "password": other_password}
     )
     assert login_resp.status_code == status.HTTP_200_OK
 
@@ -231,20 +232,20 @@ async def test_get_other_user_chat(
     # User 2 creates a chat
     template_id = templates[0]["idTemplate"]
     chat_data = {"tittle": "Other User's Chat", "ia_prompt": template_id}
-    chat_response = await api_client.patch("/chats", json=chat_data)
+    chat_response = await api_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
     # User 1 tries to access User 2's chat
-    response = await authenticated_client.get(f"/chats/{chat_id}")
+    response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify User 2 can still access their own chat
-    chat_response = await api_client.get(f"/chats/{chat_id}")
+    chat_response = await api_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_200_OK
 
     # Cleanup User 2
-    await api_client.delete("/users/me")
+    await api_client.delete(USERS_ME)
 
 
 async def test_import_conversation(
@@ -274,7 +275,7 @@ async def test_import_conversation(
         "texts": [{"text": "Imported Message 1"}, {"text": "Imported Message 2"}],
     }
 
-    response = await authenticated_client.put("/chats", json=import_payload)
+    response = await authenticated_client.put(CHATS_PATH, json=import_payload)
 
     # Assert that the response is a summary of the new chat
     assert response.status_code == status.HTTP_200_OK
@@ -288,7 +289,7 @@ async def test_import_conversation(
     new_chat_id = response_data["idChat"]
 
     # Verify that the full conversation was created correctly
-    chat_response = await authenticated_client.get(f"/chats/{new_chat_id}")
+    chat_response = await authenticated_client.get(f"{CHATS_PATH}/{new_chat_id}")
 
     assert chat_response.status_code == status.HTTP_200_OK
     conversation = chat_response.json()
@@ -319,23 +320,23 @@ async def test_delete_conversation(
     """
     template_id = templates[0]["idTemplate"]
     chat_response = await authenticated_client.patch(
-        "/chats", json={"tittle": "Test Chat", "ia_prompt": template_id}
+        CHATS_PATH, json={"tittle": "Test Chat", "ia_prompt": template_id}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
-    await authenticated_client.patch(f"/chats/{chat_id}", json={"text": "Test message"})
+    await authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json={"text": "Test message"})
 
     # Delete the chat
-    response = await authenticated_client.delete(f"/chats/{chat_id}")
+    response = await authenticated_client.delete(f"{CHATS_PATH}/{chat_id}")
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify chat was deleted
-    chat_response = await authenticated_client.get(f"/chats/{chat_id}")
+    chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify chat doesn't appear in conversations list
-    convs_response = await authenticated_client.get("/conversations")
+    convs_response = await authenticated_client.get(CONVERSATIONS)
     assert chat_id not in str(convs_response.json())
 
 
@@ -369,12 +370,12 @@ async def test_delete_other_user_chat(
     other_password = fake_user["password"]
 
     register_response = await api_client.post(
-        "/register", json={"email": other_email, "password": other_password}
+        REGISTER, json={"email": other_email, "password": other_password}
     )
     assert register_response.status_code == status.HTTP_201_CREATED
 
     login_response = await api_client.post(
-        "/auth/login", json={"email": other_email, "password": other_password}
+        LOGIN, json={"email": other_email, "password": other_password}
     )
     assert login_response.status_code == status.HTTP_200_OK
     other_token = login_response.json()["access_token"]
@@ -383,34 +384,34 @@ async def test_delete_other_user_chat(
     # User 2 creates a chat and adds a message
     template_id = templates[0]["idTemplate"]
     chat_response = await api_client.patch(
-        "/chats", json={"tittle": "Other User's Chat", "ia_prompt": template_id}
+        CHATS_PATH, json={"tittle": "Other User's Chat", "ia_prompt": template_id}
     )
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
     # Add a test message to verify content preservation
     test_message = {"text": "Test Message", "model_id": model_id}
-    message_response = await api_client.patch(f"/chats/{chat_id}", json=test_message)
+    message_response = await api_client.patch(f"{CHATS_PATH}/{chat_id}", json=test_message)
     assert message_response.status_code == status.HTTP_200_OK
 
     # Get initial state of the chat
-    initial_chat = await api_client.get(f"/chats/{chat_id}")
+    initial_chat = await api_client.get(f"{CHATS_PATH}/{chat_id}")
     assert initial_chat.status_code == status.HTTP_200_OK
     initial_content = initial_chat.json()
 
     # User 1 tries to delete the chat
-    response = await authenticated_client.delete(f"/chats/{chat_id}")
+    response = await authenticated_client.delete(f"{CHATS_PATH}/{chat_id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify chat still exists for User 2 with unchanged content
-    chat_response = await api_client.get(f"/chats/{chat_id}")
+    chat_response = await api_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_200_OK
     final_content = chat_response.json()
     assert final_content == initial_content  # Verify no changes occurred
 
     # Verify User 2 can still modify their chat
     new_message = {"text": "Another message", "model_id": model_id}
-    message_response = await api_client.patch(f"/chats/{chat_id}", json=new_message)
+    message_response = await api_client.patch(f"{CHATS_PATH}/{chat_id}", json=new_message)
     assert message_response.status_code == status.HTTP_200_OK
 
     # Cleanup User 2
@@ -437,7 +438,7 @@ async def test_chat_message_order_preservation(
     # Create a new chat
     template_id = templates[0]["idTemplate"]
     chat_data = {"tittle": "Order Test Chat", "ia_prompt": template_id}
-    chat_response = await authenticated_client.patch("/chats", json=chat_data)
+    chat_response = await authenticated_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
@@ -447,12 +448,12 @@ async def test_chat_message_order_preservation(
 
     for msg in messages:
         response = await authenticated_client.patch(
-            f"/chats/{chat_id}", json={"text": msg, "model_id": model_id}
+            f"{CHATS_PATH}/{chat_id}", json={"text": msg, "model_id": model_id}
         )
         assert response.status_code == status.HTTP_200_OK
 
     # Verify the chat history
-    chat_response = await authenticated_client.get(f"/chats/{chat_id}")
+    chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_200_OK
     chat_data = chat_response.json()
 
@@ -492,7 +493,7 @@ async def test_chat_concurrent_access(
     # --- 1. Setup: Crear un chat ---
     template_id = templates[0]["idTemplate"]
     chat_data = {"tittle": "Concurrent Lock Test", "ia_prompt": template_id}
-    chat_response = await authenticated_client.patch("/chats", json=chat_data)
+    chat_response = await authenticated_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
@@ -511,7 +512,7 @@ async def test_chat_concurrent_access(
     # creando la condición de carrera que queremos probar.
     responses = await asyncio.gather(
         *[
-            authenticated_client.patch(f"/chats/{chat_id}", json=msg)
+            authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=msg)
             for msg in concurrent_messages
         ]
     )
@@ -529,7 +530,7 @@ async def test_chat_concurrent_access(
     # --- 5. Verificar Consistencia del Chat ---
     # Ahora verificamos que la base de datos esté en el estado correcto.
     # Solo la petición exitosa debe haber guardado sus mensajes.
-    chat_response = await authenticated_client.get(f"/chats/{chat_id}")
+    chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
     assert chat_response.status_code == status.HTTP_200_OK
     chat_data = chat_response.json()
 
@@ -581,11 +582,11 @@ async def test_chat_data_integrity(
     chat1_data = {"tittle": "First Chat", "ia_prompt": template_id}
     chat2_data = {"tittle": "Second Chat", "ia_prompt": template_id}
 
-    chat1_response = await authenticated_client.patch("/chats", json=chat1_data)
+    chat1_response = await authenticated_client.patch(CHATS_PATH, json=chat1_data)
     assert chat1_response.status_code == status.HTTP_201_CREATED
     chat1_id = chat1_response.json()["idChat"]
 
-    chat2_response = await authenticated_client.patch("/chats", json=chat2_data)
+    chat2_response = await authenticated_client.patch(CHATS_PATH, json=chat2_data)
     assert chat2_response.status_code == status.HTTP_201_CREATED
     chat2_id = chat2_response.json()["idChat"]
 
@@ -593,27 +594,27 @@ async def test_chat_data_integrity(
     message1 = {"text": "Message in first chat", "model_id": model_id}
     message2 = {"text": "Message in second chat", "model_id": model_id}
 
-    await authenticated_client.patch(f"/chats/{chat1_id}", json=message1)
-    await authenticated_client.patch(f"/chats/{chat2_id}", json=message2)
+    await authenticated_client.patch(f"{CHATS_PATH}/{chat1_id}", json=message1)
+    await authenticated_client.patch(f"{CHATS_PATH}/{chat2_id}", json=message2)
 
     # Get initial state
-    chat2_initial = await authenticated_client.get(f"/chats/{chat2_id}")
+    chat2_initial = await authenticated_client.get(f"{CHATS_PATH}/{chat2_id}")
 
     # Delete first chat
-    response = await authenticated_client.delete(f"/chats/{chat1_id}")
+    response = await authenticated_client.delete(f"{CHATS_PATH}/{chat1_id}")
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify second chat remains unchanged
-    chat2_after = await authenticated_client.get(f"/chats/{chat2_id}")
+    chat2_after = await authenticated_client.get(f"{CHATS_PATH}/{chat2_id}")
     assert chat2_after.status_code == status.HTTP_200_OK
     assert chat2_after.json() == chat2_initial.json()
 
     # Verify first chat is really gone
-    response = await authenticated_client.get(f"/chats/{chat1_id}")
+    response = await authenticated_client.get(f"{CHATS_PATH}/{chat1_id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify user's chat list is accurate
-    conversations = await authenticated_client.get("/conversations")
+    conversations = await authenticated_client.get(CONVERSATIONS)
     assert conversations.status_code == status.HTTP_200_OK
     conv_data = conversations.json()["conversations"]
     assert len(conv_data) == 1
@@ -638,16 +639,16 @@ async def test_ask_question_to_nonexistent_chat(
     model_id = models[0]["idModel"]
 
     # Get initial conversations list
-    initial_conversations = await authenticated_client.get("/conversations")
+    initial_conversations = await authenticated_client.get(CONVERSATIONS)
     assert initial_conversations.status_code == status.HTTP_200_OK
     initial_count = len(initial_conversations.json()["conversations"])
 
     # Try to send message to nonexistent chat
     question = {"text": "What is FastAPI?", "model_id": model_id}
-    response = await authenticated_client.patch(f"/chats/{random_uuid}", json=question)
+    response = await authenticated_client.patch(f"{CHATS_PATH}/{random_uuid}", json=question)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
     # Verify conversations list remained unchanged
-    final_conversations = await authenticated_client.get("/conversations")
+    final_conversations = await authenticated_client.get(CONVERSATIONS)
     assert final_conversations.status_code == status.HTTP_200_OK
     assert len(final_conversations.json()["conversations"]) == initial_count

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 
+from core.endpoints import CONVERSATIONS, CHATS_PATH
 from db.models import User, Chat, Message, IAPrompt
 from schemas import chat as chat_schema
 from auth.users import fastapi_users
@@ -27,7 +28,7 @@ router = APIRouter(dependencies=[Depends(current_user)])
 
 
 @router.get(
-    "/conversations",
+    CONVERSATIONS,
     response_model=chat_schema.ConversationSummaryList,
     summary="List User Conversations",
     description="Retrieve a list of summaries for all conversations belonging to the authenticated user, sorted by creation date.",
@@ -81,7 +82,7 @@ async def get_user_chat_list(
 
 
 @router.get(
-    "/chats/{chat_id}",
+    f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.ConversationFull,
     summary="Get Full Conversation Details",
     description="Retrieve the full details of a specific conversation, including all messages, by its unique ID.",
@@ -143,7 +144,7 @@ async def get_full_conversation(
 
 
 @router.patch(
-    "/chats/{chat_id}",
+    f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.Texts,
     summary="Send Message to Chat",
     description="Sends a user's message to an existing chat, gets a simulated AI response, and saves both to the conversation history.",
@@ -157,7 +158,7 @@ async def get_full_conversation(
     },
 )
 @router.patch(
-    "/chats/{chat_id}",
+    f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.Texts,
     summary="Send Message to Chat",
     # --- DESCRIPCIÓN ACTUALIZADA ---
@@ -256,7 +257,7 @@ async def ask_question_to_chat(
 
 
 @router.patch(
-    "/chats",
+    CHATS_PATH,
     status_code=status.HTTP_201_CREATED,
     response_model=chat_schema.ConversationSummary,
     summary="Create New Chat",
@@ -316,7 +317,7 @@ async def create_chat(
 
 
 @router.put(
-    "/chats",
+    CHATS_PATH,
     response_model=chat_schema.ConversationSummary,
     summary="Import Conversation as New Chat",
     description="Creates a new chat by importing a list of messages, a title, and an optional prompt.",
@@ -379,7 +380,7 @@ async def import_conversation(
 
 
 @router.delete(
-    "/chats/{chat_id}",
+    f"{CHATS_PATH}/{{chat_id}}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a Chat",
     description="Permanently deletes a chat and all of its associated messages by its unique ID.",

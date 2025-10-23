@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from auth.manager import get_user_manager, UserManager
 from schemas.user import UserLogin
 from auth.transport import auth_backend
-
+from core.endpoints import LOGIN
 
 router = APIRouter()
 
 
 @router.post(
-    "/auth/login",
+    LOGIN,
     summary="Login with Email",
     description="Authenticate a user using email and password credentials",
     response_description="JWT token for authenticated user",

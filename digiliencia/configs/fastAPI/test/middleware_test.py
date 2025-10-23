@@ -16,6 +16,7 @@ import pytest
 from httpx import AsyncClient
 from starlette import status
 
+
 pytestmark = pytest.mark.asyncio
 
 

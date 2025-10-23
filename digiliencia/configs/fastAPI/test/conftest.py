@@ -31,6 +31,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from core.config import settings
 from db.models import User, Chat, Message, IAPrompt, Model, Base
 from starlette import status
+from core.endpoints import TEMPLATE_LIST, MODEL_LIST, REGISTER, LOGIN, USERS_ME
 
 
 # Load environment variables from the project's .env file
@@ -239,12 +240,12 @@ async def authenticated_client(
     4. Deletes the user after the test is complete for cleanup.
     """
     async with httpx.AsyncClient(base_url=API_URL) as auth_client:
-        response = await auth_client.post("/register", json=fake_user)
+        response = await auth_client.post(REGISTER, json=fake_user)
         if response.status_code != 201:
             raise Exception(f"User registration failed in fixture: {response.text}")
 
         response = await auth_client.post(
-            "/auth/login",
+            LOGIN,
             json={"email": fake_user["email"], "password": fake_user["password"]},
         )
         if response.status_code != 200:
@@ -255,7 +256,7 @@ async def authenticated_client(
 
         yield auth_client
 
-        response = await auth_client.delete("/users/me")
+        response = await auth_client.delete(USERS_ME)
         if response.status_code != 204:
             print(f"Warning: Failed to cleanup user {fake_user['email']}")
 
@@ -265,7 +266,7 @@ async def templates(authenticated_client: AsyncClient) -> list:
     """
     Function-scoped fixture that fetches the list of available prompt templates.
     """
-    response = await authenticated_client.get("/chats/template_list")
+    response = await authenticated_client.get(TEMPLATE_LIST)
     if response.status_code != status.HTTP_202_ACCEPTED:
         raise Exception(f"Error getting templates: {response.status_code}")
 
@@ -281,7 +282,7 @@ async def models(authenticated_client: AsyncClient) -> list:
     """
     Function-scoped fixture that fetches the list of available AI models.
     """
-    response = await authenticated_client.get("/chats/model_list")
+    response = await authenticated_client.get(MODEL_LIST)
     if response.status_code != status.HTTP_202_ACCEPTED:
         raise Exception(f"Error getting models: {response.status_code}")
 

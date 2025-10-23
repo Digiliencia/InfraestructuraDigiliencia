@@ -14,12 +14,13 @@ from sqlalchemy.future import select
 from db.models import IAPrompt
 from schemas import chat as chat_schema
 from db.session import get_db
+from core.endpoints import TEMPLATE_LIST
 
 router = APIRouter()
 
 
 @router.get(
-    "/chats/template_list",
+    TEMPLATE_LIST,
     response_model=tuple[chat_schema.TemplateSummary, ...],
     status_code=status.HTTP_202_ACCEPTED,
     summary="List Available Chat Templates",

@@ -13,12 +13,13 @@ from sqlalchemy.future import select
 from db.models import Model
 from schemas import chat as chat_schema
 from db.session import get_db
+from core.endpoints import MODEL_LIST
 
 router = APIRouter()
 
 
 @router.get(
-    "/chats/model_list",
+    MODEL_LIST,
     response_model=tuple[chat_schema.ModelSummary, ...],
     status_code=status.HTTP_202_ACCEPTED,
     summary="List Available AI Models",

@@ -2,6 +2,7 @@
 import pytest
 from starlette import status
 from httpx import AsyncClient
+from core.endpoints import HEALTH_PATH
 
 pytestmark = pytest.mark.asyncio
 
@@ -22,6 +23,6 @@ async def test_health_endpoint(api_client: AsyncClient):
         - The API returns a 200 OK status.
         - The response body matches the expected status JSON.
     """
-    response = await api_client.get("/health")
+    response = await api_client.get(HEALTH_PATH)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": "ok"}

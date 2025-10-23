@@ -6,13 +6,14 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from auth.users import fastapi_users
 from auth.transport import auth_backend
+from core.endpoints import API_PREFIX,JWT_PATH,HEALTH,ROOT
 
 
 from schemas import user as user_schema
 from api.routers import chats, custom_users, custom_auth, models, templates
 from core.config import settings
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
+limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per minute"])
 
 app = FastAPI(title="API", description="API for AI.", version="1.0.0")
 
@@ -44,19 +45,18 @@ async def add_security_headers(request: Request, call_next):
 
 
 # --- Routers ---
-api_prefix = "/api"
 
 # Endpoints from fastapi-users
 
 # /api/auth/jwt/login
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
-    prefix=f"{api_prefix}/auth/jwt",
+    prefix=JWT_PATH,
     tags=["Auth"],
 )
 
 # /login
-app.include_router(custom_auth.router, prefix=api_prefix, tags=["Auth"])
+app.include_router(custom_auth.router, prefix=API_PREFIX, tags=["Auth"])
 
 # /register
 app.include_router(
@@ -64,27 +64,27 @@ app.include_router(
         user_schema.UserRead,
         user_schema.UserRegistration,  # type: ignore
     ),
-    prefix=api_prefix,
+    prefix=API_PREFIX,
     tags=["Auth"],
 )
 
 # /verify
 app.include_router(
     fastapi_users.get_verify_router(user_schema.UserRead),
-    prefix=api_prefix,
+    prefix=API_PREFIX,
     tags=["Auth"],
 )
 
 # Public
-app.include_router(models.router, prefix=api_prefix, tags=["Models"])
-app.include_router(templates.router, prefix=api_prefix, tags=["templates"])
+app.include_router(models.router, prefix=API_PREFIX, tags=["Models"])
+app.include_router(templates.router, prefix=API_PREFIX, tags=["templates"])
 
 # Authentication required
-app.include_router(custom_users.router, prefix=api_prefix, tags=["Users"])
-app.include_router(chats.router, prefix=api_prefix, tags=["Chats"])
+app.include_router(custom_users.router, prefix=API_PREFIX, tags=["Users"])
+app.include_router(chats.router, prefix=API_PREFIX, tags=["Chats"])
 
 
-@app.get(api_prefix + "/", tags=["Root"])
+@app.get(ROOT, tags=["Root"])
 def read_root():
     """
     Root endpoint that provides a welcome message.
@@ -95,7 +95,7 @@ def read_root():
     return {"message": "Welcome to the Chat API"}
 
 
-@app.get(api_prefix + "/health", tags=["Health"])
+@app.get(HEALTH, tags=["Health"])
 def health():
     """Simple health check endpoint.
     Returns a small JSON payload indicating the service is reachable.

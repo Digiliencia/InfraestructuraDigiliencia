@@ -15,6 +15,7 @@ Dependencies:
 import pytest
 from httpx import AsyncClient
 from starlette import status
+from core.endpoints import REGISTER, LOGIN, USERS_ME
 
 pytestmark = pytest.mark.asyncio
 
@@ -34,7 +35,7 @@ async def test_register_success(api_client: AsyncClient, fake_user: dict):
         - The API returns a 201 Created status.
         - The response body contains the correct email and active status.
     """
-    response = await api_client.post("/register", json=fake_user)
+    response = await api_client.post(REGISTER, json=fake_user)
 
     assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
@@ -53,12 +54,12 @@ async def test_register_conflict(api_client: AsyncClient, fake_user: dict):
     Asserts:
         - The API returns a 400 Bad Request status on the second attempt.
     """
-    response = await api_client.post("/register", json=fake_user)
+    response = await api_client.post(REGISTER, json=fake_user)
     if response.status_code != status.HTTP_201_CREATED:
         pytest.skip(f"Precondition failed: {response.status_code}")
 
     # Try to register again
-    response = await api_client.post("/register", json=fake_user)
+    response = await api_client.post(REGISTER, json=fake_user)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -75,13 +76,13 @@ async def test_register_invalid_data(api_client: AsyncClient):
     """
     # Invalid email
     response_invalid_email = await api_client.post(
-        "/register", json={"email": "not-an-email", "password": "ValidPassword123"}
+        REGISTER, json={"email": "not-an-email", "password": "ValidPassword123"}
     )
     assert response_invalid_email.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Missing password
     response_no_password = await api_client.post(
-        "/register", json={"email": "test@example.com"}
+        REGISTER, json={"email": "test@example.com"}
     )
     assert response_no_password.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -101,9 +102,9 @@ async def test_custom_login_success(api_client: AsyncClient, fake_user: dict):
         - The API returns a 200 OK status.
         - The response body contains an 'access_token' and 'token_type'.
     """
-    await api_client.post("/register", json=fake_user)
+    await api_client.post(REGISTER, json=fake_user)
 
-    response = await api_client.post("/auth/login", json=fake_user)
+    response = await api_client.post(LOGIN, json=fake_user)
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -122,10 +123,10 @@ async def test_custom_login_wrong_password(api_client: AsyncClient, fake_user: d
     Asserts:
         - The API returns a 401 Unauthorized status.
     """
-    await api_client.post("/register", json=fake_user)
+    await api_client.post(REGISTER, json=fake_user)
 
     response = await api_client.post(
-        "/auth/login",
+        LOGIN,
         json={"email": fake_user["email"], "password": "wrong-password"},
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -143,7 +144,7 @@ async def test_login_nonexistent_user(api_client: AsyncClient, fake_user: dict):
     Asserts:
         - The API returns a 401 Unauthorized status.
     """
-    response = await api_client.post("/auth/login", json=fake_user)
+    response = await api_client.post(LOGIN, json=fake_user)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -162,7 +163,7 @@ async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
         - The API returns a 200 OK status.
         - The response body contains an 'access_token'.
     """
-    await api_client.post("/register", json=fake_user)
+    await api_client.post(REGISTER, json=fake_user)
 
     response = await api_client.post(
         "/auth/jwt/login",
@@ -183,7 +184,7 @@ async def test_protected_endpoint_with_invalid_token(api_client: AsyncClient):
         - The API returns a 401 Unauthorized status.
     """
     headers = {"Authorization": "Bearer invalid_token"}
-    response = await api_client.delete("/users/me", headers=headers)
+    response = await api_client.delete(USERS_ME, headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -204,19 +205,19 @@ async def test_delete_user_success(api_client: AsyncClient, fake_user: dict):
         - A subsequent login attempt for the deleted user fails with 401 Unauthorized.
     """
     # 1. Create user
-    await api_client.post("/register", json=fake_user)
+    await api_client.post(REGISTER, json=fake_user)
 
     # 2. Log in
-    login_resp = await api_client.post("/auth/login", json=fake_user)
+    login_resp = await api_client.post(LOGIN, json=fake_user)
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     # 3. Delete account
-    delete_response = await api_client.delete("/users/me", headers=headers)
+    delete_response = await api_client.delete(USERS_ME, headers=headers)
     assert delete_response.status_code == status.HTTP_204_NO_CONTENT
 
     # 4. Verify user can no longer log in
-    final_login_resp = await api_client.post("/auth/login", json=fake_user)
+    final_login_resp = await api_client.post(LOGIN, json=fake_user)
     assert final_login_resp.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -230,7 +231,7 @@ async def test_delete_user_unauthenticated(api_client: AsyncClient):
     Asserts:
         - The API returns a 401 Unauthorized status.
     """
-    response = await api_client.delete("/users/me")
+    response = await api_client.delete(USERS_ME)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -262,7 +263,7 @@ async def test_register_weak_password(
         - The response detail contains the specific reason for the failure.
     """
     response = await api_client.post(
-        "/register", json={"email": fake_user["email"], "password": password}
+        REGISTER, json={"email": fake_user["email"], "password": password}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

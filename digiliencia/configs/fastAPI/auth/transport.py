@@ -14,12 +14,13 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from core.config import settings
+from core.endpoints import TOKEN
 
 # Defines the transport mechanism for authentication tokens.
 # A BearerTransport expects tokens to be sent in the 'Authorization' header
 # with the 'Bearer' prefix (e.g., "Authorization: Bearer <token>").
 # The tokenUrl specifies the endpoint where clients can obtain a token.
-bearer_transport = BearerTransport(tokenUrl="/api/auth/jwt/login")
+bearer_transport = BearerTransport(tokenUrl=TOKEN)
 
 
 def get_jwt_strategy() -> JWTStrategy:

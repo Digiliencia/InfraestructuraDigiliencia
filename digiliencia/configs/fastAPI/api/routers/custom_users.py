@@ -12,6 +12,7 @@ from auth.manager import get_user_manager, UserManager
 from schemas.user import UserRead, UserUpdate
 from db.models import User
 from auth.users import fastapi_users
+from core.endpoints import USERS_ME
 
 # Reusable dependency for the currently authenticated, active user.
 current_user = fastapi_users.current_user(active=True)
@@ -20,7 +21,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/users/me",
+    USERS_ME,
     response_model=UserRead,
     summary="Get Current User Data",
     description="Retrieve the profile information for the currently authenticated user.",
@@ -48,7 +49,7 @@ async def get_my_data(
 
 
 @router.patch(
-    "/users/me",
+    USERS_ME,
     response_model=UserRead,
     summary="Update Current User Data",
     description="Update the profile information for the currently authenticated user. Note: Password updates should be handled via a dedicated password change endpoint.",
@@ -95,7 +96,7 @@ async def update_my_data(
 
 
 @router.delete(
-    "/users/me",
+    USERS_ME,
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Current User Account",
     description="Permanently delete the account of the currently authenticated user.",
