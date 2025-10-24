@@ -40,6 +40,7 @@ for var_name in [
         raise EnvironmentError(f"Missing environment variable for tests: {var_name}")
 
 
+
 # --- Connection Factory Fixture ---
 @pytest.fixture(scope="function")
 def get_db_connection_for_role():
@@ -106,16 +107,29 @@ def populated_db(get_db_connection_for_role):
         model_ids = [row[0] for row in cursor.fetchall()]
 
         cursor.execute(
-            "INSERT INTO IA_PROMPTS (prompt, IA_name) VALUES ('You are a helpful assistant.', 'GeneralAssistant') RETURNING ID;"
+            """
+            INSERT INTO IA_PROMPTS (prompt_name, prompt, prompt_description) 
+            VALUES (%s, %s, %s) RETURNING ID;
+            """,
+            ("GeneralAssistant", "You are a helpful assistant.", "A general purpose AI assistant"),
         )
         prompt_ids = [row[0] for row in cursor.fetchall()]
 
         # 2. Populate USERS
         user_ids = []
-        for _ in range(5):
+        for i in range(5):
             cursor.execute(
-                "INSERT INTO USERS (email, hashed_password) VALUES (%s, %s) RETURNING ID;",
-                (fake.unique.email(), "fakepass"),
+                """
+                INSERT INTO USERS (email, hashed_password, is_active, is_superuser, is_verified) 
+                VALUES (%s, %s, %s, %s, %s) RETURNING ID;
+                """,
+                (
+                    fake.unique.email(),
+                    "fakepass",
+                    True,
+                    i == 0,  # First user is superuser
+                    True,
+                ),
             )
             user_ids.append(cursor.fetchone()[0])
 
@@ -128,17 +142,17 @@ def populated_db(get_db_connection_for_role):
             )
             chat_ids.append(cursor.fetchone()[0])
 
-        # 4. Populate MESSAGES (depends on CHATS, MODELS, IA_PROMPTS)
+        # 4. Populate MESSAGES (depends on CHATS, MODELS)
         for i, chat_id in enumerate(chat_ids):
             cursor.execute(
-                """INSERT INTO MESSAGES (order_number, content, chat_id, model_id, ia_prompt_id)
+                """INSERT INTO MESSAGES (order_number, content, statistics, chat_id, model_id)
                    VALUES (%s, %s, %s, %s, %s);""",
                 (
                     i + 1,
                     "This is a test message.",
+                    '{"tokens": 150, "time": 2.5}',  # Example statistics in JSON format
                     chat_id,
                     fake.random_element(model_ids),
-                    fake.random_element(prompt_ids),
                 ),
             )
         conn.commit()
