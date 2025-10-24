@@ -6,7 +6,8 @@
     ".",
     "/workspaces/InfraestructuraDiligencia",
     "./services/classification",
-    "./digiliencia"
+    "./digiliencia",
+    "./digiliencia/configs/fastAPI"
   ],
   "python.defaultInterpreterPath": "/workspaces/InfraestructuraDiligencia/.venv/bin/python",
   "python.terminal.activateEnvironment": true,

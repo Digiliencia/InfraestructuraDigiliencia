@@ -18,10 +18,10 @@ import uuid
 import pytest
 from httpx import AsyncClient
 from starlette import status
-from schemas.chat import TemplateList, ModelList
+from digiliencia.configs.fastAPI.schemas.chat import TemplateList, ModelList
 import asyncio
 
-from core.endpoints import CONVERSATIONS, CHATS_PATH, REGISTER, LOGIN, USERS_ME
+from digiliencia.configs.fastAPI.core.endpoints import CONVERSATIONS, CHATS_PATH, REGISTER, LOGIN, USERS_ME
 
 pytestmark = pytest.mark.asyncio
 

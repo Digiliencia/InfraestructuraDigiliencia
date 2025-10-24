@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Processing SQL template and initializing database/users..."
 
-. $SCRIPT_DIR/../.env
+. $SCRIPT_DIR/../../../.env
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 

@@ -69,8 +69,8 @@ services:
       runtime: nvidia
   fastapi-service:
     build:
-      context: ../digiliencia/configs
-      dockerfile: fastAPI/DockerFile
+      context: ..
+      dockerfile: digiliencia/configs/fastAPI/DockerFile
     ports:
       - "8080:8080"
     depends_on:

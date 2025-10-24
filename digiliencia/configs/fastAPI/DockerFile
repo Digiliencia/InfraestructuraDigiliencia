@@ -12,7 +12,7 @@ ENV PYTHONUNBUFFERED 1
 # Stage 2: Install Dependencies
 # Copy the requirements file first. This step is cached by Docker. The cache
 # will only be invalidated if requirements.txt changes, speeding up builds.
-COPY fastAPI/requirements.txt .
+COPY digiliencia/configs/fastAPI/requirements.txt .
 
 # Install the Python dependencies specified in requirements.txt.
 # --no-cache-dir disables the pip cache, which is not needed in a container.
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application source code from the build context
 # into the container's working directory (/app).
 # The .dockerignore file will prevent unnecessary files from being copied.
-COPY fastAPI .
+COPY digiliencia/configs/fastAPI .
 
 # Stage 4: enviroment variables
 COPY .env .

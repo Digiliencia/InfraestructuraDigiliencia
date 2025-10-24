@@ -15,7 +15,7 @@ Dependencies:
 import pytest
 from httpx import AsyncClient
 from starlette import status
-from core.endpoints import REGISTER, LOGIN, USERS_ME
+from digiliencia.configs.fastAPI.core.endpoints import REGISTER, LOGIN, USERS_ME
 
 pytestmark = pytest.mark.asyncio
 

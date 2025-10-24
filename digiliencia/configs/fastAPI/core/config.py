@@ -21,7 +21,7 @@ from pathlib import Path
 # Build the absolute path to the .env file located at the project root.
 dotenv_path = Path(__file__).resolve().parent.parent / ".env"
 if not os.path.exists(dotenv_path):
-    dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    dotenv_path = Path(__file__).resolve().parent.parent.parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
