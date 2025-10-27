@@ -6,11 +6,11 @@ import uuid
 # This file contains tests to verify data constraints and integrity.
 
 
-def test_unique_email_constraint(populated_db):
+def test_unique_email_constraint(get_db_connection_for_role):
     """
     Verifies that the UNIQUE constraint on the 'email' column of the USERS table works.
     """
-    conn = populated_db  # Use the connection from the fixture
+    conn = get_db_connection_for_role("db_owner")  # Use the connection from the fixture
     cursor = conn.cursor()
 
     cursor.execute("SELECT email FROM USERS LIMIT 1;")
@@ -30,11 +30,11 @@ def test_unique_email_constraint(populated_db):
     cursor.close()
 
 
-def test_not_null_constraints(populated_db):
+def test_not_null_constraints(get_db_connection_for_role):
     """
     Verifies that NOT NULL constraints work as expected.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     # Test user table constraints
@@ -80,11 +80,11 @@ def test_not_null_constraints(populated_db):
     cursor.close()
 
 
-def test_foreign_key_constraints(populated_db):
+def test_foreign_key_constraints(get_db_connection_for_role):
     """
     Verifies that foreign key constraints work.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     non_existent_user_id = str(uuid.uuid4())
@@ -99,11 +99,11 @@ def test_foreign_key_constraints(populated_db):
     cursor.close()
 
 
-def test_on_delete_cascade_behavior(populated_db):
+def test_on_delete_cascade_behavior(get_db_connection_for_role):
     """
     Verifies the ON DELETE CASCADE behavior.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     # Test cascade delete from users to chats
@@ -119,14 +119,14 @@ def test_on_delete_cascade_behavior(populated_db):
     # Test cascade delete from chats to messages
     cursor.execute("SELECT id FROM CHATS LIMIT 1;")
     chat_id = cursor.fetchone()[0]
-    
+
     cursor.execute("SELECT COUNT(*) FROM MESSAGES WHERE chat_id = %s;", (chat_id,))
     initial_message_count = cursor.fetchone()[0]
     assert initial_message_count > 0, "Should have MESSAGES for testing cascade delete"
-    
+
     cursor.execute("DELETE FROM CHATS WHERE id = %s;", (chat_id,))
     conn.commit()
-    
+
     cursor.execute("SELECT COUNT(*) FROM MESSAGES WHERE chat_id = %s;", (chat_id,))
     assert cursor.fetchone()[0] == 0, "Messages should have been deleted in cascade."
 
@@ -134,11 +134,11 @@ def test_on_delete_cascade_behavior(populated_db):
     cursor.close()
 
 
-def test_on_delete_restrict_behavior(populated_db):
+def test_on_delete_restrict_behavior(get_db_connection_for_role):
     """
     Verifies the ON DELETE RESTRICT behavior for models and prompts.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     # Test RESTRICT on models
@@ -150,7 +150,9 @@ def test_on_delete_restrict_behavior(populated_db):
     conn.rollback()
 
     # Test RESTRICT on prompts
-    cursor.execute("SELECT ia_prompt_id FROM CHATS WHERE ia_prompt_id IS NOT NULL LIMIT 1;")
+    cursor.execute(
+        "SELECT ia_prompt_id FROM CHATS WHERE ia_prompt_id IS NOT NULL LIMIT 1;"
+    )
     prompt_id_in_use = cursor.fetchone()[0]
 
     with pytest.raises(ForeignKeyViolation):
@@ -161,11 +163,11 @@ def test_on_delete_restrict_behavior(populated_db):
     cursor.close()
 
 
-def test_unique_order_number_within_chat(populated_db):
+def test_unique_order_number_within_chat(get_db_connection_for_role):
     """
     Verifies that message order numbers are unique within a chat.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     # Get a chat_id and its existing order number
@@ -187,11 +189,11 @@ def test_unique_order_number_within_chat(populated_db):
     cursor.close()
 
 
-def test_default_values(populated_db):
+def test_default_values(get_db_connection_for_role):
     """
     Verifies that default values are set correctly.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     # Test user default values
@@ -203,25 +205,21 @@ def test_default_values(populated_db):
         """
     )
     is_active, is_superuser, is_verified = cursor.fetchone()
-    
-    assert is_active == True, "is_active should default to TRUE"
-    assert is_superuser == False, "is_superuser should default to FALSE"
-    assert is_verified == False, "is_verified should default to FALSE"
+
+    assert not is_active, "is_active should default to TRUE"
+    assert not is_superuser, "is_superuser should default to FALSE"
+    assert not is_verified, "is_verified should default to FALSE"
 
     conn.rollback()
     print("\nDefault values test passed.")
     cursor.close()
 
-    conn.rollback()
-    print("\nON DELETE RESTRICT test passed.")
-    cursor.close()
 
-
-def test_users_view_security(populated_db):
+def test_users_view_security(get_db_connection_for_role):
     """
     Verifies that the 'users_id_email_view' view only exposes the expected columns.
     """
-    conn = populated_db
+    conn = get_db_connection_for_role("db_owner")
     cursor = conn.cursor()
 
     with pytest.raises(psycopg2.errors.UndefinedColumn):

@@ -23,7 +23,6 @@ def test_database_and_users_exist(get_db_connection_for_role):
         assert cursor.fetchone(), f"User '{os.getenv(role_var)}' does not exist."
 
     cursor.close()
-    conn.close()
 
 
 def test_tables_and_views_created(get_db_connection_for_role):
@@ -51,7 +50,6 @@ def test_tables_and_views_created(get_db_connection_for_role):
         f"Missing views. Expected: {expected_views}, found: {views}"
     )
 
-    cursor.close()
     conn.close()
 
 
@@ -71,7 +69,6 @@ def test_db_owner_permissions(get_db_connection_for_role):
         conn.close()
 
 
-@pytest.mark.usefixtures("populated_db")
 def test_app_user_permissions(get_db_connection_for_role):
     """
     Check the permissions of 'app_user' (chatUser):
@@ -86,23 +83,25 @@ def test_app_user_permissions(get_db_connection_for_role):
     # Test READ permissions
     cursor.execute("SELECT id FROM CHATS LIMIT 1;")
     assert cursor.fetchone(), "app_user should be able to read from CHATS"
-    
+
     cursor.execute("SELECT id FROM MESSAGES LIMIT 1;")
     assert cursor.fetchone(), "app_user should be able to read from MESSAGES"
-    
+
     cursor.execute("SELECT id, ia_name FROM MODELS LIMIT 1;")
     assert cursor.fetchone(), "app_user should be able to read from MODELS"
 
-    cursor.execute("SELECT id, prompt_name, prompt, prompt_description FROM IA_PROMPTS LIMIT 1;")
+    cursor.execute(
+        "SELECT id, prompt_name, prompt, prompt_description FROM IA_PROMPTS LIMIT 1;"
+    )
     assert cursor.fetchone(), "app_user should be able to read from IA_PROMPTS"
-    
+
     cursor.execute("SELECT id, email FROM users_id_email_view LIMIT 1;")
     assert cursor.fetchone(), "app_user should be able to read from users view"
-    
+
     # Test WRITE permissions - successful cases
     cursor.execute("SELECT id FROM users_id_email_view LIMIT 1;")
     user_id = cursor.fetchone()[0]
-    
+
     # Test chat creation
     try:
         cursor.execute(
@@ -115,7 +114,7 @@ def test_app_user_permissions(get_db_connection_for_role):
         )
         chat_id = cursor.fetchone()[0]
         assert chat_id, "app_user should be able to create chats"
-        
+
         # Test message creation
         cursor.execute(
             """
@@ -126,9 +125,11 @@ def test_app_user_permissions(get_db_connection_for_role):
             (chat_id,),
         )
         assert cursor.fetchone()[0], "app_user should be able to create messages"
-        
+
     except psycopg2.Error as e:
-        pytest.fail(f"app_user should have write access to CHATS and MESSAGES, but failed: {e}")
+        pytest.fail(
+            f"app_user should have write access to CHATS and MESSAGES, but failed: {e}"
+        )
     finally:
         conn.rollback()
 
@@ -171,16 +172,7 @@ def test_app_user_permissions(get_db_connection_for_role):
     conn.close()
 
 
-@pytest.mark.usefixtures("populated_db")
 def test_app_user_login_permissions(get_db_connection_for_role):
-    """
-    Check the permissions of 'app_user_login' (userLogin):
-    - CAN read/write to USERS.
-    - CANNOT read from CHATS.
-    """
-    conn = get_db_connection_for_role("app_user_login")
-    cursor = conn.cursor()
-
     """
     Check the permissions of 'app_user_login' (userLogin):
     - CAN read/write to USERS.
@@ -201,7 +193,9 @@ def test_app_user_login_permissions(get_db_connection_for_role):
         assert cursor.fetchone()[0], "app_user_login should be able to create users"
         conn.rollback()
     except psycopg2.Error as e:
-        pytest.fail(f"app_user_login should have write access to USERS, but failed: {e}")
+        pytest.fail(
+            f"app_user_login should have write access to USERS, but failed: {e}"
+        )
 
     # Test read restrictions
     tables_to_check = ["CHATS", "MESSAGES", "MODELS", "IA_PROMPTS"]
@@ -230,7 +224,6 @@ def test_app_user_login_permissions(get_db_connection_for_role):
 
 
 # --- Logic/Function Tests ---
-@pytest.mark.usefixtures("populated_db")
 def test_get_user_id_by_email_function(get_db_connection_for_role):
     """Test the get_user_id_by_email function."""
     # Get a real email from the DB using db_owner role

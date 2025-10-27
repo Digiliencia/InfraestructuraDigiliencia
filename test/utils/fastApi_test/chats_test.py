@@ -21,7 +21,13 @@ from starlette import status
 from digiliencia.configs.fastAPI.schemas.chat import TemplateList, ModelList
 import asyncio
 
-from digiliencia.configs.fastAPI.core.endpoints import CONVERSATIONS, CHATS_PATH, REGISTER, LOGIN, USERS_ME
+from digiliencia.configs.fastAPI.core.endpoints import (
+    CONVERSATIONS,
+    CHATS_PATH,
+    REGISTER,
+    LOGIN,
+    USERS_ME,
+)
 
 pytestmark = pytest.mark.asyncio
 

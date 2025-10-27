@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     APP_DB_NAME: str
 
+    POSTGRES_USER : str
+    POSTGRES_PASSWORD : str
+    APP_USER : str
+    APP_USER_PASSWORD : str
+    APP_USER_LOGIN : str
+    APP_USER_LOGIN_PASSWORD : str
+
     @property
     def DATABASE_URL(self) -> str:
         """
