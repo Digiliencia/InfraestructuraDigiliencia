@@ -1,9 +1,10 @@
 """Service for making embedding generation requests (DRY principle)."""
 
 import os
+from typing import List, Optional
+
 import requests
 from loguru import logger
-from typing import List, Optional
 
 
 class EmbeddingService:
@@ -33,6 +34,9 @@ class EmbeddingService:
             Optional[List]: List of embeddings or None if failed.
         """
         try:
+            logger.debug(
+                f"Requesting embeddings for {len(texts)}"
+            )
             response = self.session.post(self.service_url, json={"texts": texts})
             response.raise_for_status()
             embeddings = response.json().get("embeddings")

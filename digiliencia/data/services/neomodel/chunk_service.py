@@ -66,6 +66,9 @@ class ChunkService:
         include_header: bool = True,
         force_regenerate: bool = False,
     ) -> int:
+        logger.debug(
+            f"Generating chunks for news {news.uid}"
+        )
         texts: List[str] = []
         mapping: List[tuple[int, str]] = []  # (index, kind)
         idx = 0
