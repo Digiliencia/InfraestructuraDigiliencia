@@ -9,7 +9,7 @@ from enum import Enum
 # Base API URLs
 API_PREFIX = "/api"  # Matches the prefix in main.py
 
-# Auth endpoints - Rutas relativas sin el prefijo API
+# Auth endpoints
 AUTH_PATH = "/auth"
 JWT_PATH = f"{API_PREFIX}{AUTH_PATH}/jwt"
 LOGIN = f"{AUTH_PATH}/login"  # Becomes /api/auth/jwt/login
@@ -25,12 +25,11 @@ CONVERSATIONS = "/conversations"  # Becomes /api/conversations
 TEMPLATE_LIST = f"{CHATS_PATH}/template_list"  # Becomes /api/chats/template_list
 MODEL_LIST = f"{CHATS_PATH}/model_list"  # Becomes /api/chats/model_list
 
-# Health and root endpoints - Rutas relativas sin el prefijo API
+# Health and root endpoints
 ROOT = f"{API_PREFIX}/"  # Becomes /api/
 
 HEALTH = f"{API_PREFIX}/health"  # Becomes /api/health
 
-# Rutas completas para uso en FastAPI directamente
 USERS_ME = f"{USERS_PATH}{USERS_ME_PATH}"
 
 

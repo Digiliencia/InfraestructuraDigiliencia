@@ -13,7 +13,7 @@ import asyncio
 from typing import AsyncGenerator, Any
 from httpx import AsyncClient
 
-from test.utils.conftest import faker
+from test.conftest import faker
 from starlette import status
 from digiliencia.configs.fastAPI.core.endpoints import (
     TEMPLATE_LIST,
@@ -110,14 +110,14 @@ async def authenticated_client(
     """
     async with httpx.AsyncClient(base_url=API_URL) as auth_client:
         response = await auth_client.post(REGISTER, json=fake_user)
-        if response.status_code != 201:
+        if response.status_code != status.HTTP_201_CREATED:
             raise Exception(f"User registration failed in fixture: {response.text}")
 
         response = await auth_client.post(
             LOGIN,
             json={"email": fake_user["email"], "password": fake_user["password"]},
         )
-        if response.status_code != 200:
+        if response.status_code != status.HTTP_200_OK:
             raise Exception(f"User login failed in fixture: {response.text}")
 
         token = response.json()["access_token"]
@@ -126,7 +126,7 @@ async def authenticated_client(
         yield auth_client
 
         response = await auth_client.delete(USERS_ME)
-        if response.status_code != 204:
+        if response.status_code != status.HTTP_204_NO_CONTENT:
             print(f"Warning: Failed to cleanup user {fake_user['email']}")
 
 

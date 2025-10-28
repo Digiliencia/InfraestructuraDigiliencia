@@ -7,7 +7,7 @@ import requests
 
 import pytest
 from neo4j import GraphDatabase
-from services.embeddings import settings
+# from services.embeddings import settings
 
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
