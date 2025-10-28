@@ -8,7 +8,7 @@ from the database using the available tools.
 import asyncio
 from typing import List, Optional
 
-from llama_index.core.agent import ReActAgent
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.tools import FunctionTool
 from loguru import logger
 
@@ -59,19 +59,33 @@ class NewsAgent(ToolBasedAgent):
         """
         Initialize the ReAct agent with news retrieval tools.
         
+        The agent is configured to ALWAYS use tools for answering queries,
+        ensuring factual, database-backed responses.
+        
         Returns:
             Configured ReActAgent instance
         """
         tools = self.get_tools()
         
+        # Enhanced system prompt to enforce tool usage
+        system_prompt = (
+            f"{self.get_system_prompt()}\n\n"
+            "CRITICAL INSTRUCTION: You MUST use the available tools to answer every query. "
+            "Do NOT provide answers without using tools first. "
+            "If you don't have enough information after using tools, ask the user for clarification "
+            "or suggest refining their query. "
+            "NEVER generate or invent information that doesn't come from the tools."
+        )
+        
+        # Create the agent with tools
         agent = ReActAgent(
             name="NewsAgent",
             description="Retrieves and presents cybersecurity news using database queries",
-            system_prompt=self.get_system_prompt(),
+            system_prompt=system_prompt,
             tools=tools,
             llm=self._llm,
             verbose=self.verbose,
-            timeout=self.request_timeout,  # Usar el timeout configurado
+            timeout=self.request_timeout,
         )
         
         return agent
@@ -235,15 +249,46 @@ class NewsAgent(ToolBasedAgent):
         
         for idx, news in enumerate(news_list, 1):
             result_parts.append(f"\n--- Article {idx} ---")
-            result_parts.append(f"Title: {news.title}")
-            result_parts.append(f"Date: {news.date}")
-            result_parts.append(f"Organization: {news.organization}")
             
-            if hasattr(news, 'topic') and news.topic:
-                result_parts.append(f"Topic: {news.topic}")
+            # Use 'header' instead of 'title' (correct attribute name in News model)
+            if hasattr(news, 'header'):
+                result_parts.append(f"Title: {news.header}")
             
-            if hasattr(news, 'related_field') and news.related_field:
-                result_parts.append(f"Related Field: {news.related_field}")
+            if hasattr(news, 'date'):
+                result_parts.append(f"Date: {news.date}")
+            
+            # Get organization from relationship (published_by)
+            try:
+                # Access the relationship and get the single connected node
+                org_rel = getattr(news, 'published_by', None)
+                if org_rel:
+                    org = org_rel.single()
+                    if org and hasattr(org, 'name'):
+                        result_parts.append(f"Organization: {org.name}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve organization: {e}")
+            
+            # Get topics from relationship
+            try:
+                topics_rel = getattr(news, 'topics', None)
+                if topics_rel:
+                    topics = list(topics_rel.all())
+                    if topics:
+                        topic_names = [getattr(t, 'name', str(t)) for t in topics]
+                        result_parts.append(f"Topics: {', '.join(topic_names)}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve topics: {e}")
+            
+            # Get related fields from relationship
+            try:
+                fields_rel = getattr(news, 'fields', None)
+                if fields_rel:
+                    fields = list(fields_rel.all())
+                    if fields:
+                        field_names = [getattr(f, 'name', str(f)) for f in fields]
+                        result_parts.append(f"Related Fields: {', '.join(field_names)}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve fields: {e}")
             
             # Truncate content if too long
             if hasattr(news, 'content'):
@@ -270,30 +315,48 @@ class NewsAgent(ToolBasedAgent):
         """
         Async helper to process query with the agent.
         
+        The agent will use its tools to retrieve real news data before responding.
+        
         Args:
             query: User's news query
             
         Returns:
-            Agent's response
+            Agent's response based on tool-retrieved data
         """
-        contextualized_query = f"{self.get_system_prompt()}\n\nUser Query: {query}"
-        handler = self._agent.run(user_msg=contextualized_query)
-        response = await handler
-        return str(response)
+        # Run the agent with the user query
+        # The system prompt is already configured in the agent initialization
+        handler = self._agent.run(user_msg=query)
+        result = await handler
+        
+        # The result is a Context object, extract the response
+        # Check different possible return formats
+        if isinstance(result, dict):
+            # If it's a dict, try to get 'response' key
+            return str(result.get("response", result))
+        elif hasattr(result, "response"):
+            # If it has a 'response' attribute
+            return str(result.response)
+        else:
+            # Otherwise, convert the whole result to string
+            return str(result)
     
     def process_query(self, query: str, **kwargs) -> str:
         """
-        Process a news-related query using the ReAct agent.
+        Process a news-related query using the ReAct agent with tools.
+        
+        The agent will automatically use the available tools (get_news, search_by_content)
+        to retrieve real news data from the database before formulating a response.
+        Multiple tool calls may be made if needed to fully answer the query.
         
         Args:
             query: User's news query
             **kwargs: Additional parameters
             
         Returns:
-            Agent's response based on retrieved news
+            Agent's response based on retrieved news from tools
         """
         try:
-            logger.info(f"NewsAgent processing query: {query[:100]}...")
+            logger.info(f"NewsAgent processing query with tools: {query[:100]}...")
             
             # Run the async query processing synchronously
             try:
@@ -311,7 +374,7 @@ class NewsAgent(ToolBasedAgent):
                 response = asyncio.run(self._async_process_query(query))
             
             self.record_query(success=True)
-            logger.debug("NewsAgent query processed successfully")
+            logger.debug("NewsAgent query processed successfully with tools")
             
             return str(response)
             
