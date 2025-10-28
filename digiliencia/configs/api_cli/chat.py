@@ -1,0 +1,66 @@
+import httpx
+from starlette import status
+import uuid
+from typing import Tuple, Dict
+
+from digiliencia.configs.fastAPI.core.endpoints import (
+    CONVERSATIONS,
+    TEMPLATE_LIST,
+    MODEL_LIST,
+    CHATS_PATH,
+)
+
+
+def create_chat(
+    client: httpx.Client, tittle: str, template_id: uuid.UUID
+) -> Tuple[bool, str]:
+    chat_data = {"tittle": tittle, "ia_prompt": template_id}
+    chat_response = client.patch(CHATS_PATH, json=chat_data)
+    if chat_response.status_code == status.HTTP_201_CREATED:
+        return True, chat_response.json()
+    return False, chat_response.json()
+
+
+def get_chats(client: httpx.Client) -> Dict[uuid.UUID, str]:
+    response = client.get(CONVERSATIONS)
+    chat_dict: dict[uuid.UUID, str] = dict()
+    if response.status_code == status.HTTP_202_ACCEPTED:
+        conversations = response.json()
+        for convo in conversations:
+            chat_dict[uuid.UUID(convo["id"])] = convo["title"]
+    else:
+        raise Exception(response.json())
+    return chat_dict
+
+
+def get_templates(client: httpx.Client) -> Dict[uuid.UUID, Tuple[str, str]]:
+    response = client.get(TEMPLATE_LIST)
+    template_dict: dict[uuid.UUID, Tuple[str, str]] = dict()
+    if response.status_code == status.HTTP_202_ACCEPTED:
+        templates = response.json()
+        if not templates:
+            return template_dict
+        for template in templates:
+            template_dict[uuid.UUID(template["idTemplate"])] = (
+                template["template_name"],
+                template["template_description"],
+            )
+    else:
+        raise Exception(response.json())
+    return template_dict
+
+
+def get_AI_models(client: httpx.Client) -> Dict[uuid.UUID, Tuple[str]]:
+    response = client.get(MODEL_LIST)
+    model_dict: dict[uuid.UUID, Tuple[str]] = dict()
+    if response.status_code == status.HTTP_202_ACCEPTED:
+        models = response.json()
+        if not models:
+            return model_dict
+        for model in models:
+            model_dict[uuid.UUID(model["idModel"])] = (
+                model["model_name"],
+            )
+    else:
+        raise Exception(response.json())
+    return model_dict

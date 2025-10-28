@@ -56,7 +56,7 @@ async def test_register_conflict(api_client: AsyncClient, fake_user: dict):
     """
     response = await api_client.post(REGISTER, json=fake_user)
     if response.status_code != status.HTTP_201_CREATED:
-        pytest.skip(f"Precondition failed: {response.status_code}")
+        raise AssertionError(f"Precondition failed: {response.status_code}")
 
     # Try to register again
     response = await api_client.post(REGISTER, json=fake_user)

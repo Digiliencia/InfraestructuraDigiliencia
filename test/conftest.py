@@ -350,22 +350,6 @@ async def setup_database():
     a clean state, then seeds the database with initial data. After all tests
     are finished, it drops all tables again.
     """
-    sql_drop_tables = text(
-        """
-        DO $$
-        BEGIN
-           DROP TABLE IF EXISTS MESSAGES CASCADE;
-           DROP TABLE IF EXISTS CHATS CASCADE;
-           DROP TABLE IF EXISTS USERS CASCADE;
-           DROP TABLE IF EXISTS IA_PROMPTS CASCADE;
-           DROP TABLE IF EXISTS MODELS CASCADE;
-        END $$;
-        """
-    )
-
-    async with engine.begin() as conn:
-        await conn.execute(sql_drop_tables)
-        await conn.run_sync(Base.metadata.create_all)
 
     # Seed data in a separate session
     async with TestingSessionLocal() as session:
@@ -430,8 +414,6 @@ async def setup_database():
 
     yield
 
-    async with engine.begin() as conn:
-        await conn.execute(sql_drop_tables)
 
 
 # =============================================================================

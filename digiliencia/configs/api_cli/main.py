@@ -28,7 +28,7 @@ def address_format_validation(ip_port):
 def initial_menu_flow(client: httpx.Client):
     is_logged_in = False
     not_exist = True
-    message = ""
+    message = None
     while not_exist:
         not_exist, message = menu(
             client,

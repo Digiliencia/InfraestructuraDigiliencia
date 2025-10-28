@@ -1,5 +1,5 @@
 import httpx
-from typing import Tuple
+from typing import Tuple, Optional
 
 import auth
 import menu
@@ -19,14 +19,16 @@ def login_flow(client: httpx.Client) -> Tuple[bool, str]:
             )
         return (True, "Login successful.")
     except KeyboardInterrupt:
-        return False, ""
+        return False, None
 
 
-def register_flow(client: httpx.Client, previous_message: str = "") -> Tuple[bool, str]:
+def register_flow(
+    client: httpx.Client, previous_message: Optional[str] = None
+) -> Tuple[bool, str]:
     try:
         inputs = menu.input_menu({"email": str, "password": str}, previous_message)
     except KeyboardInterrupt:
-        return False, ""
+        return False, None
     try:
         results = auth.register(client, inputs["email"], inputs["password"])
     except Exception as e:
