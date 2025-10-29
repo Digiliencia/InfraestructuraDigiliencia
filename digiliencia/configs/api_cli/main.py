@@ -1,10 +1,13 @@
 import argparse
 import socket
 import httpx
+import os
 from starlette import status
+from typing import Callable, Tuple
+
 from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
 
-from menu import menu
+from menu import selection
 from settings import unauthenticated_routes, authenticated_routes
 
 
@@ -27,14 +30,17 @@ def address_format_validation(ip_port):
 
 def initial_menu_flow(client: httpx.Client):
     is_logged_in = False
-    not_exist = True
     message = None
-    while not_exist:
-        not_exist, message = menu(
-            client,
+    while True:
+        os.system("clear")
+        selectioned: Callable[[httpx.Client], Tuple[bool, str]] = selection(
             unauthenticated_routes if not is_logged_in else authenticated_routes,
             message,
         )
+        os.system("clear")
+        if selectioned is None:
+            break
+        selectioned(client)
         is_logged_in = client.headers.get("Authorization") is not None
 
     print("Exiting application.")

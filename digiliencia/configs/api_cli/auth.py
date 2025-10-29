@@ -1,7 +1,7 @@
 import httpx
 from starlette import status
 from digiliencia.configs.fastAPI.core.endpoints import LOGIN, REGISTER, USERS_ME
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 def login(client: httpx.Client, email: str, password: str) -> bool:
@@ -45,7 +45,7 @@ def register(client: httpx.Client, email: str, password: str) -> tuple[bool, boo
 
 
 ## It do not logout, delete the user from the server
-def logout(client: httpx.Client) -> Tuple[bool, str]:
+def logout(client: httpx.Client) -> Tuple[bool, Optional[str]]:
     response = client.delete(USERS_ME)
     if response.status_code == status.HTTP_204_NO_CONTENT:
         client.headers.pop("Authorization", None)
@@ -53,7 +53,7 @@ def logout(client: httpx.Client) -> Tuple[bool, str]:
     return (False, f"Logout failed: {response.text}")
 
 
-def delete_user(client: httpx.Client) -> Tuple[bool, str]:
+def delete_user(client: httpx.Client) -> Tuple[bool, Optional[str]]:
     response = client.delete(USERS_ME)
     if response.status_code == status.HTTP_204_NO_CONTENT:
         client.headers.pop("Authorization", None)

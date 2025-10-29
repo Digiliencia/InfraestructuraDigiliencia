@@ -1,12 +1,11 @@
-import httpx
 import os
-from typing import Type, Tuple, Callable, Iterable, Optional
+from typing import Type, Callable, Iterable, Optional
+import uuid
 
 
 def input_menu(
     input_dict: dict[str, Type], previous_message: Optional[str] = None
 ) -> dict[str, any]:
-    os.system("clear")
     if previous_message:
         print(previous_message)
     inputs = dict[str, any]()
@@ -19,55 +18,67 @@ def input_menu(
     return inputs
 
 
-def show_menu(routes: dict):
-    print(f"Select an option from menu (0 - {len(routes)}):\n")
-    print("  0: Exit")
-    for number, key in enumerate(routes.keys(), start=1):
-        print(f"  {number}: {key}")
-    print()
-
-
 def dict_show(
     entries: dict[str, str],
     header: Optional[Iterable[str]] = None,
     previous_message: Optional[str] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
+    is_selection: bool = False,
 ) -> None:
-    os.system("clear")
     print(previous_message)
     if header:
         for head in header:
             print(f"{head}\t")
-    for key, value in entries.items():
-        print(f"- {key}:\t{value}")
+    for position, (key, value) in enumerate(entries.items(), start=1):
+        print(f"{position if is_selection else ''}- {key}:\t{value}")
     if is_pasue:
         pause(pause_message)
 
 
 def iterables_show(
-    entries: Iterable[Iterable[str]],
+    entries: Iterable[Iterable[str | uuid.UUID]],
     header: Optional[Iterable[str]] = None,
     previous_message: Optional[str] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
+    is_selection: bool = False,
 ) -> None:
-    os.system("clear")
-    if not previous_message is None:
+    if previous_message is not None:
         print(previous_message)
     if header:
         for head in header:
             print(f"{head}\t", end="")
-    print()
+        print()
     for value in entries:
         first: bool = True
-        for value_in_value in value:
+        for position, value_in_value in enumerate(value, start=1):
             if first:
-                print(f"- {value_in_value}", end="")
+                print(f"{position if is_selection else ''}- {value_in_value}", end="")
                 first = False
             else:
                 print(f"\t{value_in_value}", end="")
         print()
+    if is_pasue:
+        pause(pause_message)
+
+
+def simple_iterables_show(
+    entries: Iterable[str | uuid.UUID],
+    header: Optional[Iterable[str]] = None,
+    previous_message: Optional[str] = None,
+    is_pasue: bool = False,
+    pause_message: Optional[str] = None,
+    is_selection: bool = False,
+) -> None:
+    if previous_message is not None:
+        print(previous_message)
+    if header:
+        for head in header:
+            print(f"{head}\t", end="")
+        print()
+    for position, value in enumerate(entries, start=1):
+        print(f"{position if is_selection else ''}- {value}")
     if is_pasue:
         pause(pause_message)
 
@@ -83,28 +94,64 @@ def alert(message: str):
     pause()
 
 
-def menu(
-    client: httpx.Client,
-    router: dict[str, Callable[[httpx.Client], Tuple[bool, str]]],
+def show_selection(
+    routes: Iterable[str | uuid.UUID | Iterable[str | uuid.UUID]],
+    header: Optional[Iterable[str]] = None,
     previous_message: Optional[str] = None,
-) -> Tuple[bool, Optional[str]]:
+    is_pasue: bool = False,
+    pause_message: Optional[str] = None,
+) -> None:
+    print("Select an option:")
+    selection_function: Callable[
+        [
+            Iterable[Iterable[str | uuid.UUID]],
+            Optional[Iterable[str]],
+            Optional[str],
+            bool,
+            Optional[str],
+            Optional[bool],
+        ],
+        None,
+    ]
+    if routes is dict[str | uuid.UUID, str]:
+        selection_function = dict_show
+    elif routes is Iterable[Iterable[str | uuid.UUID]]:
+        selection_function = iterables_show
+    elif routes is Iterable[str | uuid.UUID]:
+        selection_function = simple_iterables_show
+    else:  # I try it
+        selection_function = simple_iterables_show
+    try:
+        selection_function(
+            routes, header, previous_message, is_pasue, pause_message, True
+        )
+    except Exception as e:
+        raise Exception(f"Not implemented yet: {type(routes)}. {e}")
+
+
+def selection(
+    router: dict[str | uuid.UUID, any],
+    previous_message: Optional[str] = None,
+) -> any:
     while True:
         os.system("clear")
         if previous_message:
             print(previous_message)
-        show_menu(router)
+        show_selection(
+            list(router.keys()),
+        )
         try:
             opcion = int(input("Enter option number: "))
-            if opcion == 0:
-                return False, "Exiting menu."
+            if opcion == 0:  # To write fewer
+                raise IndexError
             opcion = list(router.keys())[opcion - 1]
             if opcion in router:
-                return True, router[opcion](client)[1]
+                return router[opcion]
             else:
-                return menu(client, router, "Incorrect option.")
+                return selection(router, "Incorrect option.")
         except ValueError:
-            return menu(client, router, "Invalid input. Please enter a number.")
+            return selection(router, "Invalid input. Please enter a number.")
         except IndexError:
-            return menu(client, router, "The option number is out of range.")
+            return selection(router, "The option number is out of range.")
         except KeyboardInterrupt:
-            return False, ""
+            return None

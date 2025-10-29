@@ -89,12 +89,12 @@ class ConversationSummary(BaseModel):
     Attributes:
         idChat (UUID): The unique identifier for the chat.
         tittle (str): The title of the chat.
-        ia_prompt (UUID): The unique identifier of the associated AI prompt.
+        template (UUID): The unique identifier of the associated AI prompt.
     """
 
     idChat: UUID
     tittle: str
-    ia_prompt: UUID
+    template: UUID
 
 
 class ConversationFull(ConversationSummary):
@@ -119,7 +119,7 @@ class ConversationSummaryList(BaseModel):
         conversations (List[ConversationSummary]): The list of chat summaries.
     """
 
-    conversations: List[ConversationSummary]
+    conversations: dict[UUID,ConversationSummary]
 
 
 class ConversationList(BaseModel):

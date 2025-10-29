@@ -33,8 +33,9 @@ router = APIRouter(dependencies=[Depends(current_user)])
     summary="List User Conversations",
     description="Retrieve a list of summaries for all conversations belonging to the authenticated user, sorted by creation date.",
     response_description="A list of conversation summaries.",
+    status_code=status.HTTP_202_ACCEPTED
     responses={
-        200: {
+        202: {
             "description": "A list of the user's conversation summaries.",
             "content": {
                 "application/json": {
@@ -78,7 +79,7 @@ async def get_user_chat_list(
         )
         for chat in chats
     ]
-    return chat_schema.ConversationSummaryList(conversations=summaries)
+    return chat_schema.ConversationSummaryList(conversations={summary.idChat: summary for summary in summaries})
 
 
 @router.get(

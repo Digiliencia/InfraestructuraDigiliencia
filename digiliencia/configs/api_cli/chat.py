@@ -1,7 +1,7 @@
 import httpx
 from starlette import status
 import uuid
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 
 from digiliencia.configs.fastAPI.core.endpoints import (
     CONVERSATIONS,
@@ -14,21 +14,26 @@ from digiliencia.configs.fastAPI.core.endpoints import (
 def create_chat(
     client: httpx.Client, tittle: str, template_id: uuid.UUID
 ) -> Tuple[bool, str]:
-    chat_data = {"tittle": tittle, "ia_prompt": template_id}
+    chat_data = {"tittle": tittle, "ia_prompt": str(template_id)}
     chat_response = client.patch(CHATS_PATH, json=chat_data)
     if chat_response.status_code == status.HTTP_201_CREATED:
         return True, chat_response.json()
     return False, chat_response.json()
 
 
-def get_chats(client: httpx.Client) -> Dict[uuid.UUID, str]:
+def get_chats(client: httpx.Client) -> Dict[uuid.UUID, Tuple[str, uuid.UUID]]:
     response = client.get(CONVERSATIONS)
-    chat_dict: dict[uuid.UUID, str] = dict()
-    if response.status_code == status.HTTP_202_ACCEPTED:
-        conversations = response.json()
-        for convo in conversations:
-            chat_dict[uuid.UUID(convo["id"])] = convo["title"]
+    chat_dict: Dict[uuid.UUID, Tuple[str, uuid.UUID]] = dict()
+    if response.status_code == 200:  # status.HTTP_202_ACCEPTED:
+        conversations = response.json().get("conversations", [])
+        if conversations:
+            for convo in conversations:
+                chat_dict[uuid.UUID(convo["idChat"])] = (
+                    convo["tittle"],
+                    uuid.UUID(convo["ia_prompt"]),
+                )
     else:
+        print(response.json())
         raise Exception(response.json())
     return chat_dict
 
@@ -58,9 +63,16 @@ def get_AI_models(client: httpx.Client) -> Dict[uuid.UUID, Tuple[str]]:
         if not models:
             return model_dict
         for model in models:
-            model_dict[uuid.UUID(model["idModel"])] = (
-                model["model_name"],
-            )
+            model_dict[uuid.UUID(model["idModel"])] = (model["model_name"],)
     else:
         raise Exception(response.json())
     return model_dict
+
+
+def delete_chat(client: httpx.Client, chat_id: uuid.UUID) -> Tuple[bool, Optional[str]]:
+    response = client.delete(f"{CHATS_PATH}/{str(chat_id)}")
+    if response.status_code == status.HTTP_204_NO_CONTENT:
+        return True, None
+    elif response.status_code == status.HTTP_404_NOT_FOUND:
+        return False, f"Chat {chat_id} not found."
+    return False, f"Unexpected error: {response} for chat {chat_id}"

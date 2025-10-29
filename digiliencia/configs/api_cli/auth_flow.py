@@ -5,7 +5,7 @@ import auth
 import menu
 
 
-def login_flow(client: httpx.Client) -> Tuple[bool, str]:
+def login_flow(client: httpx.Client) -> Tuple[bool, Optional[str]]:
     MAX_TRY = 3
     counter = MAX_TRY
     try:
