@@ -4,10 +4,12 @@ import uuid
 
 
 def input_menu(
-    input_dict: dict[str, Type], previous_message: Optional[str] = None
+    input_dict: dict[str, Type], previous_messages: Optional[list[str]] = None,
+    message : Optional[str] = None
 ) -> dict[str, Any]:
-    if previous_message:
-        print(previous_message)
+    print_message_list(previous_messages)
+    if message is not None:
+        print(message)
     inputs = dict[str, any]()
     for key, value in input_dict.items():
         while inputs.get(key) is None:
@@ -21,12 +23,12 @@ def input_menu(
 def dict_show(
     entries: dict[str, str],
     header: Optional[Iterable[str]] = None,
-    previous_message: Optional[str] = None,
+    previous_messages: Optional[list[str]] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
     is_selection: bool = False,
 ) -> None:
-    print(previous_message)
+    print_message_list(previous_messages)
     if header:
         for head in header:
             print(f"{head}\t")
@@ -39,13 +41,12 @@ def dict_show(
 def iterables_show(
     entries: Iterable[Iterable[str | uuid.UUID]],
     header: Optional[Iterable[str]] = None,
-    previous_message: Optional[str] = None,
+    previous_messages: Optional[list[str]] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
     is_selection: bool = False,
 ) -> None:
-    if previous_message is not None:
-        print(previous_message)
+    print_message_list(previous_messages)
     if header:
         for head in header:
             print(f"{head}\t", end="")
@@ -66,13 +67,12 @@ def iterables_show(
 def simple_iterables_show(
     entries: Iterable[str | uuid.UUID],
     header: Optional[Iterable[str]] = None,
-    previous_message: Optional[str] = None,
+    previous_messages: Optional[list[str]] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
     is_selection: bool = False,
 ) -> None:
-    if previous_message is not None:
-        print(previous_message)
+    print_message_list(previous_messages)
     if header:
         for head in header:
             print(f"{head}\t", end="")
@@ -97,16 +97,17 @@ def alert(message: str):
 def show_selection(
     routes: Iterable[str | uuid.UUID | Iterable[str | uuid.UUID]],
     header: Optional[Iterable[str]] = None,
-    previous_message: Optional[str] = None,
+    previous_messages: Optional[list[str]] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
 ) -> None:
+    print_message_list(previous_messages)
     print("Select an option:")
     selection_function: Callable[
         [
             Iterable[Iterable[str | uuid.UUID]],
             Optional[Iterable[str]],
-            Optional[str],
+            Optional[list[str]],
             bool,
             Optional[str],
             Optional[bool],
@@ -123,7 +124,7 @@ def show_selection(
         selection_function = simple_iterables_show
     try:
         selection_function(
-            routes, header, previous_message, is_pasue, pause_message, True
+            routes, header, previous_messages, is_pasue, pause_message, True
         )
     except Exception as e:
         raise Exception(f"Not implemented yet: {type(routes)}. {e}")
@@ -131,12 +132,14 @@ def show_selection(
 
 def selection(
     router: dict[str | uuid.UUID, Any],
-    previous_message: Optional[str] = None,
+    previous_messages: Optional[list[str]] = None,
+    message: Optional[str] = None,
 ) -> Any:
     while True:
         os.system("clear")
-        if previous_message:
-            print(previous_message)
+        print_message_list(previous_messages)
+        if message is not None:
+            print(message)
         show_selection(
             list(router.keys()),
         )
@@ -148,10 +151,16 @@ def selection(
             if opcion in router:
                 return router[opcion]
             else:
-                return selection(router, "Incorrect option.")
+                return selection(router, previous_messages,"Incorrect option.")
         except ValueError:
-            return selection(router, "Invalid input. Please enter a number.")
+            return selection(router,previous_messages, "Invalid input. Please enter a number.")
         except IndexError:
-            return selection(router, "The option number is out of range.")
+            return selection(router, previous_messages, "The option number is out of range.")
         except KeyboardInterrupt:
             return None
+
+
+def print_message_list(messages: Optional[list[str]]):
+    if messages is not None and len(messages) > 0:
+        for message in messages:
+            print(message)
