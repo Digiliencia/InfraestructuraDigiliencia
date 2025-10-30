@@ -36,13 +36,13 @@ class SocialEuropeScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-title"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-title"): # type: ignore
             title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
         else:
             text_list = self.driver.find_elements(By.CSS_SELECTOR, ".gb-text")
             title = text_list[0].text
 
-        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-author"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-author"): # type: ignore
             authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
         else:
             authors_line = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline").text
@@ -51,7 +51,7 @@ class SocialEuropeScraper(AbstractNewsScraper):
         authors = [authors_line.strip()]
         author = "".join(authors)
 
-        if ScrapUtils().if_element_exists(self.driver, By.CLASS_NAME, "entry-time"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-time"): # type: ignore
             time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
         else:
             time_elem = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline +div +p").text

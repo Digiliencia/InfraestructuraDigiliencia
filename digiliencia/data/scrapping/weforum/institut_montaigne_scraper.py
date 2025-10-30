@@ -35,7 +35,7 @@ class InstitutMontaigneScraper(AbstractNewsScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "div.date"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.date"): # type: ignore
             time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text
         else:
             time_elem = self.driver.find_element(By.CSS_SELECTOR, ".section-publication__date").text
