@@ -130,8 +130,7 @@ def _format_news_results(news_results: List) -> str:
         # Add content preview (first 200 chars)
         if hasattr(news, 'content') and news.content:
             content_str = str(news.content)
-            preview = content_str[:200] + "..." if len(content_str) > 200 else content_str
-            formatted += f"   Preview: {preview}\n"
+            formatted += f"   Content: {content_str}\n"
         
         # Add metadata if available
         metadata_parts = []
