@@ -146,47 +146,6 @@ class BaseAgent(ABC):
         return f"{self.__class__.__name__}(name='{self.name}', model='{self.model_name}')"
 
 
-class ToolBasedAgent(BaseAgent):
-    """
-    Base class for agents that use tools to answer queries.
-    
-    These agents must always use their available tools to provide responses
-    based on real data rather than generating responses from the LLM alone.
-    """
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._tools = []
-    
-    @abstractmethod
-    def get_tools(self) -> List[Any]:
-        """
-        Get the list of tools available to this agent.
-        
-        Returns:
-            List of tool functions or objects
-        """
-        pass
-    
-    def get_tool_descriptions(self) -> List[Dict[str, str]]:
-        """
-        Get descriptions of all available tools.
-        
-        Returns:
-            List of dictionaries with tool name and description
-        """
-        tools = self.get_tools()
-        descriptions = []
-        
-        for tool in tools:
-            descriptions.append({
-                "name": getattr(tool, "__name__", str(tool)),
-                "description": getattr(tool, "__doc__", "No description available"),
-            })
-        
-        return descriptions
-
-
 class ConversationalAgentBase(BaseAgent):
     """
     Base class for conversational agents that don't require tools.

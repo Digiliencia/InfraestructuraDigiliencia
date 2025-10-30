@@ -23,6 +23,9 @@ class Env:
 
     _instance = None
     _ddbb_uri: str = ""
+    _neo4j_username: str = ""
+    _neo4j_password: str = ""
+    _neo4j_url: str = ""
     _weforum_email: str = ""
     _weforum_passwd: str = ""
     _webdriverwait_timeout: int = 5
@@ -30,6 +33,7 @@ class Env:
     _llm_url: str = ""
     _classification_model: str = ""
     _embeddings_service: str = ""
+    _embeddings_dimension: int = 0
     _chatbot_llm: str = ""
 
     def __new__(cls):
@@ -38,6 +42,9 @@ class Env:
             cls._instance = super().__new__(cls)
             cls._instance.load_env_vars()
             cls._instance._ddbb_uri = cls._instance.get_env_var("DDBB_URI")
+            cls._instance._neo4j_username = cls._instance.get_env_var("NEO4J_USERNAME")
+            cls._instance._neo4j_password = cls._instance.get_env_var("NEO4J_PASSWORD")
+            cls._instance._neo4j_url = cls._instance.get_env_var("NEO4J_URL")
             cls._instance._weforum_email = cls._instance.get_env_var("WEFORUM_EMAIL")
             cls._instance._weforum_passwd = cls._instance.get_env_var("WEFORUM_PASSWD")
             cls._instance._webdriverwait_timeout = int(
@@ -53,6 +60,9 @@ class Env:
             cls._instance._embeddings_service = cls._instance.get_env_var(
                 "EMBEDDINGS_SERVICE"
             )
+            cls._instance._embeddings_dimension = int(
+                cls._instance.get_env_var("EMBEDDINGS_DIMENSION", 0)
+            )
             cls._instance._chatbot_llm = cls._instance.get_env_var("CHATBOT_LLM")
         return cls._instance
 
@@ -66,8 +76,20 @@ class Env:
         return self._ddbb_uri
 
     @property
+    def neo4j_username(self) -> str:
+        return self._neo4j_username
+
+    @property
+    def neo4j_password(self) -> str:
+        return self._neo4j_password
+
+    @property
     def weforum_email(self) -> str:
         return self._weforum_email
+
+    @property
+    def neo4j_url(self) -> str:
+        return self._neo4j_url
 
     @property
     def weforum_passwd(self) -> str:
@@ -92,6 +114,10 @@ class Env:
     @property
     def embeddings_service(self) -> str:
         return self._embeddings_service
+
+    @property
+    def embeddings_dimension(self) -> int:
+        return self._embeddings_dimension
 
     @property
     def chatbot_llm(self) -> str:

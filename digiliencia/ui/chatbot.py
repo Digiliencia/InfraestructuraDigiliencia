@@ -15,11 +15,9 @@ try:
 except RuntimeError:
     pass
 
-from digiliencia.agents.agent_utils import (
-    AgentConfig,
-    get_performance_monitor,
-    validate_config,
-)
+from digiliencia.agents.agent_utils import (AgentConfig,
+                                            get_performance_monitor,
+                                            validate_config)
 from digiliencia.agents.router_agent import RouterAgent
 from digiliencia.configs.env import Env
 
@@ -222,30 +220,7 @@ def render_ui():
             }
         )
 
-    # Extras
-    with st.expander("🛠️ Available Tools"):
-        try:
-            tools = agent_router.get_available_tools()
-            if tools:
-                for tool in tools:
-                    st.write(f"**{tool['name']}**: {tool['description']}")
-            else:
-                st.info("No tools available or agent not initialized")
-        except Exception as e:
-            st.error(f"Could not retrieve tools: {e}")
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🗑️ Clear Conversation"):
-            st.session_state.messages = []
-            try:
-                agent_router.reset_conversation()
-                st.success("Conversation cleared successfully")
-                logger.info("Conversation cleared by user")
-            except Exception as e:
-                st.error(f"Error clearing conversation: {e}")
-                logger.error(f"Failed to clear conversation: {e}")
-            st.rerun()
+    col2, col3 = st.columns(2)
     with col2:
         if st.button("📊 Show Agent Metrics"):
             try:
