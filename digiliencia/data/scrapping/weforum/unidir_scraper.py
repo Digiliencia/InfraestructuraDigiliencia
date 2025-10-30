@@ -48,12 +48,11 @@ class UnidirScraper(AbstractNewsScraper):
         time_elem = self.driver.find_element(
             By.CSS_SELECTOR, ".post-title__date-val"
         ).text
-
-        if TimeUtils().detect_format_month(time_elem) == "%B":
-            date = datetime.strptime(time_elem, "%d %B %Y")  # type: ignore
-        elif TimeUtils().detect_format_month(time_elem) == "%b":
-            date = datetime.strptime(time_elem, "%d %b %Y")  # type: ignore
-        else:
+        
+        try:
+            date_ft = time_elem.replace(",", "")
+            date = datetime.strptime(date_ft, TimeUtils().detect_fomat_date(time_elem))  # type: ignore 
+        except ValueError:
             logger.warning("Date has not detected. By default date is today.")
             date = datetime.today()
 
