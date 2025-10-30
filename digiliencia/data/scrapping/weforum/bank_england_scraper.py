@@ -22,6 +22,11 @@ Stacktrace:
 Stacktrace:
 '''
 
+'''
+Error scraping https://www.bankofengland.co.uk/report/2025/the-boes-approach-to-innovation-in-ai-dlt-quantum-computing:
+ ScrapUtils.if_element_exists() missing 1 required positional argument: 'element'
+'''
+
 class BankEnglandScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

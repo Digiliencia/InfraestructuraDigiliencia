@@ -10,6 +10,16 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+'''
+- Error scraping https://www.findevgateway.org/blog/2025/10/driving-womens-empowerment-and-economy-one-chat-at-time:
+ Message: no such element: Unable to locate element: {"method":"css selector","selector":".author"}
+  (Session info: chrome=141.0.7390.123); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+        GetHandleVerifier [0x0x3dfe43+66515]
+        GetHandleVerifier [0x0x3dfe84+66580]
+        (No symbol) [0x0x1cdc48]
+        (No symbol) [0x0x218704]
+'''
 
 class FindevGatewayScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
