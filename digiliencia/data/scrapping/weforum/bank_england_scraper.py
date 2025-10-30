@@ -55,16 +55,16 @@ class BankEnglandScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1[itemprop='name']"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1[itemprop='name']"): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "h1[itemprop='name']").text
-        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1[itemprop='name']"): # type: ignore
+        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1[itemprop='name']"): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "h1[itemprop='name']").text
         else:
             title = self.driver.find_element(By.CSS_SELECTOR, ".mobile-post-main-image__date + h1").text
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, ".mobile-post-main-image__date h3"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, ".mobile-post-main-image__date h3"): # type: ignore
             time_elem = self.driver.find_elements(By.CSS_SELECTOR, ".mobile-post-main-image__date h3")[1].text
-        elif ScrapUtils().if_element_exists(By.CSS_SELECTOR, ".published-date"): # type: ignore
+        elif ScrapUtils.if_element_exists(By.CSS_SELECTOR, ".published-date"): # type: ignore
             time_elem = self.driver.find_element(By.CSS_SELECTOR, ".published-date").text
         else:
             time_elem = self.driver.find_element(By.CLASS_NAME, "published-date").text
@@ -73,16 +73,16 @@ class BankEnglandScraper(AbstractNewsScraper):
         date_ft = time_elem.replace("Published on ", "")
         date = datetime.strptime(date_ft, fmt_date)  # type: ignore
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, ".mobile-post-main-image__date h3"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, ".mobile-post-main-image__date h3"): # type: ignore
             author = self.driver.find_elements(By.CSS_SELECTOR, ".mobile-post-main-image__date h3")[0].text
         else:
             author = "Bank of England"  # There is not author
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "div[id='output'] p"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div[id='output'] p"): # type: ignore
             content_container = self.driver.find_elements(
                 By.CSS_SELECTOR, "div[id='output'] p"
             )
-        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, ".page-section p"): # type: ignore
+        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, ".page-section p"): # type: ignore
             content_container = self.driver.find_elements(
                 By.CSS_SELECTOR, ".page-section p"
             )

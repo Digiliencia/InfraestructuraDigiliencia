@@ -65,9 +65,9 @@ class OliverWymanScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"]):  # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, elems["title"]):  # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
-        elif ScrapUtils().if_element_exists(self.driver, By.CSS_SELECTOR, "h1.text-primary.text-primary--subheading"): # type: ignore
+        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1.text-primary.text-primary--subheading"): # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "h1.text-primary.text-primary--subheading").text
         else:
             title = self.driver.find_element(

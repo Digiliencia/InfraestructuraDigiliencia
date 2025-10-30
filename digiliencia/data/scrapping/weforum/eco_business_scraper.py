@@ -48,7 +48,7 @@ class EcoBusinessScraper(AbstractNewsScraper):
         authors = author_line.rsplit(",", 1)
         author = authors[0].strip()
 
-        if ScrapUtils().if_element_exists(self.driver, By.TAG_NAME, "time"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.TAG_NAME, "time"): # type: ignore
             time_elem = self.driver.find_element(  # Esperar a que se carge
                 By.TAG_NAME, "time"
             ).text
