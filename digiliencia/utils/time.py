@@ -266,6 +266,7 @@ class TimeUtils:
             "%d %B %Y",          # 20 October 2025
             "%b %d, %Y",         # Oct 20, 2025
             "%B %d, %Y",         # October 20, 2025
+            "%B %d %Y"           # October 20 2025
             "%Y-%m-%dEST%H:%M",
             "%Y-%m-%dT%H:%M:%S", # 2025-10-20T13:45:00
             "%Y-%m-%d %H:%M:%S", # 2025-10-20 13:45:00

@@ -10,16 +10,6 @@ from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
 '''
-2025-10-30 10:08:13.173 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://hbr.org/sponsored/2025/10/the-business-rewards-and-identity-risks-of-agentic-ai:
- time data 'October 10 2025' does not match format '%B %d, %Y'
-'''
-
-'''
-Error scraping https://hbr.org/sponsored/2025/10/how-ai-will-forge-the-next-generation-of-cybersecurity-talent:
- time data 'October 29 2025' does not match format '%B %d, %Y'
-'''
-
-'''
  2025-10-30 10:07:14.415 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://hbr.org/2025/10/how-to-lead-when-the-conditions-for-success-suddenly-disappear:
  ScrapUtils.if_element_exists() missing 1 required positional argument: 'element'
 '''
