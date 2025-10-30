@@ -12,7 +12,7 @@ from loguru import logger
 
 from digiliencia.agents.base_agent import BaseAgent
 from digiliencia.agents.conversational_agent import ConversationalAgent
-from digiliencia.agents.news_agent import NewsAgent
+from digiliencia.agents.rag.news_agent import NewsAgent
 from digiliencia.agents.router_agent import RouterAgent
 
 

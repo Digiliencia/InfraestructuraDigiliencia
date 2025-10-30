@@ -3,13 +3,14 @@
 import gc
 from datetime import datetime
 from typing import Iterable, List, Optional
+
 from loguru import logger
 
-from digiliencia.data.services.embedding_service import EmbeddingService
 from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
+from digiliencia.data.services.embedding_service import EmbeddingService
 from digiliencia.data.services.neomodel.chunk_service import ChunkService
 from digiliencia.data.services.neomodel.config import configure_neomodel
 from digiliencia.enums.related_fields import RelatedFields
@@ -480,7 +481,10 @@ class NewsService:
                 logger.error("No embedding generated for the provided content.")
                 return []
             query_vector = query_embedding[0]
+            
             # Cypher query to search for similar news using embeddings
+            from neomodel import db
+            
             cypher_query = """
             MATCH (n:News)
             WHERE n.content_embedding IS NOT NULL
@@ -489,8 +493,14 @@ class NewsService:
             ORDER BY similarity DESC
             LIMIT $limit
             """
-            results = News.cypher(cypher_query, {"query_vector": query_vector, "limit": limit})
-            similar_news = [record[0] for record in results]
+            
+            results, meta = db.cypher_query(
+                cypher_query, 
+                {"query_vector": query_vector, "limit": limit}
+            )
+            
+            # Inflate results to News objects
+            similar_news = [News.inflate(row[0]) for row in results]
             return similar_news
         except Exception as e:
             logger.error(f"Error during content-based search: {e}")

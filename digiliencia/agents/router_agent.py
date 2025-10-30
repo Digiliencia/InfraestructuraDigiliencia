@@ -7,14 +7,14 @@ to the appropriate specialized agent.
 
 import re
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from loguru import logger
 
 from digiliencia.agents.base_agent import BaseAgent
 from digiliencia.agents.conversational_agent import ConversationalAgent
-from digiliencia.agents.news_agent import NewsAgent
 from digiliencia.agents.prompts import ROUTER_SYSTEM_PROMPT
+from digiliencia.agents.rag.news_agent import NewsAgent
 
 
 class AgentType(Enum):
@@ -239,37 +239,3 @@ class RouterAgent(BaseAgent):
         
         return metrics
     
-    def get_available_tools(self) -> list:
-        """
-        Get all available tools from all agents.
-        
-        Returns:
-            List of tool descriptions
-        """
-        tools = []
-        
-        for agent_type, agent in self._agents.items():
-            # Check if agent has the method
-            if hasattr(agent, 'get_tool_descriptions') and callable(getattr(agent, 'get_tool_descriptions')):
-                agent_tools = agent.get_tool_descriptions()
-                for tool in agent_tools:
-                    tool['agent'] = agent_type.value
-                    tools.append(tool)
-        
-        return tools
-    
-    def reset_conversation(self):
-        """Reset all agents' conversation states."""
-        for agent in self._agents.values():
-            # Check if agent has reset_conversation method
-            if hasattr(agent, 'reset_conversation') and callable(getattr(agent, 'reset_conversation')):
-                agent.reset_conversation()
-        
-        logger.debug("All agent conversations reset")
-    
-    def reset_routing_stats(self):
-        """Reset routing statistics."""
-        self._routing_stats = {
-            agent_type.value: 0 for agent_type in AgentType
-        }
-        logger.debug("Routing statistics reset")
