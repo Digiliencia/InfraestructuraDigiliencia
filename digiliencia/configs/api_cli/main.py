@@ -1,14 +1,7 @@
 import argparse
 import socket
-import httpx
-import os
-from starlette import status
-from typing import Callable, Tuple
 
-from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
-
-from menu import selection
-from settings import unauthenticated_routes, authenticated_routes
+import console_cli
 
 
 def address_format_validation(ip_port):
@@ -26,24 +19,6 @@ def address_format_validation(ip_port):
         raise argparse.ArgumentTypeError(f"Invalid format. {str(e)}")
     except Exception as e:
         raise argparse.ArgumentTypeError(f"Invalid input. Error: {str(e)}")
-
-
-def initial_menu_flow(client: httpx.Client):
-    is_logged_in = False
-    message = None
-    while True:
-        os.system("clear")
-        selectioned: Callable[[httpx.Client], Tuple[bool, str]] = selection(
-            unauthenticated_routes if not is_logged_in else authenticated_routes,
-            message,
-        )
-        os.system("clear")
-        if selectioned is None:
-            break
-        selectioned(client)
-        is_logged_in = client.headers.get("Authorization") is not None
-
-    print("Exiting application.")
 
 
 if __name__ == "__main__":
@@ -64,15 +39,5 @@ if __name__ == "__main__":
     URL = f"http://{ip}:{port}/api"
     print(f"Configured API URL: {URL}")
 
-    try:
-        client = httpx.Client(base_url=URL, timeout=5)
-        response = client.get(HEALTH_PATH)
-        if (
-            response.status_code == status.HTTP_200_OK
-            and response.json().get("status") == "ok"
-        ):
-            initial_menu_flow(client)
-        else:
-            print("Could not connect to the API. Error:", response.json)
-    except httpx.HTTPError as e:
-        print("Error connecting to the API:", str(e))
+    interface: console_cli.console_cli = console_cli.console_cli(URL)
+    interface.initial_menu_flow()

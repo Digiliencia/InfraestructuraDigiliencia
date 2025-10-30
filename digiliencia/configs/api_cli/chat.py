@@ -21,9 +21,9 @@ def create_chat(
     return False, chat_response.json()
 
 
-def get_chats(client: httpx.Client) -> Dict[uuid.UUID, Tuple[str, uuid.UUID]]:
+def get_chats(client: httpx.Client) -> Dict[uuid.UUID | str, Tuple[str, uuid.UUID]]:
     response = client.get(CONVERSATIONS)
-    chat_dict: Dict[uuid.UUID, Tuple[str, uuid.UUID]] = dict()
+    chat_dict: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = dict()
     if response.status_code == 200:  # status.HTTP_202_ACCEPTED:
         conversations = response.json().get("conversations", [])
         if conversations:

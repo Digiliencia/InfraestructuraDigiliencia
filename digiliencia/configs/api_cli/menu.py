@@ -1,11 +1,11 @@
 import os
-from typing import Type, Callable, Iterable, Optional
+from typing import Type, Callable, Iterable, Optional, Any
 import uuid
 
 
 def input_menu(
     input_dict: dict[str, Type], previous_message: Optional[str] = None
-) -> dict[str, any]:
+) -> dict[str, Any]:
     if previous_message:
         print(previous_message)
     inputs = dict[str, any]()
@@ -130,9 +130,9 @@ def show_selection(
 
 
 def selection(
-    router: dict[str | uuid.UUID, any],
+    router: dict[str | uuid.UUID, Any],
     previous_message: Optional[str] = None,
-) -> any:
+) -> Any:
     while True:
         os.system("clear")
         if previous_message:
