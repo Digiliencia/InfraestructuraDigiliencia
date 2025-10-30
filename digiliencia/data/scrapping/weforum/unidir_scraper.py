@@ -9,11 +9,6 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
-'''
-2025-10-30 10:23:14.315 | ERROR    | digiliencia.data.scrapping.weforum.__main__:scrap_news:564 - Error scraping https://unidir.org/publication/evaluating-the-alignment-between-budgetary-allocations-and-national-security-priorities-exploratory-case-study-kenya/:
- time data '17 September 2025' does not match format '%d %b %Y'
-'''
-
 class UnidirScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
