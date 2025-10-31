@@ -78,11 +78,13 @@ def delete_chat(client: httpx.Client, chat_id: uuid.UUID) -> Tuple[bool, Optiona
     return False, f"Unexpected error: {response} for chat {chat_id}"
 
 
-def get_chat(client: httpx.Client, chat_id: uuid.UUID) -> Tuple[Optional[list[str]],str]:
+def get_chat(
+    client: httpx.Client, chat_id: uuid.UUID
+) -> Tuple[Optional[list[str]], str]:
     response = client.get(f"{CHATS_PATH}/{str(chat_id)}")
     if response.status_code == status.HTTP_202_ACCEPTED:
         messages = response.json()
-        message_list : list[str] = list()
+        message_list: list[str] = list()
         for message in messages:
             message_list.append(message["content"])
         return message_list, "OK"
@@ -90,11 +92,14 @@ def get_chat(client: httpx.Client, chat_id: uuid.UUID) -> Tuple[Optional[list[st
         return None, f"Chat {chat_id} not found."
     return None, f"Unexpected error: {response} for chat {chat_id}"
 
-def ask_question(client: httpx.Client, question: str, chat_id: uuid.UUID, ia_model: uuid.UUID) -> Tuple[Optional[str],str]:
+
+def ask_question(
+    client: httpx.Client, question: str, chat_id: uuid.UUID, ia_model: uuid.UUID
+) -> Tuple[Optional[str], str]:
     message_content = {"text": question, "model_id": str(ia_model)}
-    response = client.patch(f"{CHATS_PATH}/{str(chat_id)}",json=message_content)
+    response = client.patch(f"{CHATS_PATH}/{str(chat_id)}", json=message_content)
     if response.status_code == status.HTTP_202_ACCEPTED:
-        message : str = response.json()["text"]
+        message: str = response.json()["text"]
         return message, "OK"
     elif response.status_code == status.HTTP_404_NOT_FOUND:
         return None, f"Chat {chat_id} not found."

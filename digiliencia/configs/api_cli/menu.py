@@ -4,8 +4,9 @@ import uuid
 
 
 def input_menu(
-    input_dict: dict[str, Type], previous_messages: Optional[list[str]] = None,
-    message : Optional[str] = None
+    input_dict: dict[str, Type],
+    previous_messages: Optional[list[str]] = None,
+    message: Optional[str] = None,
 ) -> dict[str, Any]:
     print_message_list(previous_messages)
     if message is not None:
@@ -151,11 +152,15 @@ def selection(
             if opcion in router:
                 return router[opcion]
             else:
-                return selection(router, previous_messages,"Incorrect option.")
+                return selection(router, previous_messages, "Incorrect option.")
         except ValueError:
-            return selection(router,previous_messages, "Invalid input. Please enter a number.")
+            return selection(
+                router, previous_messages, "Invalid input. Please enter a number."
+            )
         except IndexError:
-            return selection(router, previous_messages, "The option number is out of range.")
+            return selection(
+                router, previous_messages, "The option number is out of range."
+            )
         except KeyboardInterrupt:
             return None
 
