@@ -5,7 +5,7 @@ import uuid
 
 def input_menu(
     input_dict: dict[str, Type],
-    previous_messages: Optional[list[str]] = None,
+    previous_messages: Optional[Iterable[str]] = None,
     message: Optional[str] = None,
 ) -> dict[str, Any]:
     print_message_list(previous_messages)
@@ -132,8 +132,8 @@ def show_selection(
 
 
 def selection(
-    router: dict[str | uuid.UUID, Any],
-    previous_messages: Optional[list[str]] = None,
+    router: tuple[tuple[str, Any], ...],
+    previous_messages: Optional[Iterable[str]] = None,
     message: Optional[str] = None,
 ) -> Any:
     while True:
@@ -142,17 +142,13 @@ def selection(
         if message is not None:
             print(message)
         show_selection(
-            list(router.keys()),
+            (element[0] for element in router),
         )
         try:
             opcion = int(input("Enter option number: "))
             if opcion == 0:  # To write fewer
                 raise IndexError
-            opcion = list(router.keys())[opcion - 1]
-            if opcion in router:
-                return router[opcion]
-            else:
-                return selection(router, previous_messages, "Incorrect option.")
+            return router[opcion - 1][1]
         except ValueError:
             return selection(
                 router, previous_messages, "Invalid input. Please enter a number."
@@ -165,7 +161,7 @@ def selection(
             return None
 
 
-def print_message_list(messages: Optional[list[str]]):
-    if messages is not None and len(messages) > 0:
+def print_message_list(messages: Optional[Iterable[str]]):
+    if messages is not None:
         for message in messages:
             print(message)

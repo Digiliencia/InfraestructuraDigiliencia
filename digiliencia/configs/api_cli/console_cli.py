@@ -1,12 +1,12 @@
 import httpx
 from starlette import status
-from typing import Tuple, Callable, Dict, Optional
+from typing import Tuple, Callable, Dict, Optional, Any
 import uuid
 import os
 
 from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
 import menu
-import chat
+from chat import Chat
 
 import authentication
 
@@ -15,6 +15,7 @@ class console_cli:
     def __init__(self, url: str) -> None:
         self.messages: list[str] = ["Dilignecia CLI"]
         self.client: httpx.Client = httpx.Client(base_url=url)
+        self.chat: Chat = Chat(self.client)
         try:
             response = self.client.get(HEALTH_PATH)
             if (
@@ -27,8 +28,8 @@ class console_cli:
 
     def is_logged_in(self) -> bool:
         logged: bool = self.client.headers.get("Authorization") is not None
-        self.routes: Dict[
-            str | uuid.UUID, Callable[[console_cli], Tuple[bool, Optional[str]]]
+        self.routes: Tuple[
+            Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
         ] = authenticated_routes if logged else unauthenticated_routes
         return logged
 
@@ -60,7 +61,7 @@ class console_cli:
                 if counter == 0:
                     return (False, "Maximum login attempts exceeded.")
                 inputs = menu.input_menu(
-                    {"email": str, "password": str}, "Login failed. Please try again."
+                    {"email": str, "password": str}, ("Login failed. Please try again.")
                 )
             self.messages.append(f"Logged as: {inputs['email']}")
             return (True, "Login successful.")
@@ -105,24 +106,32 @@ class console_cli:
         tittle: str = menu.input_menu(
             {tittle_key: str}, self.messages, "Creating a chat."
         )[tittle_key]
-        # Invert keys and values: use template name as key and UUID as value
-        templates = chat.get_templates(self.client)
-        template_dict: Dict[str | uuid.UUID, uuid.UUID] = {
-            v[0]: uuid.UUID(str(k)) for k, v in templates.items()
-        }
-        template: uuid.UUID = menu.selection(template_dict, self.messages)
+        templates = self.chat.get_templates()
 
-        success, message = chat.create_chat(self.client, tittle, template)
+        template: uuid.UUID = menu.selection(
+            tuple(
+                (f"{value[0]} {value[1]}", str(key)) for key, value in templates.items()
+            ),
+            self.messages,
+        )
+
+        success, message = self.chat.create_chat(tittle, template)
         if success:
             return True, "Chat created."
         return False, message
 
     def select_chat_flow(self) -> Tuple[bool, Optional[str]]:
-        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = chat.get_chats(
-            self.client
+        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
+        selected_chat_id: uuid.UUID = menu.selection(
+            tuple(
+                (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))
+                for key, value in chats.items()
+            ),
+            self.messages,
         )
-        selected_chat_id: uuid.UUID = menu.selection(chats, self.messages)
-        chat_messages, message = chat.get_chat(self.client, selected_chat_id)
+        if selected_chat_id is None:
+            return False, None
+        chat_messages, message = self.chat.get_chat(selected_chat_id)
         if chat_messages is None:
             menu.alert(message)
             return False, None
@@ -130,14 +139,14 @@ class console_cli:
         menu.iterables_show(chat_messages, is_pasue=False)
         message_text: str = "Message"
         # Improvisation
-        ia_model_id: uuid.UUID = list(chat.get_AI_models(self.client).keys())[0]
+        ia_model_id: uuid.UUID = list(self.chat.get_AI_models().keys())[0]
         while True:
             try:
                 message: str = menu.input_menu({message_text: str})[message_text]
             except KeyboardInterrupt:
                 break
-            response, state_response = chat.ask_question(
-                self.client, message, selected_chat_id, ia_model_id
+            response, state_response = self.chat.ask_question(
+                message, selected_chat_id, ia_model_id
             )
             if response is None:
                 menu.alert(state_response)
@@ -147,17 +156,19 @@ class console_cli:
         return True, None
 
     def delete_chat_flow(self) -> Tuple[bool, Optional[str]]:
-        chats: dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = chat.get_chats(
-            self.client
-        )
+        chats: dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
         if not bool(chats):
             menu.alert("No chats found.")
         else:
             chat_id: uuid.UUID = menu.selection(
-                {value[0]: key for key, value in chats.items()}, self.messages
+                tuple(
+                    (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))
+                    for key, value in chats.items()
+                ),
+                self.messages,
             )
             if chat_id:
-                success, messaje = chat.delete_chat(self.client, chat_id)
+                success, messaje = self.chat.delete_chat(chat_id)
                 if success:
                     menu.alert("Chat deleted")
                 else:
@@ -165,7 +176,7 @@ class console_cli:
         return True, None
 
     def show_templates(self) -> Tuple[bool, Optional[str]]:
-        templates: dict = chat.get_templates(self.client)
+        templates: dict = self.chat.get_templates()
         if not bool(templates):
             menu.alert("Template list is empty.")
         else:
@@ -178,7 +189,7 @@ class console_cli:
         return True, None
 
     def show_AI_models(self) -> Tuple[bool, Optional[str]]:
-        models: Dict[uuid.UUID, Tuple[str]] = chat.get_AI_models(self.client)
+        models: Dict[uuid.UUID, Tuple[str]] = self.chat.get_AI_models()
         if not bool(models):
             menu.alert("AI models list is empty.")
         else:
@@ -191,41 +202,45 @@ class console_cli:
         return True, None
 
     def show_chats(self) -> Tuple[bool, Optional[str]]:
-        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = chat.get_chats(
-            self.client
-        )
+        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
         if not bool(chats):
             menu.alert("No chats found.")
         else:
-            menu.iterables_show(
-                chats.values(), ("Tittle", "Template"), self.messages, True
+            menu.simple_iterables_show(
+                tuple(
+                    (f"{value[0]} {self.chat.get_templates()[value[1]][0]}")
+                    for value in chats.values()
+                ),
+                ("Tittle", "Template"),
+                self.messages,
+                True,
             )
         return True, None
 
 
-general_routes: Dict[
-    str | uuid.UUID, Callable[[console_cli], Tuple[bool, Optional[str]]]
-] = {
-    "show AI models": console_cli.show_AI_models,
-    "show_templates": console_cli.show_templates,
-}
+general_routes: Tuple[
+    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
+] = (
+    ("show AI models", console_cli.show_AI_models),
+    ("show_templates", console_cli.show_templates),
+)
 
-unauthenticated_routes: Dict[
-    str | uuid.UUID, Callable[[console_cli], Tuple[bool, Optional[str]]]
-] = {
-    "login": console_cli.login_flow,
-    "register": console_cli.register_flow,
-    "show AI models": console_cli.show_AI_models,
-    "show_templates": console_cli.show_templates,
-} | general_routes
+unauthenticated_routes: Tuple[
+    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
+] = (
+    ("login", console_cli.login_flow),
+    ("register", console_cli.register_flow),
+    ("show AI models", console_cli.show_AI_models),
+    ("show_templates", console_cli.show_templates),
+) + general_routes
 
-authenticated_routes: Dict[
-    str | uuid.UUID, Callable[[console_cli], Tuple[bool, Optional[str]]]
-] = {
-    "New chat": console_cli.create_chat_flow,
-    "Select chat": console_cli.select_chat_flow,
-    "Show chats": console_cli.show_chats,
-    "Delete chat": console_cli.delete_chat_flow,
-    "Log out": console_cli.logout,
-    "Delete user": console_cli.delete_user,
-} | general_routes
+authenticated_routes: Tuple[
+    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
+] = (
+    ("New chat", console_cli.create_chat_flow),
+    ("Select chat", console_cli.select_chat_flow),
+    ("Show chats", console_cli.show_chats),
+    ("Delete chat", console_cli.delete_chat_flow),
+    ("Log out", console_cli.logout),
+    ("Delete user", console_cli.delete_user),
+) + general_routes

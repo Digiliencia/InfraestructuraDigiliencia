@@ -100,6 +100,7 @@ async def get_full_conversation(
     chat_id: UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
+    status_code=status.HTTP_202_ACCEPTED
 ) -> chat_schema.ConversationFull:
     """
     Retrieves a full conversation, including its messages, by its ID.
@@ -162,7 +163,6 @@ async def get_full_conversation(
     f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.Texts,
     summary="Send Message to Chat",
-    # --- DESCRIPCIÓN ACTUALIZADA ---
     description=(
         "Sends a user's message to an existing chat, gets a simulated AI "
         "response, and saves both to the conversation history. This endpoint "
@@ -170,14 +170,12 @@ async def get_full_conversation(
         "message is already being processed, it will return a 409 Conflict."
     ),
     response_description="The AI-generated response text.",
-    # --- RESPONSES ACTUALIZADO ---
     responses={
         200: {"description": "The AI-generated response."},
         401: {"description": "User is not authenticated."},
         404: {
             "description": "The chat was not found or the user is not authorized to access it."
         },
-        # --- NUEVA LÍNEA AÑADIDA ---
         409: {"description": "A request for this chat is already being processed."},
     },
 )
@@ -252,8 +250,6 @@ async def ask_question_to_chat(
         await db.commit()
         return chat_schema.Texts(text=ai_response_text)
     finally:
-        # Asegúrate de que el cliente de redis sea importado como 'redis'
-        # o ajusta esta línea.
         await redis_client.delete(lock_key)
 
 
