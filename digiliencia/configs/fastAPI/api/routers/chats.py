@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
+from typing import cast
 
 from core.endpoints import CONVERSATIONS, CHATS_PATH
 from db.models import User, Chat, Message, IAPrompt
@@ -33,7 +34,7 @@ router = APIRouter(dependencies=[Depends(current_user)])
     summary="List User Conversations",
     description="Retrieve a list of summaries for all conversations belonging to the authenticated user, sorted by creation date.",
     response_description="A list of conversation summaries.",
-    status_code=status.HTTP_202_ACCEPTED
+    status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {
             "description": "A list of the user's conversation summaries.",
@@ -57,6 +58,7 @@ router = APIRouter(dependencies=[Depends(current_user)])
 async def get_user_chat_list(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
+    status_code=status.HTTP_202_ACCEPTED,
 ) -> chat_schema.ConversationSummaryList:
     """
     Retrieves a summary list of all chats for the authenticated user.
@@ -75,7 +77,7 @@ async def get_user_chat_list(
 
     summaries = [
         chat_schema.ConversationSummary(
-            idChat=chat.id, tittle=chat.tittle, ia_prompt=chat.ia_prompt_id
+            idChat=UUID(str(chat.id)), tittle=str(chat.tittle), template=UUID(str(chat.ia_prompt_id))
         )
         for chat in chats
     ]
@@ -89,7 +91,7 @@ async def get_user_chat_list(
     description="Retrieve the full details of a specific conversation, including all messages, by its unique ID.",
     response_description="The full conversation object with its message history.",
     responses={
-        200: {"description": "The full conversation object."},
+        202: {"description": "The full conversation object."},
         401: {"description": "User is not authenticated."},
         404: {
             "description": "The chat was not found or the user is not authorized to view it."
@@ -130,35 +132,21 @@ async def get_full_conversation(
     messages = result.scalars().all()
 
     return chat_schema.ConversationFull(
-        idChat=chat.id,
-        tittle=chat.tittle,
-        ia_prompt=chat.ia_prompt_id,
+        idChat=UUID(str(chat.id)),
+        tittle=str(chat.tittle),
+        template=UUID(str(chat.ia_prompt_id)),
         messages=[
             chat_schema.message(
-                id=msg.id,
-                order_number=msg.order_number,
-                content=msg.content,
-                model_id=msg.model_id,
+                id=UUID(str(msg.id)),
+                order_number=cast(int, msg.order_number),
+                content=str(msg.content),
+                model_id= UUID(str(msg.model_id)) if msg.model_id is not None else None,
             )
             for msg in messages
         ],
     )
 
 
-@router.patch(
-    f"{CHATS_PATH}/{{chat_id}}",
-    response_model=chat_schema.Texts,
-    summary="Send Message to Chat",
-    description="Sends a user's message to an existing chat, gets a simulated AI response, and saves both to the conversation history.",
-    response_description="The AI-generated response text.",
-    responses={
-        200: {"description": "The AI-generated response."},
-        401: {"description": "User is not authenticated."},
-        404: {
-            "description": "The chat was not found or the user is not authorized to access it."
-        },
-    },
-)
 @router.patch(
     f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.Texts,
@@ -307,9 +295,9 @@ async def create_chat(
     await db.refresh(chat)
 
     return chat_schema.ConversationSummary(
-        idChat=chat.id,
-        tittle=chat.tittle,
-        ia_prompt=ia_prompt.id,
+        idChat=UUID(str(chat.id)),
+        tittle=str(chat.tittle),
+        template=UUID(str(ia_prompt.id)),
     )
 
 
@@ -372,7 +360,7 @@ async def import_conversation(
     await db.refresh(chat)
 
     return chat_schema.ConversationSummary(
-        idChat=chat.id, tittle=chat.tittle, ia_prompt=chat.ia_prompt_id
+        idChat=UUID(str(chat.id)), tittle=str(chat.tittle), template=UUID(str(chat.ia_prompt_id))
     )
 
 

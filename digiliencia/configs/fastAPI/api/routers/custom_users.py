@@ -122,3 +122,53 @@ async def delete_my_data(
     """
     await user_manager.delete(user)
     return None
+
+@router.post(
+    USERS_ME,
+    summary="Logout User",
+    description="Logs out the currently authenticated user.",
+    response_description="Logout successful message",
+    responses={
+        200: {
+            "description": "Successful logout",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Logout successful"}
+                }
+            },
+        },
+        401: {
+            "description": "User not authenticated",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated"}
+                }
+            },
+        },
+    },
+)
+async def logout(
+    user: User = Depends(current_user),
+):
+    """
+    Logs out the current user.
+
+    This endpoint requires a valid Bearer token in the Authorization header.
+    For stateless JWT (Bearer) authentication, this endpoint serves as
+    a server-side confirmation. The client is responsible for deleting/discarding
+    the token locally.
+
+    Parameters:
+        user (User): The currently authenticated user (injected).
+
+    Returns:
+        dict: A confirmation message.
+
+    Raises:
+        HTTPException:
+            - 401: If no valid token is provided or the user is inactive.
+    """
+    # For stateless Bearer tokens, logout is a "no-op" on the server.
+    # The client is responsible for discarding the token.
+    # We just return a success message to confirm authentication.
+    return {"detail": "Logout successful"}

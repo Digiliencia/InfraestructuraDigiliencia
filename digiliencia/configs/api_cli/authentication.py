@@ -46,8 +46,8 @@ def register(client: httpx.Client, email: str, password: str) -> tuple[bool, boo
 
 ## It do not logout, delete the user from the server
 def logout(client: httpx.Client) -> Tuple[bool, Optional[str]]:
-    response = client.delete(USERS_ME)
-    if response.status_code == status.HTTP_204_NO_CONTENT:
+    response = client.post(USERS_ME)
+    if response.status_code == status.HTTP_200_OK:
         client.headers.pop("Authorization", None)
         return (True, "Logout successful.")
     return (False, f"Logout failed: {response.text}")

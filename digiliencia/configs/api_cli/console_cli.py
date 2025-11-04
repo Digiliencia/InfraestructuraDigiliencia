@@ -122,6 +122,9 @@ class console_cli:
 
     def select_chat_flow(self) -> Tuple[bool, Optional[str]]:
         chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
+        if not bool(chats):
+            menu.alert("Chats not found")
+            return True, None
         selected_chat_id: uuid.UUID = menu.selection(
             tuple(
                 (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))

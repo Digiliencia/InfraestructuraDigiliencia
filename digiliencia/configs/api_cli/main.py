@@ -40,4 +40,7 @@ if __name__ == "__main__":
     print(f"Configured API URL: {URL}")
 
     interface: console_cli.console_cli = console_cli.console_cli(URL)
-    interface.initial_menu_flow()
+    try:
+        interface.initial_menu_flow()
+    except ConnectionRefusedError as exc:
+        print("Connection refused.")

@@ -25,7 +25,7 @@ class Chat:
     def get_chats(self) -> Dict[uuid.UUID | str, Tuple[str, uuid.UUID]]:
         response = self.client.get(CONVERSATIONS)
         chat_dict: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = dict()
-        if response.status_code == 200:  # status.HTTP_202_ACCEPTED:
+        if response.status_code == status.HTTP_202_ACCEPTED:
             conversations = response.json().get("conversations", [])
             if conversations:
                 for convo in conversations:

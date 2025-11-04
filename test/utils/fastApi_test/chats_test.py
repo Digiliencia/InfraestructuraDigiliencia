@@ -44,8 +44,8 @@ async def test_get_conversations_empty(authenticated_client: AsyncClient):
         - The response body is an empty list of conversations.
     """
     response = await authenticated_client.get(CONVERSATIONS)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"conversations": []}
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == {"conversations": {}}
 
 
 async def test_invalid_chat_operations(
@@ -164,7 +164,7 @@ async def test_chat_creation_and_messages(
     model_id = models[0]["idModel"]
 
     # Create new chat
-    chat_data = {"tittle": "Test Chat", "ia_prompt": template_id}
+    chat_data = {"tittle": "Test Chat", "template": template_id}
     chat_response = await authenticated_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
@@ -280,7 +280,7 @@ async def test_import_conversation(
     valid_ia_prompt_id = templates[0]["idTemplate"]
 
     import_payload = {
-        "ia_prompt": valid_ia_prompt_id,
+        "template": valid_ia_prompt_id,
         "tittle": "Imported Title",
         "texts": [{"text": "Imported Message 1"}, {"text": "Imported Message 2"}],
     }
@@ -293,7 +293,7 @@ async def test_import_conversation(
 
     assert "idChat" in response_data
     assert response_data["tittle"] == "Imported Title"
-    assert response_data["ia_prompt"] == valid_ia_prompt_id
+    assert response_data["template"] == valid_ia_prompt_id
     assert "messages" not in response_data
 
     new_chat_id = response_data["idChat"]
@@ -631,7 +631,7 @@ async def test_chat_data_integrity(
 
     # Verify user's chat list is accurate
     conversations = await authenticated_client.get(CONVERSATIONS)
-    assert conversations.status_code == status.HTTP_200_OK
+    assert conversations.status_code == status.HTTP_202_ACCEPTED
     conv_data = conversations.json()["conversations"]
     assert len(conv_data) == 1
     assert conv_data[0]["idChat"] == chat2_id
@@ -656,7 +656,7 @@ async def test_ask_question_to_nonexistent_chat(
 
     # Get initial conversations list
     initial_conversations = await authenticated_client.get(CONVERSATIONS)
-    assert initial_conversations.status_code == status.HTTP_200_OK
+    assert initial_conversations.status_code == status.HTTP_202_ACCEPTED
     initial_count = len(initial_conversations.json()["conversations"])
 
     # Try to send message to nonexistent chat
@@ -668,5 +668,5 @@ async def test_ask_question_to_nonexistent_chat(
 
     # Verify conversations list remained unchanged
     final_conversations = await authenticated_client.get(CONVERSATIONS)
-    assert final_conversations.status_code == status.HTTP_200_OK
+    assert final_conversations.status_code == status.HTTP_202_ACCEPTED
     assert len(final_conversations.json()["conversations"]) == initial_count
