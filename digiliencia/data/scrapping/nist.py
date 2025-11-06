@@ -120,7 +120,7 @@ class Nist(AbstractScraper):
 
         self.driver.get(self.url_cybersegurity)
         news_events: list[ScrapedEventsModel] = []
-        
+
         columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
         num_columns = len(columns)
         num_rows = self._get_max_num_events_of_page()

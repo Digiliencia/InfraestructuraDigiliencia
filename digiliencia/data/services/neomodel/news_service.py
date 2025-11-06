@@ -422,25 +422,25 @@ class NewsService:
         query_parts = ["MATCH (n:News)"]
         where_clauses = []
         params: Dict[str, Any] = {"limit": limit}
-        
+
         # Add relationship patterns for filtering
         if topic is not None:
             query_parts.append("MATCH (n)-[:HAS_TOPIC]->(t:Topic)")
             topic_name = getattr(topic, "value", topic)
             where_clauses.append("t.name = $topic_name")
             params["topic_name"] = topic_name
-        
+
         if related_field is not None:
             query_parts.append("MATCH (n)-[:HAS_FIELD]->(f:Field)")
             related_field_name = getattr(related_field, "name", str(related_field))
             where_clauses.append("f.name = $field_name")
             params["field_name"] = related_field_name
-        
+
         if organization is not None:
             query_parts.append("MATCH (n)-[:PUBLISHED_BY]->(org:NewsAgency)")
             where_clauses.append("org.name = $org_name")
             params["org_name"] = organization
-        
+
         # Add date filters
         if start_date:
             try:
@@ -449,7 +449,7 @@ class NewsService:
                 params["start_date"] = start_dt
             except Exception as e:
                 logger.warning(f"Invalid start_date format: {start_date}, error: {e}")
-        
+
         if end_date:
             try:
                 end_dt = datetime.strptime(end_date, "%Y-%m-%d")
@@ -457,15 +457,15 @@ class NewsService:
                 params["end_date"] = end_dt
             except Exception as e:
                 logger.warning(f"Invalid end_date format: {end_date}, error: {e}")
-        
+
         # Combine query parts
         query = " ".join(query_parts)
         if where_clauses:
             query += " WHERE " + " AND ".join(where_clauses)
-        
+
         # Add return and ordering
         query += " RETURN n ORDER BY n.date DESC LIMIT $limit"
-        
+
         try:
             results, meta = db.cypher_query(query, params)
             # Inflate results to News objects
@@ -475,14 +475,14 @@ class NewsService:
             logger.error(f"Query: {query}")
             logger.error(f"Params: {params}")
             return []
-    
+
     def search_by_content(
         self,
         content: str,
-        limit: int = 10,   
+        limit: int = 10,
     ) -> list[News]:
         """
-        Searches for news items containing similar content. 
+        Searches for news items containing similar content.
         Internally uses embeddings.
 
         Args:
@@ -490,7 +490,7 @@ class NewsService:
             limit (int): Maximum number of news items to retrieve.
         Returns:
             List of news items containing the specified content.
-        """ 
+        """
         embedding_service = EmbeddingService()
         try:
             query_embedding = embedding_service.generate_embeddings([content])
@@ -498,10 +498,10 @@ class NewsService:
                 logger.error("No embedding generated for the provided content.")
                 return []
             query_vector = query_embedding[0]
-            
+
             # Cypher query to search for similar news using embeddings
             from neomodel import db
-            
+
             cypher_query = """
             MATCH (n:News)
             WHERE n.content_embedding IS NOT NULL
@@ -510,12 +510,11 @@ class NewsService:
             ORDER BY similarity DESC
             LIMIT $limit
             """
-            
+
             results, meta = db.cypher_query(
-                cypher_query, 
-                {"query_vector": query_vector, "limit": limit}
+                cypher_query, {"query_vector": query_vector, "limit": limit}
             )
-            
+
             # Inflate results to News objects
             similar_news = [News.inflate(row[0]) for row in results]
             return similar_news

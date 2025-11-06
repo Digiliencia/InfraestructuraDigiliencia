@@ -29,10 +29,14 @@ class EmbeddingService:
             model: Model name for Ollama (defaults to EMBEDDINGS_MODEL env var)
         """
         self.service_url: str = (
-            service_url if service_url is not None else os.getenv("EMBEDDINGS_SERVICE", "")
+            service_url
+            if service_url is not None
+            else os.getenv("EMBEDDINGS_SERVICE", "")
         )
         self.provider: str = (
-            provider if provider is not None else os.getenv("EMBEDDINGS_PROVIDER", "custom")
+            provider
+            if provider is not None
+            else os.getenv("EMBEDDINGS_PROVIDER", "custom")
         )
         self.model: str = (
             model if model is not None else os.getenv("EMBEDDINGS_MODEL", "")
@@ -43,13 +47,19 @@ class EmbeddingService:
             raise ValueError("EMBEDDINGS_SERVICE environment variable not set")
 
         if self.provider == "ollama" and not self.model:
-            logger.error("EMBEDDINGS_MODEL environment variable not set for Ollama provider")
-            raise ValueError("EMBEDDINGS_MODEL environment variable not set for Ollama provider")
+            logger.error(
+                "EMBEDDINGS_MODEL environment variable not set for Ollama provider"
+            )
+            raise ValueError(
+                "EMBEDDINGS_MODEL environment variable not set for Ollama provider"
+            )
 
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
 
-        logger.info(f"EmbeddingService initialized with provider: {self.provider}, model: {self.model}")
+        logger.info(
+            f"EmbeddingService initialized with provider: {self.provider}, model: {self.model}"
+        )
 
     def generate_embeddings(self, texts: List[str]) -> Optional[List]:
         """
@@ -75,7 +85,9 @@ class EmbeddingService:
             Optional[List]: List of embeddings or None if failed.
         """
         try:
-            logger.debug(f"Requesting embeddings from custom API for {len(texts)} texts")
+            logger.debug(
+                f"Requesting embeddings from custom API for {len(texts)} texts"
+            )
             response = self.session.post(self.service_url, json={"texts": texts})
             response.raise_for_status()
             embeddings = response.json().get("embeddings")
@@ -100,28 +112,32 @@ class EmbeddingService:
         """
         try:
             logger.debug(f"Requesting embeddings from Ollama for {len(texts)} texts")
-            
+
             embeddings = []
             # Ollama API requires one text at a time for embeddings
             for text in texts:
                 response = self.session.post(
                     f"{self.service_url}/api/embed",
-                    json={"model": self.model, "input": text}
+                    json={"model": self.model, "input": text},
                 )
                 response.raise_for_status()
                 result = response.json()
                 embedding = result.get("embeddings")
-                
+
                 # Ollama returns embeddings as a list with one element
                 if embedding and len(embedding) > 0:
                     embeddings.append(embedding[0])
                 else:
-                    logger.error(f"No embedding returned from Ollama for text: {text[:50]}...")
+                    logger.error(
+                        f"No embedding returned from Ollama for text: {text[:50]}..."
+                    )
                     return None
-            
-            logger.debug(f"Successfully received {len(embeddings)} embeddings from Ollama")
+
+            logger.debug(
+                f"Successfully received {len(embeddings)} embeddings from Ollama"
+            )
             return embeddings
-            
+
         except requests.RequestException as e:
             logger.error(f"Ollama embedding service request failed: {e}")
             return None

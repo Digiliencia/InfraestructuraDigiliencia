@@ -1,7 +1,13 @@
 """Chunk node for storing embedded fragments of News content."""
 
-from neomodel import (ArrayProperty, FloatProperty, IntegerProperty,
-                      StringProperty, StructuredNode, UniqueIdProperty)
+from neomodel import (
+    ArrayProperty,
+    FloatProperty,
+    IntegerProperty,
+    StringProperty,
+    StructuredNode,
+    UniqueIdProperty,
+)
 
 
 class Chunk(StructuredNode):
@@ -14,6 +20,6 @@ class Chunk(StructuredNode):
     kind = StringProperty(
         default="content"
     )  # 'content' (default) or other kinds if extended
-    model = StringProperty(required=True) # Embedding model used for this chunk
- 
+    model = StringProperty(required=True)  # Embedding model used for this chunk
+
     # Relationship to News is defined on News side as HAS_CHUNK

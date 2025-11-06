@@ -67,9 +67,7 @@ class ChunkService:
         include_header: bool = True,
         force_regenerate: bool = False,
     ) -> int:
-        logger.debug(
-            f"Generating chunks for news {news.uid}"
-        )
+        logger.debug(f"Generating chunks for news {news.uid}")
         texts: List[str] = []
         mapping: List[tuple[int, str]] = []  # (index, kind)
         idx = 0
@@ -139,7 +137,9 @@ class ChunkService:
                 except Exception:
                     pass
             else:
-                c = Chunk(index=idx, text=text, embedding=emb, kind=k, model=embedding_model).save()
+                c = Chunk(
+                    index=idx, text=text, embedding=emb, kind=k, model=embedding_model
+                ).save()
                 try:
                     news.chunks.connect(c)  # type: ignore[attr-defined]
                 except Exception:

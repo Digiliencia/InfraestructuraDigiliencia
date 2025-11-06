@@ -16,21 +16,21 @@ from loguru import logger
 class CustomAPIEmbedding(BaseEmbedding):
     """
     Custom embedding class that uses the internal embeddings microservice or Ollama.
-    
+
     This class integrates with:
     - FastAPI embeddings service (custom provider)
     - Ollama API (ollama provider)
-    
+
     The service uses sentence-transformers models or Ollama models to generate embeddings.
     """
-    
+
     # Private attributes for API configuration
     _api_url: str = PrivateAttr()
     _timeout: int = PrivateAttr()
     _embedding_dimension: int = PrivateAttr()
     _provider: str = PrivateAttr()
     _model: str = PrivateAttr()
-    
+
     def __init__(
         self,
         api_url: str,
@@ -43,7 +43,7 @@ class CustomAPIEmbedding(BaseEmbedding):
     ) -> None:
         """
         Initialize the custom API embedding client.
-        
+
         Args:
             api_url: Full URL to the embeddings API endpoint
             embed_batch_size: Number of texts to embed in a single batch
@@ -54,9 +54,9 @@ class CustomAPIEmbedding(BaseEmbedding):
             **kwargs: Additional arguments passed to BaseEmbedding
         """
         # Ensure model_name is set to avoid OpenAI fallback
-        if 'model_name' not in kwargs:
-            kwargs['model_name'] = f'{provider}-api-embedding'
-        
+        if "model_name" not in kwargs:
+            kwargs["model_name"] = f"{provider}-api-embedding"
+
         super().__init__(
             embed_batch_size=embed_batch_size,
             **kwargs,
@@ -66,30 +66,30 @@ class CustomAPIEmbedding(BaseEmbedding):
         self._embedding_dimension = embedding_dimension
         self._provider = provider
         self._model = model
-        
+
         if self._provider == "ollama" and not self._model:
             raise ValueError("Model name is required for Ollama provider")
-        
+
         logger.info(
             f"CustomAPIEmbedding initialized with provider: {provider}, "
             f"API: {api_url}, dimension: {embedding_dimension}, model: {model}"
         )
-    
+
     @classmethod
     def class_name(cls) -> str:
         """Return the class name for serialization."""
         return "CustomAPIEmbedding"
-    
+
     def _call_api(self, texts: List[str]) -> List[List[float]]:
         """
         Call the embeddings API to get embeddings for texts.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             List of embedding vectors
-            
+
         Raises:
             requests.RequestException: If the API call fails
         """
@@ -97,66 +97,68 @@ class CustomAPIEmbedding(BaseEmbedding):
             return self._call_ollama_api(texts)
         else:
             return self._call_custom_api(texts)
-    
+
     def _call_custom_api(self, texts: List[str]) -> List[List[float]]:
         """
         Call the custom embeddings API to get embeddings for texts.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             List of embedding vectors
-            
+
         Raises:
             requests.RequestException: If the API call fails
         """
         try:
             payload = {"texts": texts}
-            
+
             logger.debug(f"Calling custom embeddings API with {len(texts)} texts")
-            
+
             response = requests.post(
                 self._api_url,
                 json=payload,
                 timeout=self._timeout,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
-            
+
             result = response.json()
             embeddings = result.get("embeddings", [])
-            
+
             if not embeddings:
                 raise ValueError("API returned empty embeddings")
-            
-            logger.debug(f"Successfully received {len(embeddings)} embeddings from custom API")
-            
+
+            logger.debug(
+                f"Successfully received {len(embeddings)} embeddings from custom API"
+            )
+
             return embeddings
-            
+
         except requests.RequestException as e:
             logger.error(f"Error calling custom embeddings API: {e}")
             raise
         except (KeyError, ValueError) as e:
             logger.error(f"Error parsing custom API response: {e}")
             raise
-    
+
     def _call_ollama_api(self, texts: List[str]) -> List[List[float]]:
         """
         Call the Ollama API to get embeddings for texts.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             List of embedding vectors
-            
+
         Raises:
             requests.RequestException: If the API call fails
         """
         try:
             logger.debug(f"Calling Ollama embeddings API with {len(texts)} texts")
-            
+
             embeddings = []
             # Ollama API requires one text at a time for embeddings
             for text in texts:
@@ -164,98 +166,102 @@ class CustomAPIEmbedding(BaseEmbedding):
                     f"{self._api_url}/api/embed",
                     json={"model": self._model, "input": text},
                     timeout=self._timeout,
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 )
                 response.raise_for_status()
-                
+
                 result = response.json()
                 embedding = result.get("embeddings")
-                
+
                 # Ollama returns embeddings as a list with one element
                 if not embedding or len(embedding) == 0:
-                    raise ValueError(f"Ollama API returned empty embedding for text: {text[:50]}...")
-                
+                    raise ValueError(
+                        f"Ollama API returned empty embedding for text: {text[:50]}..."
+                    )
+
                 embeddings.append(embedding[0])
-            
-            logger.debug(f"Successfully received {len(embeddings)} embeddings from Ollama API")
-            
+
+            logger.debug(
+                f"Successfully received {len(embeddings)} embeddings from Ollama API"
+            )
+
             return embeddings
-            
+
         except requests.RequestException as e:
             logger.error(f"Error calling Ollama embeddings API: {e}")
             raise
         except (KeyError, ValueError) as e:
             logger.error(f"Error parsing Ollama API response: {e}")
             raise
-    
+
     def _get_query_embedding(self, query: str) -> List[float]:
         """
         Get embedding for a single query.
-        
+
         Args:
             query: Query text to embed
-            
+
         Returns:
             Embedding vector
         """
         return self._call_api([query])[0]
-    
+
     def _get_text_embedding(self, text: str) -> List[float]:
         """
         Get embedding for a single text.
-        
+
         Args:
             text: Text to embed
-            
+
         Returns:
             Embedding vector
         """
         return self._call_api([text])[0]
-    
+
     def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Get embeddings for multiple texts in batches.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             List of embedding vectors
         """
         # Process in batches according to embed_batch_size
         all_embeddings: List[List[float]] = []
-        
+
         for i in range(0, len(texts), self.embed_batch_size):
-            batch = texts[i:i + self.embed_batch_size]
+            batch = texts[i : i + self.embed_batch_size]
             batch_embeddings = self._call_api(batch)
             all_embeddings.extend(batch_embeddings)
-        
+
         return all_embeddings
-    
+
     async def _aget_query_embedding(self, query: str) -> List[float]:
         """
         Async version of _get_query_embedding.
-        
+
         Note: Currently wraps the synchronous version.
         For true async support, use aiohttp instead of requests.
-        
+
         Args:
             query: Query text to embed
-            
+
         Returns:
             Embedding vector
         """
         # For now, just call the sync version
         # TODO: Implement true async with aiohttp if needed
         return self._get_query_embedding(query)
-    
+
     async def _aget_text_embedding(self, text: str) -> List[float]:
         """
         Async version of _get_text_embedding.
-        
+
         Args:
             text: Text to embed
-            
+
         Returns:
             Embedding vector
         """

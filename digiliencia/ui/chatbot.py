@@ -15,9 +15,11 @@ try:
 except RuntimeError:
     pass
 
-from digiliencia.agents.agent_utils import (AgentConfig,
-                                            get_performance_monitor,
-                                            validate_config)
+from digiliencia.agents.agent_utils import (
+    AgentConfig,
+    get_performance_monitor,
+    validate_config,
+)
 from digiliencia.agents.router_agent import RouterAgent
 from digiliencia.configs.env import Env
 
