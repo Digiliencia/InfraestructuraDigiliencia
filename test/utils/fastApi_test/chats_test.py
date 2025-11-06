@@ -40,12 +40,12 @@ async def test_get_conversations_empty(authenticated_client: AsyncClient):
         authenticated_client (AsyncClient): An authenticated HTTP client fixture.
 
     Asserts:
-        - The API returns a 200 OK status.
+        - The API returns a 202 ACCEPTED status.
         - The response body is an empty list of conversations.
     """
     response = await authenticated_client.get(CONVERSATIONS)
     assert response.status_code == status.HTTP_202_ACCEPTED
-    assert response.json() == {"conversations": {}}
+    assert response.json() == {"conversations": []}
 
 
 async def test_invalid_chat_operations(
@@ -156,7 +156,7 @@ async def test_chat_creation_and_messages(
 
     Asserts:
         - The chat is created successfully (201 Created).
-        - Messages are sent and received successfully (200 OK).
+        - Messages are sent and received successfully (202 Accepted).
         - The retrieved conversation history contains the correct number of
           messages and the original user content.
     """
@@ -174,7 +174,7 @@ async def test_chat_creation_and_messages(
     response1 = await authenticated_client.patch(
         f"{CHATS_PATH}/{chat_id}", json=question1
     )
-    assert response1.status_code == status.HTTP_200_OK
+    assert response1.status_code == status.HTTP_202_ACCEPTED
     assert "text" in response1.json()
 
     # Add second message
@@ -182,12 +182,12 @@ async def test_chat_creation_and_messages(
     response2 = await authenticated_client.patch(
         f"{CHATS_PATH}/{chat_id}", json=question2
     )
-    assert response2.status_code == status.HTTP_200_OK
+    assert response2.status_code == status.HTTP_202_ACCEPTED
     assert "text" in response2.json()
 
     # Get conversation history
     chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
     conversation = chat_response.json()
 
     # Verify message history
@@ -252,7 +252,7 @@ async def test_get_other_user_chat(
 
     # Verify User 2 can still access their own chat
     chat_response = await api_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
 
     # Cleanup User 2
     await api_client.delete(USERS_ME)
@@ -272,7 +272,7 @@ async def test_import_conversation(
         templates (TemplateList): A fixture providing available AI prompts.
 
     Asserts:
-        - The API returns a 200 OK status with a summary of the new chat.
+        - The API returns a 202 Accpeted status with a summary of the new chat.
         - The summary does not contain the full message list.
         - A subsequent GET request to the new chat's ID retrieves the full,
           correctly imported conversation.
@@ -301,7 +301,7 @@ async def test_import_conversation(
     # Verify that the full conversation was created correctly
     chat_response = await authenticated_client.get(f"{CHATS_PATH}/{new_chat_id}")
 
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
     conversation = chat_response.json()
 
     assert conversation["tittle"] == "Imported Title"
@@ -406,11 +406,11 @@ async def test_delete_other_user_chat(
     message_response = await api_client.patch(
         f"{CHATS_PATH}/{chat_id}", json=test_message
     )
-    assert message_response.status_code == status.HTTP_200_OK
+    assert message_response.status_code == status.HTTP_202_ACCEPTED
 
     # Get initial state of the chat
     initial_chat = await api_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert initial_chat.status_code == status.HTTP_200_OK
+    assert initial_chat.status_code == status.HTTP_202_ACCEPTED
     initial_content = initial_chat.json()
 
     # User 1 tries to delete the chat
@@ -419,7 +419,7 @@ async def test_delete_other_user_chat(
 
     # Verify chat still exists for User 2 with unchanged content
     chat_response = await api_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
     final_content = chat_response.json()
     assert final_content == initial_content  # Verify no changes occurred
 
@@ -428,7 +428,7 @@ async def test_delete_other_user_chat(
     message_response = await api_client.patch(
         f"{CHATS_PATH}/{chat_id}", json=new_message
     )
-    assert message_response.status_code == status.HTTP_200_OK
+    assert message_response.status_code == status.HTTP_202_ACCEPTED
 
     # Cleanup User 2
     await api_client.delete("/users/me")
@@ -466,11 +466,11 @@ async def test_chat_message_order_preservation(
         response = await authenticated_client.patch(
             f"{CHATS_PATH}/{chat_id}", json={"text": msg, "model_id": model_id}
         )
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_202_ACCEPTED
 
     # Verify the chat history
     chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
     chat_data = chat_response.json()
 
     # Verify message order and content
@@ -492,7 +492,7 @@ async def test_chat_concurrent_access(
     Tests that the chat endpoint lock prevents concurrent message processing.
 
     It sends multiple requests simultaneously to the same chat and asserts
-    that only ONE request succeeds (200 OK) and all others are rejected
+    that only ONE request succeeds (202 Accepeted) and all others are rejected
     with a 409 Conflict.
 
     Args:
@@ -501,31 +501,26 @@ async def test_chat_concurrent_access(
         models (ModelList): A fixture providing available AI models.
 
     Asserts:
-        - Exactly one request returns HTTP_200_OK.
+        - Exactly one request returns HTTP_202_ACCEPTED.
         - All other requests return HTTP_409_CONFLICT.
         - The chat history contains exactly two messages (one user, one AI)
           from the single successful request.
     """
-    # --- 1. Setup: Crear un chat ---
     template_id = templates[0]["idTemplate"]
     chat_data = {"tittle": "Concurrent Lock Test", "ia_prompt": template_id}
     chat_response = await authenticated_client.patch(CHATS_PATH, json=chat_data)
     assert chat_response.status_code == status.HTTP_201_CREATED
     chat_id = chat_response.json()["idChat"]
 
-    # --- 2. Preparar Peticiones Concurrentes ---
     model_id = models[0]["idModel"]
-    num_requests = 5  # Enviaremos 5 peticiones a la vez
+    num_requests = 5
     concurrent_messages = [
         {"text": f"Concurrent message {i}", "model_id": model_id}
         for i in range(num_requests)
     ]
-    # Guardamos los textos originales para verificarlos luego
     original_texts = {msg["text"] for msg in concurrent_messages}
 
-    # --- 3. Enviar Mensajes Concurrentemente ---
-    # asyncio.gather ejecuta todas las corutinas "a la vez",
-    # creando la condición de carrera que queremos probar.
+    # asyncio.gather runs all request at the "same time",
     responses = await asyncio.gather(
         *[
             authenticated_client.patch(f"{CHATS_PATH}/{chat_id}", json=msg)
@@ -533,41 +528,25 @@ async def test_chat_concurrent_access(
         ]
     )
 
-    # --- 4. Verificar Comportamiento del Bloqueo ---
-    # Recolectamos todos los códigos de estado recibidos
     status_codes = [response.status_code for response in responses]
 
-    # ¡Esta es la aserción clave!
-    # Solo una petición debe tener éxito (200 OK).
-    assert status_codes.count(status.HTTP_200_OK) == 1
-    # Todas las demás deben ser rechazadas (409 CONFLICT).
+    assert status_codes.count(status.HTTP_202_ACCEPTED) == 1
     assert status_codes.count(status.HTTP_409_CONFLICT) == num_requests - 1
 
-    # --- 5. Verificar Consistencia del Chat ---
-    # Ahora verificamos que la base de datos esté en el estado correcto.
-    # Solo la petición exitosa debe haber guardado sus mensajes.
     chat_response = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")
-    assert chat_response.status_code == status.HTTP_200_OK
+    assert chat_response.status_code == status.HTTP_202_ACCEPTED
     chat_data = chat_response.json()
 
-    # El chat solo debe contener 2 mensajes:
-    # 1. El mensaje del usuario que "ganó" la carrera.
-    # 2. La respuesta de la IA a ese mensaje.
     assert len(chat_data["messages"]) == 2
 
-    # Verificar que los mensajes son correctos
     user_msg = chat_data["messages"][0]
     ai_msg = chat_data["messages"][1]
 
-    # Verificar mensaje de usuario
     assert user_msg["order_number"] == 1
-    # Asegurarnos que el contenido es uno de los que enviamos
     assert user_msg["content"] in original_texts
 
-    # Verificar respuesta de la IA
     assert ai_msg["order_number"] == 2
-    # Opcional: verificar que la respuesta simulada coincide con el mensaje
-    # que sí se guardó.
+
     expected_ai_response = (
         f"Simulated response to '{user_msg['content']}' using model {model_id}"
     )
@@ -622,7 +601,7 @@ async def test_chat_data_integrity(
 
     # Verify second chat remains unchanged
     chat2_after = await authenticated_client.get(f"{CHATS_PATH}/{chat2_id}")
-    assert chat2_after.status_code == status.HTTP_200_OK
+    assert chat2_after.status_code == status.HTTP_202_ACCEPTED
     assert chat2_after.json() == chat2_initial.json()
 
     # Verify first chat is really gone

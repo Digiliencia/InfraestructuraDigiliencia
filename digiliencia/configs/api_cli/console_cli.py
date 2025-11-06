@@ -206,6 +206,7 @@ class console_cli:
 
     def show_chats(self) -> Tuple[bool, Optional[str]]:
         chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
+        
         if not bool(chats):
             menu.alert("No chats found.")
         else:
@@ -219,6 +220,7 @@ class console_cli:
                 True,
             )
         return True, None
+    
 
 
 general_routes: Tuple[
@@ -234,7 +236,6 @@ unauthenticated_routes: Tuple[
     ("login", console_cli.login_flow),
     ("register", console_cli.register_flow),
     ("show AI models", console_cli.show_AI_models),
-    ("show_templates", console_cli.show_templates),
 ) + general_routes
 
 authenticated_routes: Tuple[

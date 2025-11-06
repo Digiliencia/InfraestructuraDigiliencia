@@ -99,7 +99,7 @@ async def test_custom_login_success(api_client: AsyncClient, fake_user: dict):
         fake_user (dict): A fixture providing fake user credentials.
 
     Asserts:
-        - The API returns a 200 OK status.
+        - The API returns a 202 Accepeted status.
         - The response body contains an 'access_token' and 'token_type'.
     """
     await api_client.post(REGISTER, json=fake_user)
@@ -160,7 +160,7 @@ async def test_standard_login_success(api_client: AsyncClient, fake_user: dict):
         fake_user (dict): A fixture providing fake user credentials.
 
     Asserts:
-        - The API returns a 200 OK status.
+        - The API returns a 202 Accpeted status.
         - The response body contains an 'access_token'.
     """
     await api_client.post(REGISTER, json=fake_user)

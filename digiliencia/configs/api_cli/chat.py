@@ -31,10 +31,10 @@ class Chat:
                 for convo in conversations:
                     chat_dict[uuid.UUID(convo["idChat"])] = (
                         convo["tittle"],
-                        uuid.UUID(convo["ia_prompt"]),
+                        uuid.UUID(convo["template"]),
                     )
         else:
-            print(response.json())
+            print(response)
             raise Exception(response.json())
         return chat_dict
 
@@ -81,7 +81,7 @@ class Chat:
             messages = response.json()
             message_list: list[str] = list()
             for message in messages:
-                message_list.append(message["content"])
+                message_list.append(message[2])
             return message_list, "OK"
         elif response.status_code == status.HTTP_404_NOT_FOUND:
             return None, f"Chat {chat_id} not found."

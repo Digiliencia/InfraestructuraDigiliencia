@@ -111,15 +111,15 @@ class ConversationFull(ConversationSummary):
     messages: List[message]
 
 
-class ConversationSummaryList(BaseModel):
+class ConversationSummaries(BaseModel):
     """
-    Schema for a response containing a list of conversation summaries.
+    Schema for a response containing a tuple of conversation summaries.
 
     Attributes:
-        conversations (List[ConversationSummary]): The list of chat summaries.
+        conversations (Tuple[ConversationSummary,...]): The tuple of chat summaries.
     """
 
-    conversations: dict[UUID,ConversationSummary]
+    conversations: tuple[ConversationSummary,...]
 
 
 class ConversationList(BaseModel):

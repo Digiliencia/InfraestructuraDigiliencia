@@ -30,7 +30,7 @@ router = APIRouter(dependencies=[Depends(current_user)])
 
 @router.get(
     CONVERSATIONS,
-    response_model=chat_schema.ConversationSummaryList,
+    response_model=chat_schema.ConversationSummaries,
     summary="List User Conversations",
     description="Retrieve a list of summaries for all conversations belonging to the authenticated user, sorted by creation date.",
     response_description="A list of conversation summaries.",
@@ -59,7 +59,7 @@ async def get_user_chat_list(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
     status_code=status.HTTP_202_ACCEPTED,
-) -> chat_schema.ConversationSummaryList:
+) -> chat_schema.ConversationSummaries:
     """
     Retrieves a summary list of all chats for the authenticated user.
 
@@ -68,20 +68,21 @@ async def get_user_chat_list(
         db (AsyncSession): The database session, injected by dependency.
 
     Returns:
-        chat_schema.ConversationSummaryList: An object containing a list of
+        chat_schema.ConversationSummaries: An object containing a list of
                                              conversation summaries.
     """
     stmt = select(Chat).where(Chat.user_id == user.id).order_by(Chat.id.desc())
     result = await db.execute(stmt)
     chats = result.scalars().all()
 
-    summaries = [
+    summaries: tuple[chat_schema.ConversationSummary,...] = tuple(
         chat_schema.ConversationSummary(
             idChat=UUID(str(chat.id)), tittle=str(chat.tittle), template=UUID(str(chat.ia_prompt_id))
         )
         for chat in chats
-    ]
-    return chat_schema.ConversationSummaryList(conversations={summary.idChat: summary for summary in summaries})
+    )
+
+    return chat_schema.ConversationSummaries(conversations=summaries)
 
 
 @router.get(
@@ -90,6 +91,7 @@ async def get_user_chat_list(
     summary="Get Full Conversation Details",
     description="Retrieve the full details of a specific conversation, including all messages, by its unique ID.",
     response_description="The full conversation object with its message history.",
+    status_code=status.HTTP_202_ACCEPTED,
     responses={
         202: {"description": "The full conversation object."},
         401: {"description": "User is not authenticated."},
@@ -102,7 +104,6 @@ async def get_full_conversation(
     chat_id: UUID,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
-    status_code=status.HTTP_202_ACCEPTED
 ) -> chat_schema.ConversationFull:
     """
     Retrieves a full conversation, including its messages, by its ID.
@@ -158,8 +159,9 @@ async def get_full_conversation(
         "message is already being processed, it will return a 409 Conflict."
     ),
     response_description="The AI-generated response text.",
+    status_code=status.HTTP_202_ACCEPTED,
     responses={
-        200: {"description": "The AI-generated response."},
+        202: {"description": "The AI-generated response."},
         401: {"description": "User is not authenticated."},
         404: {
             "description": "The chat was not found or the user is not authorized to access it."
