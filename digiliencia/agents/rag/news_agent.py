@@ -84,16 +84,6 @@ class NewsAgent(BaseAgent):
         """
         tools = self.get_tools()
 
-        # Enhanced system prompt to enforce tool usage
-        system_prompt = (
-            f"{self.get_system_prompt()}\n\n"
-            "CRITICAL INSTRUCTION: You MUST use the available tools to answer every query. "
-            "Do NOT provide answers without using tools first. "
-            "If you don't have enough information after using tools, ask the user for clarification "
-            "or suggest refining their query. "
-            "NEVER generate or invent information that doesn't come from the tools."
-        )
-
         # Create the agent with tools
         llm = Ollama(
             model=self.model_name, temperature=self.temperature, request_timeout=7 * 60

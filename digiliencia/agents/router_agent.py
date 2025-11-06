@@ -5,7 +5,6 @@ This agent acts as an orchestrator, analyzing user queries and routing them
 to the appropriate specialized agent.
 """
 
-import re
 from enum import Enum
 from typing import Any, Dict
 

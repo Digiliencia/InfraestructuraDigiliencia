@@ -6,7 +6,7 @@ in the INCIBE citizen awareness system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from llama_index.core.llms import LLM
 from llama_index.llms.ollama import Ollama
