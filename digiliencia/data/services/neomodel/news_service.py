@@ -377,6 +377,7 @@ class NewsService:
 
     def generate_embeddings_for_missing_chunks(
         self,
+        model_name: str,
         limit: Optional[int] = None,
         batch_size: int = 32,
     ) -> int:
@@ -385,6 +386,7 @@ class NewsService:
         Returns number of chunks updated.
         """
         return ChunkService().generate_embeddings_for_missing_chunks(
+            model_name,
             limit=limit,
             batch_size=batch_size,
         )

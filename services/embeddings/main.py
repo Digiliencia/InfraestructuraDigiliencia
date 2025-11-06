@@ -6,7 +6,14 @@ from settings import Settings
 
 def build_app() -> FastAPI:
     settings = Settings()
-    service = EmbeddingService(model_name=settings.model_name, device=settings.device)
+    service = EmbeddingService(
+        model_name=settings.model_name,
+        device=settings.device,
+        batch_size=settings.batch_size,
+        dtype=settings.dtype,
+        normalize_embeddings=settings.normalize_embeddings,
+        dimension=settings.dimension,
+    )
 
     app = FastAPI(title="Embeddings Service", version="0.1.0")
 

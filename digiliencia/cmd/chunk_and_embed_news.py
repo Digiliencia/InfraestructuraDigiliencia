@@ -1,5 +1,6 @@
 from loguru import logger
 
+from digiliencia.configs.env import env
 from digiliencia.data.services.neomodel.config import configure_neomodel
 from digiliencia.data.services.neomodel.news_service import NewsService
 
@@ -11,8 +12,8 @@ def main():
         processed = service.generate_chunks_for_all_news(
             limit=None,
             only_missing=True,
-            chunk_size=800,
-            overlap=100,
+            chunk_size= env.news_chunk_size,
+            overlap=env.news_chunk_overlap,
             include_header=True,
             batch_size=16,
         )
