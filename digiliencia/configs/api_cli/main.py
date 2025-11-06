@@ -42,5 +42,5 @@ if __name__ == "__main__":
     interface: console_cli.console_cli = console_cli.console_cli(URL)
     try:
         interface.initial_menu_flow()
-    except ConnectionRefusedError as exc:
+    except ConnectionRefusedError:
         print("Connection refused.")

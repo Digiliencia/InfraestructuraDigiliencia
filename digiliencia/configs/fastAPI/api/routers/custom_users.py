@@ -123,6 +123,7 @@ async def delete_my_data(
     await user_manager.delete(user)
     return None
 
+
 @router.post(
     USERS_ME,
     summary="Logout User",
@@ -132,17 +133,13 @@ async def delete_my_data(
         200: {
             "description": "Successful logout",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Logout successful"}
-                }
+                "application/json": {"example": {"detail": "Logout successful"}}
             },
         },
         401: {
             "description": "User not authenticated",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Not authenticated"}
-                }
+                "application/json": {"example": {"detail": "Not authenticated"}}
             },
         },
     },

@@ -119,7 +119,7 @@ class ConversationSummaries(BaseModel):
         conversations (Tuple[ConversationSummary,...]): The tuple of chat summaries.
     """
 
-    conversations: tuple[ConversationSummary,...]
+    conversations: tuple[ConversationSummary, ...]
 
 
 class ConversationList(BaseModel):

@@ -75,9 +75,11 @@ async def get_user_chat_list(
     result = await db.execute(stmt)
     chats = result.scalars().all()
 
-    summaries: tuple[chat_schema.ConversationSummary,...] = tuple(
+    summaries: tuple[chat_schema.ConversationSummary, ...] = tuple(
         chat_schema.ConversationSummary(
-            idChat=UUID(str(chat.id)), tittle=str(chat.tittle), template=UUID(str(chat.ia_prompt_id))
+            idChat=UUID(str(chat.id)),
+            tittle=str(chat.tittle),
+            template=UUID(str(chat.ia_prompt_id)),
         )
         for chat in chats
     )
@@ -141,7 +143,7 @@ async def get_full_conversation(
                 id=UUID(str(msg.id)),
                 order_number=cast(int, msg.order_number),
                 content=str(msg.content),
-                model_id= UUID(str(msg.model_id)) if msg.model_id is not None else None,
+                model_id=UUID(str(msg.model_id)) if msg.model_id is not None else None,
             )
             for msg in messages
         ],
@@ -362,7 +364,9 @@ async def import_conversation(
     await db.refresh(chat)
 
     return chat_schema.ConversationSummary(
-        idChat=UUID(str(chat.id)), tittle=str(chat.tittle), template=UUID(str(chat.ia_prompt_id))
+        idChat=UUID(str(chat.id)),
+        tittle=str(chat.tittle),
+        template=UUID(str(chat.ia_prompt_id)),
     )
 
 

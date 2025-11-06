@@ -13,7 +13,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from sqlalchemy import insert, text
+from sqlalchemy import insert
 import json
 from faker import Faker
 from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
@@ -23,7 +23,6 @@ from digiliencia.configs.fastAPI.db.models import (
     Message,
     IAPrompt,
     Model,
-    Base,
 )
 
 faker = Faker()
@@ -413,7 +412,6 @@ async def setup_database():
         await session.commit()
 
     yield
-
 
 
 # =============================================================================

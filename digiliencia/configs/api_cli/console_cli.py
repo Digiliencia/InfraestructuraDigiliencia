@@ -1,6 +1,6 @@
 import httpx
 from starlette import status
-from typing import Tuple, Callable, Dict, Optional, Any
+from typing import Tuple, Callable, Dict, Optional
 import uuid
 import os
 
@@ -206,7 +206,7 @@ class console_cli:
 
     def show_chats(self) -> Tuple[bool, Optional[str]]:
         chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
-        
+
         if not bool(chats):
             menu.alert("No chats found.")
         else:
@@ -220,7 +220,6 @@ class console_cli:
                 True,
             )
         return True, None
-    
 
 
 general_routes: Tuple[
