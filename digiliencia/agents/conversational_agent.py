@@ -5,8 +5,6 @@ This agent handles general questions, explanations, and educational conversation
 without requiring tool usage.
 """
 
-from typing import Optional
-
 from llama_index.core.chat_engine import SimpleChatEngine
 from loguru import logger
 
