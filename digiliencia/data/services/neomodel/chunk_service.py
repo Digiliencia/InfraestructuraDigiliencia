@@ -1,6 +1,7 @@
 """Service focused on Chunk creation and embeddings backfill for News content."""
 
 import gc
+import os
 from typing import Iterable, List, Optional
 
 from loguru import logger
@@ -99,6 +100,7 @@ class ChunkService:
             except Exception:
                 pass
         embedding_service = EmbeddingService()
+        embedding_model = os.getenv("EMBEDDINGS_MODEL", "unknown")
         all_vectors: List[List[float]] = []
         effective_bs = max(1, min(int(batch_size) if batch_size else 16, 30))
         for batch in self._batch(texts, effective_bs):
@@ -130,13 +132,14 @@ class ChunkService:
             if existing:
                 if emb is not None:
                     existing.embedding = emb
+                    existing.model = embedding_model
                     existing.save()
                 try:
                     news.chunks.connect(existing)  # type: ignore[attr-defined]
                 except Exception:
                     pass
             else:
-                c = Chunk(index=idx, text=text, embedding=emb, kind=k).save()
+                c = Chunk(index=idx, text=text, embedding=emb, kind=k, model=embedding_model).save()
                 try:
                     news.chunks.connect(c)  # type: ignore[attr-defined]
                 except Exception:
@@ -199,6 +202,7 @@ class ChunkService:
         updated = 0
         failed = 0
         buffer: List[Chunk] = []
+        embedding_model = os.getenv("EMBEDDINGS_MODEL", "unknown")
 
         def _process_buffer(buf: List[Chunk]) -> int:
             nonlocal failed
@@ -218,6 +222,7 @@ class ChunkService:
                     if i < len(vecs) and vecs[i] is not None:
                         try:
                             ch.embedding = vecs[i]
+                            ch.model = embedding_model
                             ch.save()
                             count += 1
                         except Exception as e:
