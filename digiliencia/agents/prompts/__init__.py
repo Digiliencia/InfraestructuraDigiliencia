@@ -155,13 +155,14 @@ Provide a clear, helpful, and educational response:"""
 # UTILITY FUNCTIONS
 # =============================================================================
 
+
 def format_router_prompt(query: str) -> str:
     """
     Format the router prompt with the user query.
-    
+
     Args:
         query: User's input query
-        
+
     Returns:
         Formatted prompt for the router agent
     """
@@ -171,23 +172,25 @@ def format_router_prompt(query: str) -> str:
 def format_news_agent_prompt(query: str) -> str:
     """
     Format the news agent prompt with the user query.
-    
+
     Args:
         query: User's input query
-        
+
     Returns:
         Formatted prompt for the news agent
     """
-    return f"{NEWS_AGENT_SYSTEM_PROMPT}\n\n{NEWS_AGENT_QUERY_TEMPLATE.format(query=query)}"
+    return (
+        f"{NEWS_AGENT_SYSTEM_PROMPT}\n\n{NEWS_AGENT_QUERY_TEMPLATE.format(query=query)}"
+    )
 
 
 def format_conversational_agent_prompt(query: str) -> str:
     """
     Format the conversational agent prompt with the user query.
-    
+
     Args:
         query: User's input query
-        
+
     Returns:
         Formatted prompt for the conversational agent
     """

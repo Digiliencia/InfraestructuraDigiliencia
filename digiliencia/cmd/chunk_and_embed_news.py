@@ -12,7 +12,7 @@ def main():
         processed = service.generate_chunks_for_all_news(
             limit=None,
             only_missing=True,
-            chunk_size= env.news_chunk_size,
+            chunk_size=env.news_chunk_size,
             overlap=env.news_chunk_overlap,
             include_header=True,
             batch_size=16,

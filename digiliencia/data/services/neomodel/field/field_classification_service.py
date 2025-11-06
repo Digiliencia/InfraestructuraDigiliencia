@@ -1,10 +1,12 @@
 from typing import Dict, List
 
-from digiliencia.agents.prompts.field_classification_prompt import \
-    FieldClassificationPrompt
+from digiliencia.agents.prompts.field_classification_prompt import (
+    FieldClassificationPrompt,
+)
 from digiliencia.data.models.neomodel.field import Field
-from digiliencia.data.services.neomodel.base_classification_service import \
-    BaseClassificationService
+from digiliencia.data.services.neomodel.base_classification_service import (
+    BaseClassificationService,
+)
 from digiliencia.data.services.neomodel.field.field_service import FieldService
 
 

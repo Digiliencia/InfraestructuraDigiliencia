@@ -146,11 +146,11 @@ class Env:
     @property
     def chatbot_llm(self) -> str:
         return self._chatbot_llm
-    
+
     @property
     def news_chunk_size(self) -> int:
         return self._news_chunk_size
-    
+
     @property
     def news_chunk_overlap(self) -> int:
         return self._news_chunk_overlap
@@ -173,5 +173,6 @@ class Env:
             logger.error(f"Environment variable {var_name} is not set")
             raise EnvError(f"Environment variable {var_name} is not set")
         return value
+
 
 env = Env()
