@@ -107,5 +107,7 @@ jobs:
           EMBEDDINGS_SERVICE: http://localhost:11434
           EMBEDDINGS_MODEL: qwen3-embedding:8b
           EMBEDDINGS_DIMENSION: 4096
+
+          CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
           
         run: uv run pytest
