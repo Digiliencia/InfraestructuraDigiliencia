@@ -16,7 +16,9 @@ dependencies = [
     "requests>=2.31.0",
     "rich>=14.0.0",
     "selenium>=4.33.0",
+    "starlette>=0.50.0",
     "streamlit>=1.49.1",
+    "urllib3>=2.5.0",
     "webdriver-manager>=4.0.2",
 ]
 
