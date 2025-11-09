@@ -96,5 +96,8 @@ jobs:
           DDBB_PASSWD: testpassword
           WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
           WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
+          NEO4J_USERNAME: neo4j
+          NEO4J_PASSWORD: testpassword
+          NEO4J_URL: neo4j+s://localhost:7687
           WEBDRIVERWAIT_TIMEOUT: 10
         run: uv run pytest
