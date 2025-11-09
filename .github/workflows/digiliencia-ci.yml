@@ -100,4 +100,7 @@ jobs:
           NEO4J_PASSWORD: testpassword
           NEO4J_URL: neo4j+s://localhost:7687
           WEBDRIVERWAIT_TIMEOUT: 10
+          LLM_URL: ${{ secrets.LLM_URL }}
+          CLASSIFICATION_MODEL: gemma3:12b
+          
         run: uv run pytest
