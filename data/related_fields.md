@@ -1188,10 +1188,6 @@ Growing demand for quality goods and services in emerging markets.
 
 Revival of handmade, locally sourced products in response to mass manufacturing.
 
-### New Patterns of Consumption
-
-(Repeat of above) Emphasis on sharing economy platforms and digital subscriptions.
-
 ---
 
 ## Illicit Economy

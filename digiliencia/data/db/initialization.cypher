@@ -96,3 +96,4 @@ REQUIRE c.text IS NOT NULL;
 // Optional indexes to speed up filters used during upserts
 CREATE INDEX chunk_index_idx FOR (c:Chunk) ON (c.index);
 CREATE INDEX chunk_text_idx FOR (c:Chunk) ON (c.text);
+CREATE VECTOR INDEX chunk_embedding_idx FOR (c:Chunk) ON (c.embedding) OPTIONS {indexConfig: {`vector.dimensions`: 1024, `vector.similarity_function`: 'COSINE'}};

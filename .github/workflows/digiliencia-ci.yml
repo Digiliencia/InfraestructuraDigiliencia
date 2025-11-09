@@ -96,5 +96,18 @@ jobs:
           DDBB_PASSWD: testpassword
           WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
           WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
+          NEO4J_USERNAME: neo4j
+          NEO4J_PASSWORD: testpassword
+          NEO4J_URL: neo4j+s://localhost:7687
           WEBDRIVERWAIT_TIMEOUT: 10
+          LLM_URL: ${{ secrets.LLM_URL }}
+          CLASSIFICATION_MODEL: gemma3:12b
+
+          EMBEDDINGS_PROVIDER: ollama
+          EMBEDDINGS_SERVICE: http://localhost:11434
+          EMBEDDINGS_MODEL: qwen3-embedding:8b
+          EMBEDDINGS_DIMENSION: 4096
+
+          CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
+          
         run: uv run pytest

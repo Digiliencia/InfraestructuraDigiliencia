@@ -4,11 +4,11 @@ import gc
 import os
 from typing import Iterable, List, Optional
 
-import requests
 from loguru import logger
 
 from digiliencia.data.models.neomodel.chunk import Chunk
 from digiliencia.data.models.neomodel.news import News
+from digiliencia.data.services.embedding_service import EmbeddingService
 
 
 class ChunkService:
@@ -67,30 +67,22 @@ class ChunkService:
         include_header: bool = True,
         force_regenerate: bool = False,
     ) -> int:
-        embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-        if not embeddings_service_url:
-            logger.error("EMBEDDINGS_SERVICE environment variable not set")
-            return 0
-
+        logger.debug(f"Generating chunks for news {news.uid}")
         texts: List[str] = []
         mapping: List[tuple[int, str]] = []  # (index, kind)
-
         idx = 0
         if include_header and news.header:
             texts.append(str(news.header))
             mapping.append((idx, "header"))
             idx += 1
-
         for piece in self._split_text_into_chunks(
             str(news.content or ""), max_chars=chunk_size, overlap=overlap
         ):
             texts.append(piece)
             mapping.append((idx, kind))
             idx += 1
-
         if not texts:
             return 0
-
         created = 0
         if force_regenerate:
             try:
@@ -105,35 +97,29 @@ class ChunkService:
                         pass
             except Exception:
                 pass
-
-        with requests.Session() as session:
-            session.headers.update({"Content-Type": "application/json"})
-            all_vectors: List[List[float]] = []
-            # cap batch size to maximum 30 per request
-            effective_bs = max(1, min(int(batch_size) if batch_size else 16, 30))
-            for batch in self._batch(texts, effective_bs):
-                try:
-                    resp = session.post(embeddings_service_url, json={"texts": batch})
-                    resp.raise_for_status()
-                    vecs = resp.json().get("embeddings") or []
-                    all_vectors.extend(vecs)
-                except Exception as e:
-                    logger.error(
-                        f"Chunk embedding batch failed for news {news.uid}: {str(e)[:120]}"
-                    )
-                    break
-                finally:
-                    gc.collect()
-
+        embedding_service = EmbeddingService()
+        embedding_model = os.getenv("EMBEDDINGS_MODEL", "unknown")
+        all_vectors: List[List[float]] = []
+        effective_bs = max(1, min(int(batch_size) if batch_size else 16, 30))
+        for batch in self._batch(texts, effective_bs):
+            try:
+                vecs = embedding_service.generate_embeddings(batch) or []
+                all_vectors.extend(vecs)
+            except Exception as e:
+                logger.error(
+                    f"Chunk embedding batch failed for news {news.uid}: {str(e)[:120]}"
+                )
+                break
+            finally:
+                gc.collect()
+        embedding_service.close()
         if len(all_vectors) != len(texts):
             logger.warning(
                 f"Embeddings count mismatch for news {news.uid}: got {len(all_vectors)} for {len(texts)} texts"
             )
-
         for i, (idx, k) in enumerate(mapping):
             text = texts[i]
             emb = all_vectors[i] if i < len(all_vectors) else None
-
             existing = None
             if not force_regenerate:
                 try:
@@ -141,23 +127,24 @@ class ChunkService:
                     existing = existing_list[0] if existing_list else None
                 except Exception:
                     existing = None
-
             if existing:
                 if emb is not None:
                     existing.embedding = emb
+                    existing.model = embedding_model
                     existing.save()
                 try:
                     news.chunks.connect(existing)  # type: ignore[attr-defined]
                 except Exception:
                     pass
             else:
-                c = Chunk(index=idx, text=text, embedding=emb, kind=k).save()
+                c = Chunk(
+                    index=idx, text=text, embedding=emb, kind=k, model=embedding_model
+                ).save()
                 try:
                     news.chunks.connect(c)  # type: ignore[attr-defined]
                 except Exception:
                     pass
                 created += 1
-
         news.save()
         return created
 
@@ -212,24 +199,20 @@ class ChunkService:
         limit: Optional[int] = None,
         batch_size: int = 32,
     ) -> int:
-        embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-        if not embeddings_service_url:
-            logger.error("EMBEDDINGS_SERVICE environment variable not set")
-            return 0
-
         updated = 0
         failed = 0
         buffer: List[Chunk] = []
+        embedding_model = os.getenv("EMBEDDINGS_MODEL", "unknown")
 
-        def _process_buffer(session: requests.Session, buf: List[Chunk]) -> int:
+        def _process_buffer(buf: List[Chunk]) -> int:
             nonlocal failed
             if not buf:
                 return 0
             texts = [str(c.text or "") for c in buf]
             try:
-                resp = session.post(embeddings_service_url, json={"texts": texts})
-                resp.raise_for_status()
-                vecs = resp.json().get("embeddings") or []
+                embedding_service = EmbeddingService()
+                vecs = embedding_service.generate_embeddings(texts) or []
+                embedding_service.close()
                 if len(vecs) != len(buf):
                     logger.warning(
                         f"Embeddings count mismatch for chunk batch: got {len(vecs)} for {len(buf)} texts"
@@ -239,6 +222,7 @@ class ChunkService:
                     if i < len(vecs) and vecs[i] is not None:
                         try:
                             ch.embedding = vecs[i]
+                            ch.model = embedding_model
                             ch.save()
                             count += 1
                         except Exception as e:
@@ -252,25 +236,18 @@ class ChunkService:
                 logger.error(f"Failed embedding chunk batch: {str(e)[:150]}")
                 return 0
 
-        with requests.Session() as session:
-            session.headers.update({"Content-Type": "application/json"})
-            try:
-                # cap batch size to maximum 30 per request
-                effective_bs = max(1, min(int(batch_size) if batch_size else 32, 30))
-                for ch in Chunk.nodes.filter(embedding__isnull=True):
-                    if limit is not None and updated >= limit:
-                        break
-                    buffer.append(ch)
-                    if len(buffer) >= effective_bs:
-                        updated += _process_buffer(session, buffer)
-                        buffer = []
-                        gc.collect()
-
-                if buffer and (limit is None or updated < limit):
-                    updated += _process_buffer(session, buffer)
-            finally:
+        effective_bs = max(1, min(int(batch_size) if batch_size else 32, 30))
+        for ch in Chunk.nodes.filter(embedding__isnull=True):
+            if limit is not None and updated >= limit:
+                break
+            buffer.append(ch)
+            if len(buffer) >= effective_bs:
+                updated += _process_buffer(buffer)
+                buffer = []
                 gc.collect()
-
+        if buffer and (limit is None or updated < limit):
+            updated += _process_buffer(buffer)
+        gc.collect()
         if updated > 0:
             logger.info(
                 f"Chunk embedding backfill completed. Updated: {updated}, Failed: {failed}"

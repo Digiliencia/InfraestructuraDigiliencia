@@ -8,9 +8,11 @@ Web scrapping: https://www.nist.gov/nice/ccw-events
 
 import time
 from datetime import datetime
+
 from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from digiliencia.data.models.events_model import ScrapedEventsModel
 from digiliencia.data.scrapping.abc_scraper import AbstractScraper
 from digiliencia.exc.nist_exec import NistExec
@@ -84,6 +86,12 @@ class Nist(AbstractScraper):
         show_line_str = elem_show_line.split()
         return int(show_line_str[5])
 
+    def _get_all_events(self) -> int:
+        """Give all events of website"""
+        elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
+        show_line_str = elem_show_line.split()
+        return int(show_line_str[5])
+
     def scrap_events(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
         """
         Access the cybersegurity section of the NIST website and extract information of events.
@@ -107,6 +115,13 @@ class Nist(AbstractScraper):
 
         self.driver.get(self.url_cybersegurity)
         news_events: list[ScrapedEventsModel] = []
+
+        columns = self.driver.find_elements(By.CSS_SELECTOR, "table thead td")
+        num_columns = len(columns)
+        num_rows = self._get_max_num_events_of_page()
+
+        logger.info(f"All Events to scarp website: {self._get_all_events()}")
+        logger.info(f"Number of columns: {num_columns} and rows: {num_rows} of table")
 
         num_rows = self._get_max_num_events_of_page()
 

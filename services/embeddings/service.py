@@ -13,6 +13,7 @@ class EmbeddingService:
         batch_size: int = 16,
         dtype: str = "auto",
         normalize_embeddings: bool = False,
+        dimension: Optional[int] = None,
     ):
         # Carga del modelo
         self.model = SentenceTransformer(model_name, device=device or None)
@@ -31,6 +32,7 @@ class EmbeddingService:
 
         self.batch_size = int(batch_size) if batch_size else 16
         self.normalize_embeddings = bool(normalize_embeddings)
+        self.dimension = dimension
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
     def _clear_memory(self):
@@ -44,25 +46,21 @@ class EmbeddingService:
             raise ValueError("Texto vacío o nulo")
         try:
             with torch.inference_mode():
+                encode_kwargs = {
+                    "show_progress_bar": False,
+                    "batch_size": 1,
+                    "normalize_embeddings": self.normalize_embeddings,
+                    "convert_to_numpy": True,
+                    "device": self.device,
+                }
+                if self.dimension is not None:
+                    encode_kwargs["truncate_dim"] = self.dimension
+
                 if self._dtype is not None and self.device.startswith("cuda"):
                     with torch.autocast(device_type="cuda", dtype=self._dtype):
-                        vec = self.model.encode(
-                            text,
-                            show_progress_bar=False,
-                            batch_size=1,
-                            normalize_embeddings=self.normalize_embeddings,
-                            convert_to_numpy=True,
-                            device=self.device,
-                        )
+                        vec = self.model.encode(text, **encode_kwargs)
                 else:
-                    vec = self.model.encode(
-                        text,
-                        show_progress_bar=False,
-                        batch_size=1,
-                        normalize_embeddings=self.normalize_embeddings,
-                        convert_to_numpy=True,
-                        device=self.device,
-                    )
+                    vec = self.model.encode(text, **encode_kwargs)
             # Asegurar que el resultado esté en CPU y como lista para liberar VRAM
             result = vec.tolist()
             return result
@@ -94,6 +92,16 @@ class EmbeddingService:
                     local_bs = len(batch)
                     while True:
                         try:
+                            encode_kwargs = {
+                                "show_progress_bar": False,
+                                "batch_size": local_bs,
+                                "normalize_embeddings": self.normalize_embeddings,
+                                "convert_to_numpy": True,
+                                "device": self.device,
+                            }
+                            if self.dimension is not None:
+                                encode_kwargs["truncate_dim"] = self.dimension
+
                             if self._dtype is not None and self.device.startswith(
                                 "cuda"
                             ):
@@ -101,21 +109,11 @@ class EmbeddingService:
                                     device_type="cuda", dtype=self._dtype
                                 ):
                                     vecs = self.model.encode(
-                                        batch[:local_bs],
-                                        show_progress_bar=False,
-                                        batch_size=local_bs,
-                                        normalize_embeddings=self.normalize_embeddings,
-                                        convert_to_numpy=True,
-                                        device=self.device,
+                                        batch[:local_bs], **encode_kwargs
                                     )
                             else:
                                 vecs = self.model.encode(
-                                    batch[:local_bs],
-                                    show_progress_bar=False,
-                                    batch_size=local_bs,
-                                    normalize_embeddings=self.normalize_embeddings,
-                                    convert_to_numpy=True,
-                                    device=self.device,
+                                    batch[:local_bs], **encode_kwargs
                                 )
                             all_vecs.extend(v.tolist() for v in vecs)
                             del vecs
