@@ -102,5 +102,10 @@ jobs:
           WEBDRIVERWAIT_TIMEOUT: 10
           LLM_URL: ${{ secrets.LLM_URL }}
           CLASSIFICATION_MODEL: gemma3:12b
+
+          EMBEDDINGS_PROVIDER: ollama
+          EMBEDDINGS_SERVICE: http://localhost:11434
+          EMBEDDINGS_MODEL: qwen3-embedding:8b
+          EMBEDDINGS_DIMENSION: 4096
           
         run: uv run pytest
