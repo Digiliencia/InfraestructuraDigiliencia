@@ -139,9 +139,11 @@ class console_cli:
             menu.alert(message)
             return False, None
 
-        menu.iterables_show(chat_messages, is_pasue=False)
+        menu.iterables_show(chat_messages, is_pasue=False)        
+        return self.conversation_flow(selected_chat_id)
+    
+    def conversation_flow(self,selected_chat_id: uuid.UUID)-> Tuple[bool, Optional[str]]:
         message_text: str = "Message"
-        # Improvisation
         ia_model_id: uuid.UUID = list(self.chat.get_AI_models().keys())[0]
         while True:
             try:
@@ -157,6 +159,8 @@ class console_cli:
             print(f"IA: {response}")
 
         return True, None
+
+
 
     def delete_chat_flow(self) -> Tuple[bool, Optional[str]]:
         chats: dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
