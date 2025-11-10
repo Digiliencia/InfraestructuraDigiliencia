@@ -155,10 +155,6 @@ class Env:
     def news_chunk_overlap(self) -> int:
         return self._news_chunk_overlap
 
-    @property
-    def chatbot_llm(self) -> str:
-        return self._chatbot_llm
-
     @staticmethod
     def load_env_vars():
         # In testing mode, don't load from .env to avoid overwriting test variables

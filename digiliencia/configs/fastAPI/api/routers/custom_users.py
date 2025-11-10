@@ -156,3 +156,4 @@ async def logout(
         "is_active": current_user.is_active,
         "chats_count": len(current_user.chats) if current_user.chats else 0,
     }
+    """

@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from auth.manager import get_user_manager, UserManager
 from schemas.user import UserLogin
 from auth.transport import auth_backend
-from core.endpoints import LOGIN
 
 router = APIRouter()
 

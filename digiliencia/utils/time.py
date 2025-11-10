@@ -141,21 +141,6 @@ class TimeUtils:
         return date_result.strftime("%m/%d/%Y")
 
     @staticmethod
-    def format_eeuu_date(days_ago: int) -> str:
-        """
-        Formats a date based on the number of days ago in mm/dd/yyyy format.
-
-        Args:
-            days_ago (int): The number of days ago.
-
-        Returns:
-            str: A formatted string representing the date in mm/dd/yyyy format.
-        """
-        today = datetime.now()
-        date_result = today - timedelta(days=days_ago)
-        return date_result.strftime("%m/%d/%Y")
-
-    @staticmethod
     def days_between_es_dates(date_str1: str, date_str2: str) -> int:
         """
         Calculates the difference in days between two dates in several formats.

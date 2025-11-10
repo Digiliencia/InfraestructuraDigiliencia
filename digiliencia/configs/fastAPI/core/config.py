@@ -10,18 +10,18 @@ place for all application settings.
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List
-import os
 import json
 from pathlib import Path  # 1. Importa la librería Path
 
 
 # 2. Calcula la ruta raíz del proyecto (dos niveles por encima de este fichero)
 #    /core/config.py -> /core/ -> /
-project_root = Path(__file__).resolve().parent.parent.parent
+project_root = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 # 3. Construye la ruta absoluta y explícita al fichero .env
 dotenv_path = project_root / ".env"
 
+print(".env path: ",dotenv_path)
 
 class Settings(BaseSettings):
     """
