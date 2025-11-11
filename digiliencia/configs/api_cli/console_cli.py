@@ -130,7 +130,7 @@ class console_cli:
                 (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))
                 for key, value in chats.items()
             ),
-            self.messages,
+            self.messages
         )
         if selected_chat_id is None:
             return False, None
@@ -139,6 +139,10 @@ class console_cli:
             menu.alert(message)
             return False, None
 
+        return self.conversation_flow(chat_messages, selected_chat_id)
+    
+    def conversation_flow(self, chat_messages : list[str], selected_chat_id : uuid.UUID) -> Tuple[bool, Optional[str]]:
+        self.show_header()
         menu.iterables_show(chat_messages, is_pasue=False)
         message_text: str = "Message"
         # Improvisation
@@ -155,7 +159,6 @@ class console_cli:
                 menu.alert(state_response)
                 return False, None
             print(f"IA: {response}")
-
         return True, None
 
     def delete_chat_flow(self) -> Tuple[bool, Optional[str]]:
@@ -221,6 +224,9 @@ class console_cli:
             )
         return True, None
 
+    def show_header(self) -> None:
+        os.system("clear")
+        menu.print_message_list(self.messages)
 
 general_routes: Tuple[
     Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...

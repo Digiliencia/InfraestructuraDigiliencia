@@ -2,12 +2,6 @@
 
 This document provides details on the structure, setup and endpoints of the Chat Service API built with FastAPI.
 
-## Quick Start
-
-Run the server: `uvicorn main:app --host 0.0.0.0 --port 8080 --reload`
-
-The API will be available at http://0.0.0.0:8080 with interactive docs at `/docs`
-
 ## Project structure (overview)
 
 The project is organized into modules for clear separation of concerns, following FastAPI best practices. Key folders and files:
@@ -26,20 +20,7 @@ configs/fastAPI/
 
 ## Setup and installation
 
-1. Create and activate a virtual environment (recommended):
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Configure environment variables
+1. Configure environment variables
 
 Copy the example env file into place and edit it with your values (DB URL, JWT secret, etc.):
 
@@ -48,7 +29,7 @@ cp .env_example .env
 # then edit .env to set your values
 ```
 
-Note: the repository also contains a `configs/.env` file that can be used for local testing; ensure the values match your environment.
+2. Use the Dockerfile to build the image.
 
 ## Run the server (development)
 

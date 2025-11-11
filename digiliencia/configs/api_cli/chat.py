@@ -80,8 +80,8 @@ class Chat:
         if response.status_code == status.HTTP_202_ACCEPTED:
             messages = response.json()
             message_list: list[str] = list()
-            for message in messages:
-                message_list.append(message[2])
+            for message in messages["messages"]:
+                message_list.append(message)
             return message_list, "OK"
         elif response.status_code == status.HTTP_404_NOT_FOUND:
             return None, f"Chat {chat_id} not found."
