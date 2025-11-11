@@ -140,12 +140,8 @@ class console_cli:
             return False, None
 
         menu.iterables_show(chat_messages, is_pasue=False)
-        return self.conversation_flow(selected_chat_id)
-
-    def conversation_flow(
-        self, selected_chat_id: uuid.UUID
-    ) -> Tuple[bool, Optional[str]]:
         message_text: str = "Message"
+        # Improvisation
         ia_model_id: uuid.UUID = list(self.chat.get_AI_models().keys())[0]
         while True:
             try:

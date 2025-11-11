@@ -17,13 +17,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, declarative_base
-import fastapi_users.db
+from fastapi_users.db import SQLAlchemyBaseUserTableUUID
 
 # The declarative base class for all SQLAlchemy models in this application.
 Base = declarative_base()
 
 
-class User(fastapi_users.db.SQLAlchemyBaseUserTableUUID, Base):
+class User(SQLAlchemyBaseUserTableUUID, Base):
     """
     Represents a user in the system.
 
