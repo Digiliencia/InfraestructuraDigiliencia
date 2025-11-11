@@ -71,9 +71,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
 
     async def authenticate_json(self, credentials: UserLogin) -> Optional[User]:
         """
-        Override the default authenticate method to use email and password.
+        Authenticates a user based on email and password from a JSON payload.
 
-        Returns the authenticated user or None if authentication fails.
+        Args:
+            credentials (UserLogin): The user's login credentials (email and password).
+
+        Returns:
+            Optional[User]: The authenticated user object if successful, otherwise None.
         """
         try:
             user = await self.user_db.get_by_email(credentials.email)

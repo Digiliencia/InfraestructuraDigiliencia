@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from auth.users import fastapi_users
 from auth.transport import auth_backend
-from core.endpoints import API_PREFIX, HEALTH, ROOT
+from core.endpoints import API_PREFIX, JWT_PATH, HEALTH, ROOT
 
 
 from schemas import user as user_schema
@@ -51,7 +51,7 @@ async def add_security_headers(request: Request, call_next):
 # /api/auth/jwt/login
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
-    prefix=f"{API_PREFIX}/auth/jwt",
+    prefix=JWT_PATH,
     tags=["Auth"],
 )
 
