@@ -110,7 +110,11 @@ class console_cli:
 
         template: uuid.UUID = menu.selection(
             tuple(
-                (f"{template.template_name} {template.template_description}", str(template.idTemplate)) for template in templates.templates
+                (
+                    f"{template.template_name} {template.template_description}",
+                    str(template.idTemplate),
+                )
+                for template in templates.templates
             ),
             self.messages,
         )
@@ -228,7 +232,7 @@ class console_cli:
             templates = self.chat.get_templates()
             menu.simple_iterables_show(
                 tuple(
-                        f"{chat.tittle} {next((template.template_name for template in templates.templates if template.idTemplate == chat.template),'') if templates is not None else ''}"
+                    f"{chat.tittle} {next((template.template_name for template in templates.templates if template.idTemplate == chat.template), '') if templates is not None else ''}"
                     for chat in chats.conversations
                 ),
                 ("Tittle", "Template"),
