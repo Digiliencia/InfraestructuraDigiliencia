@@ -9,6 +9,7 @@ client to discover the models available for use in the system.
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+import uuid
 
 from db.models import Model
 from schemas import chat as chat_schema
@@ -20,9 +21,9 @@ router = APIRouter()
 
 @router.get(
     MODEL_LIST,
-    response_model=tuple[chat_schema.ModelSummary, ...],
+    response_model=chat_schema.Models,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="List Available AI Models",
+    summary="Tuple Available AI Models",
     description="Retrieves a list of all available AI models that can be used in chat conversations. This is a public endpoint and does not require authentication.",
     response_description="A list containing a summary for each available AI model.",
     responses={
@@ -45,9 +46,9 @@ router = APIRouter()
         }
     },
 )
-async def get_ia_list(
+async def get_models(
     db: AsyncSession = Depends(get_db),
-) -> tuple[chat_schema.ModelSummary, ...]:
+) -> chat_schema.Models:
     """
     Retrieves a list of all configured AI models from the database.
 
@@ -61,8 +62,10 @@ async def get_ia_list(
     result = await db.execute(select(Model.id, Model.ia_name))
     models = result.fetchall()
 
-    model_list = tuple(
-        chat_schema.ModelSummary(idModel=str(model.id), model_name=model.ia_name)
+    model_list: tuple[chat_schema.ModelSummary, ...] = tuple(
+        chat_schema.ModelSummary(
+            idModel=uuid.UUID(str(model.id)), model_name=model.ia_name
+        )
         for model in models
     )
-    return model_list
+    return chat_schema.Models(models=model_list)

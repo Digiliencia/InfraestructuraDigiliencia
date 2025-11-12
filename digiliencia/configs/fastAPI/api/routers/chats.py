@@ -138,7 +138,7 @@ async def get_full_conversation(
         idChat=UUID(str(chat.id)),
         tittle=str(chat.tittle),
         template=UUID(str(chat.ia_prompt_id)),
-        messages=[
+        messages=tuple(
             chat_schema.message(
                 id=UUID(str(msg.id)),
                 order_number=cast(int, msg.order_number),
@@ -146,7 +146,7 @@ async def get_full_conversation(
                 model_id=UUID(str(msg.model_id)) if msg.model_id is not None else None,
             )
             for msg in messages
-        ],
+        ),
     )
 
 

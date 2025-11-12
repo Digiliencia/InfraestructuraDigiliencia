@@ -1,8 +1,10 @@
 import httpx
 from starlette import status
-from typing import Tuple, Callable, Dict, Optional
+from typing import Tuple, Callable, Optional
 import uuid
 import os
+
+import digiliencia.configs.fastAPI.schemas.chat as chat_schema
 
 from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
 import menu
@@ -16,6 +18,7 @@ class console_cli:
         self.messages: list[str] = ["Dilignecia CLI"]
         self.client: httpx.Client = httpx.Client(base_url=url)
         self.chat: Chat = Chat(self.client)
+        self.alert_time: float = 0.7
         try:
             response = self.client.get(HEALTH_PATH)
             if (
@@ -28,9 +31,9 @@ class console_cli:
 
     def is_logged_in(self) -> bool:
         logged: bool = self.client.headers.get("Authorization") is not None
-        self.routes: Tuple[
-            Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
-        ] = authenticated_routes if logged else unauthenticated_routes
+        self.routes: Tuple[Tuple[str, Callable[[console_cli], None]], ...] = (
+            authenticated_routes if logged else unauthenticated_routes
+        )
         return logged
 
     def initial_menu_flow(self) -> None:
@@ -49,7 +52,7 @@ class console_cli:
             self.logout()
         print("Exiting application.")
 
-    def login_flow(self) -> Tuple[bool, Optional[str]]:
+    def login_flow(self) -> None:
         MAX_TRY = 3
         counter = MAX_TRY
         try:
@@ -59,193 +62,196 @@ class console_cli:
             ):
                 counter -= 1
                 if counter == 0:
-                    return (False, "Maximum login attempts exceeded.")
-                inputs = menu.input_menu(
-                    {"email": str, "password": str}, ("Login failed. Please try again.")
-                )
+                    menu.alert("Maximum login attempts exceeded.", self.alert_time * 2)
+                    return
+                inputs = menu.input_menu({"email": str, "password": str})
             self.messages.append(f"Logged as: {inputs['email']}")
-            return (True, "Login successful.")
+            menu.alert("Login successful.", self.alert_time)
         except KeyboardInterrupt:
-            return False, None
+            return
 
-    def register_flow(
-        self, message: Optional[str] = None
-    ) -> Tuple[bool, Optional[str]]:
+    def register_flow(self, message: Optional[str] = None) -> None:
         try:
             inputs = menu.input_menu(
                 {"email": str, "password": str}, self.messages, message
             )
         except KeyboardInterrupt:
-            return False, None
-        try:
-            results = authentication.register(
+            return
+
+        if authentication.register(self.client, inputs["email"], inputs["password"]):
+            if not authentication.login(
                 self.client, inputs["email"], inputs["password"]
-            )
-        except Exception as e:
-            return (False, f"Registration failed with an unexpected error: {e}")
-        if not results[0]:
-            self.register_flow(
-                "Registration failed: " + results[2] + " Please try again."
-            )
-        if not results[1]:
-            return (
-                False,
-                "Registration succeeded but automatic login failed. Please try to login manually.",
-            )
+            ):
+                menu.alert(
+                    "Registration succeeded but automatic login failed. Please try to login manually.",
+                    self.alert_time,
+                )
+        else:
+            return
         self.messages.append(f"Logged as: {inputs['email']}")
-        return (True, "Registration and login successful.")
+        menu.alert("Registration and login successful.", self.alert_time)
 
-    def delete_user(self) -> Tuple[bool, Optional[str]]:
-        return authentication.delete_user(self.client)
+    def delete_user(self) -> None:
+        authentication.delete_user(self.client)
 
-    def logout(self) -> Tuple[bool, Optional[str]]:
-        return authentication.logout(self.client)
+    def logout(self) -> None:
+        if authentication.logout(self.client):
+            self.messages.pop()
 
-    def create_chat_flow(self) -> Tuple[bool, Optional[str]]:
+    def create_chat_flow(self) -> None:
         tittle_key = "tittle"
         tittle: str = menu.input_menu(
             {tittle_key: str}, self.messages, "Creating a chat."
         )[tittle_key]
         templates = self.chat.get_templates()
+        if templates is None:
+            menu.alert("Error getting templates.")
+            return
 
         template: uuid.UUID = menu.selection(
             tuple(
-                (f"{value[0]} {value[1]}", str(key)) for key, value in templates.items()
+                (f"{template.template_name} {template.template_description}", str(template.idTemplate)) for template in templates.templates
             ),
             self.messages,
         )
 
-        success, message = self.chat.create_chat(tittle, template)
-        if success:
-            return True, "Chat created."
-        return False, message
+        if self.chat.create_chat(tittle, template):
+            menu.alert("Chat created.")
 
-    def select_chat_flow(self) -> Tuple[bool, Optional[str]]:
-        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
-        if not bool(chats):
+    def select_chat_flow(self) -> None:
+        chats: Optional[chat_schema.ConversationSummaries] = self.chat.get_chats()
+        if chats is None or not bool(chats.conversations):
             menu.alert("Chats not found")
-            return True, None
+            return
+        templates: Optional[chat_schema.Templates] = self.chat.get_templates()
         selected_chat_id: uuid.UUID = menu.selection(
             tuple(
-                (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))
-                for key, value in chats.items()
+                (
+                    f"{chat.tittle} {templates.templates[0].template_name if templates is not None else ''}",
+                    str(chat.idChat),
+                )
+                for chat in chats.conversations
             ),
-            self.messages
+            self.messages,
         )
         if selected_chat_id is None:
             return False, None
         chat_messages, message = self.chat.get_chat(selected_chat_id)
         if chat_messages is None:
             menu.alert(message)
-            return False, None
+            return
 
-        return self.conversation_flow(chat_messages, selected_chat_id)
-    
-    def conversation_flow(self, chat_messages : list[str], selected_chat_id : uuid.UUID) -> Tuple[bool, Optional[str]]:
+        self.conversation_flow(chat_messages, selected_chat_id)
+
+    def conversation_flow(
+        self, chat_messages: list[str], selected_chat_id: uuid.UUID
+    ) -> None:
         self.show_header()
         menu.iterables_show(chat_messages, is_pasue=False)
         message_text: str = "Message"
         # Improvisation
-        ia_model_id: uuid.UUID = list(self.chat.get_AI_models().keys())[0]
+        ia_model_id = self.chat.get_AI_models()
+        if ia_model_id is None:
+            menu.alert("AI model not found")
+            return
         while True:
             try:
                 message: str = menu.input_menu({message_text: str})[message_text]
             except KeyboardInterrupt:
                 break
             response, state_response = self.chat.ask_question(
-                message, selected_chat_id, ia_model_id
+                message, selected_chat_id, ia_model_id.models[0].idModel
             )
             if response is None:
                 menu.alert(state_response)
-                return False, None
+                return
             print(f"IA: {response}")
-        return True, None
 
-    def delete_chat_flow(self) -> Tuple[bool, Optional[str]]:
-        chats: dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
-        if not bool(chats):
-            menu.alert("No chats found.")
+    def delete_chat_flow(self) -> None:
+        chats: Optional[chat_schema.ConversationSummaries] = self.chat.get_chats()
+        if chats is None or not bool(chats.conversations):
+            menu.alert("Chats not found")
         else:
-            chat_id: uuid.UUID = menu.selection(
+            templates = self.chat.get_templates()
+            selected_chat: chat_schema.ConversationSummary = menu.selection(
                 tuple(
-                    (f"{value[0]} {self.chat.get_templates()[value[1]][0]}", str(key))
-                    for key, value in chats.items()
+                    (
+                        f"{chat.tittle} {templates.templates[0].idTemplate if templates is not None else ''}",
+                        chat,
+                    )
+                    for chat in chats.conversations
                 ),
                 self.messages,
             )
-            if chat_id:
-                success, messaje = self.chat.delete_chat(chat_id)
-                if success:
-                    menu.alert("Chat deleted")
-                else:
-                    menu.alert(f"Unenable delete chat. Error: {messaje}")
-        return True, None
+            if selected_chat and self.chat.delete_chat(selected_chat.idChat):
+                menu.alert(f"Chat {selected_chat.tittle} deleted", self.alert_time)
 
-    def show_templates(self) -> Tuple[bool, Optional[str]]:
-        templates: dict = self.chat.get_templates()
+    def show_templates(self) -> None:
+        templates = self.chat.get_templates()
+        if templates is None:
+            menu.alert("Error getting templates.")
+            return
         if not bool(templates):
             menu.alert("Template list is empty.")
-        else:
-            menu.iterables_show(
-                templates.values(),
-                ("Name", "Description"),
-                is_pasue=True,
-                previous_messages=self.messages,
-            )
-        return True, None
+            return
 
-    def show_AI_models(self) -> Tuple[bool, Optional[str]]:
-        models: Dict[uuid.UUID, Tuple[str]] = self.chat.get_AI_models()
+        menu.iterables_show(
+            (
+                (template.template_name, template.template_description)
+                for template in templates.templates
+            ),
+            ("Name", "Description"),
+            is_pasue=True,
+            previous_messages=self.messages,
+        )
+
+    def show_AI_models(self) -> None:
+        models: Optional[chat_schema.Models] = self.chat.get_AI_models()
+        if models is None:
+            menu.alert("Error getting models.")
+            return
         if not bool(models):
             menu.alert("AI models list is empty.")
         else:
-            menu.iterables_show(
-                models.values(),
+            menu.iterables_show(  # Description of model not implemented
+                ((model.model_name, "") for model in models.models),
                 ("Name", "Description"),
                 is_pasue=True,
                 previous_messages=self.messages,
             )
-        return True, None
 
-    def show_chats(self) -> Tuple[bool, Optional[str]]:
-        chats: Dict[uuid.UUID | str, Tuple[str, uuid.UUID]] = self.chat.get_chats()
-
-        if not bool(chats):
-            menu.alert("No chats found.")
+    def show_chats(self) -> None:
+        chats: Optional[chat_schema.ConversationSummaries] = self.chat.get_chats()
+        if chats is None or not bool(chats.conversations):
+            menu.alert("Chats not found")
         else:
+            templates = self.chat.get_templates()
             menu.simple_iterables_show(
                 tuple(
-                    (f"{value[0]} {self.chat.get_templates()[value[1]][0]}")
-                    for value in chats.values()
+                        f"{chat.tittle} {next((template.template_name for template in templates.templates if template.idTemplate == chat.template),'') if templates is not None else ''}"
+                    for chat in chats.conversations
                 ),
                 ("Tittle", "Template"),
                 self.messages,
                 True,
             )
-        return True, None
 
     def show_header(self) -> None:
         os.system("clear")
         menu.print_message_list(self.messages)
 
-general_routes: Tuple[
-    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
-] = (
+
+general_routes: Tuple[Tuple[str, Callable[[console_cli], None]], ...] = (
     ("show AI models", console_cli.show_AI_models),
     ("show_templates", console_cli.show_templates),
 )
 
-unauthenticated_routes: Tuple[
-    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
-] = (
+unauthenticated_routes: Tuple[Tuple[str, Callable[[console_cli], None]], ...] = (
     ("login", console_cli.login_flow),
     ("register", console_cli.register_flow),
-    ("show AI models", console_cli.show_AI_models),
 ) + general_routes
 
-authenticated_routes: Tuple[
-    Tuple[str, Callable[[console_cli], Tuple[bool, Optional[str]]]], ...
-] = (
+authenticated_routes: Tuple[Tuple[str, Callable[[console_cli], None]], ...] = (
     ("New chat", console_cli.create_chat_flow),
     ("Select chat", console_cli.select_chat_flow),
     ("Show chats", console_cli.show_chats),

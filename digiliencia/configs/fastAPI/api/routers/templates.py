@@ -10,6 +10,7 @@ client to discover the predefined templates for initiating chat conversations.
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+import uuid
 
 from db.models import IAPrompt
 from schemas import chat as chat_schema
@@ -21,7 +22,7 @@ router = APIRouter()
 
 @router.get(
     TEMPLATE_LIST,
-    response_model=tuple[chat_schema.TemplateSummary, ...],
+    response_model=chat_schema.Templates,
     status_code=status.HTTP_202_ACCEPTED,
     summary="List Available Chat Templates",
     description="Retrieves a list of all available AI prompt templates that can be used to start new chat conversations. This is a public endpoint.",
@@ -50,7 +51,7 @@ router = APIRouter()
 )
 async def get_template_list(
     db: AsyncSession = Depends(get_db),
-) -> tuple[chat_schema.TemplateSummary, ...]:
+) -> chat_schema.Templates:
     """
     Retrieves a list of all configured AI prompt templates from the database.
 
@@ -66,12 +67,12 @@ async def get_template_list(
     )
     templates = result.fetchall()
 
-    template_list = tuple(
+    template_list: tuple[chat_schema.TemplateSummary, ...] = tuple(
         chat_schema.TemplateSummary(
-            idTemplate=str(template.id),
+            idTemplate=uuid.UUID(str(template.id)),
             template_name=template.prompt_name,
             template_description=template.prompt_description,
         )
         for template in templates
     )
-    return template_list
+    return chat_schema.Templates(templates=template_list)

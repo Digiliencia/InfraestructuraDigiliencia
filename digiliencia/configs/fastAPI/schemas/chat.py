@@ -8,7 +8,7 @@ conforms to a predefined structure, enhancing type safety and clarity.
 """
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 
@@ -108,7 +108,7 @@ class ConversationFull(ConversationSummary):
                                   ordered by their sequence number.
     """
 
-    messages: List[message]
+    messages: tuple[message, ...]
 
 
 class ConversationSummaries(BaseModel):
@@ -130,7 +130,7 @@ class ConversationList(BaseModel):
         conversations (List[ConversationFull]): The list of full conversations.
     """
 
-    conversations: List[ConversationFull]
+    conversations: tuple[ConversationFull, ...]
 
 
 class ConversationImport(BaseModel):
@@ -146,7 +146,7 @@ class ConversationImport(BaseModel):
 
     ia_prompt: Optional[UUID] = None
     tittle: str
-    texts: List[Texts]
+    texts: tuple[Texts, ...]
 
 
 class ModelSummary(BaseModel):
@@ -162,7 +162,7 @@ class ModelSummary(BaseModel):
     model_name: str
 
 
-class ModelList(BaseModel):
+class Models(BaseModel):
     """
     Schema for a response containing a list of available AI models.
 
@@ -188,7 +188,7 @@ class TemplateSummary(BaseModel):
     template_description: str
 
 
-class TemplateList(BaseModel):
+class Templates(BaseModel):
     """
     Schema for a response containing a list of available AI prompt templates.
 

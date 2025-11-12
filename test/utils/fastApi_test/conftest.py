@@ -15,6 +15,7 @@ from httpx import AsyncClient
 
 from test.conftest import faker
 from starlette import status
+from digiliencia.configs.fastAPI.schemas.chat import Templates, Models
 from digiliencia.configs.fastAPI.core.endpoints import (
     TEMPLATE_LIST,
     MODEL_LIST,
@@ -131,7 +132,7 @@ async def authenticated_client(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def templates(authenticated_client: AsyncClient) -> list:
+async def templates(authenticated_client: AsyncClient) -> Templates:
     """
     Function-scoped fixture that fetches the list of available prompt templates.
     """
@@ -139,15 +140,15 @@ async def templates(authenticated_client: AsyncClient) -> list:
     if response.status_code != status.HTTP_202_ACCEPTED:
         raise Exception(f"Error getting templates: {response.status_code}")
 
-    templates_list = response.json()
-    if not templates_list:
+    templates = response.json()
+    if not templates:
         raise Exception("No templates found in database to use in tests.")
 
-    return templates_list
+    return Templates.model_validate(templates)
 
 
 @pytest_asyncio.fixture(scope="function")
-async def models(authenticated_client: AsyncClient) -> list:
+async def models(authenticated_client: AsyncClient) -> Models:
     """
     Function-scoped fixture that fetches the list of available AI models.
     """
@@ -155,8 +156,8 @@ async def models(authenticated_client: AsyncClient) -> list:
     if response.status_code != status.HTTP_202_ACCEPTED:
         raise Exception(f"Error getting models: {response.status_code}")
 
-    models_list = response.json()
-    if not models_list:
+    models = response.json()
+    if not models:
         raise Exception("No models found in database to use in tests.")
 
-    return models_list
+    return Models.model_validate(models)

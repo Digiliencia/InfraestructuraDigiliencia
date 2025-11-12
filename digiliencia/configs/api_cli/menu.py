@@ -1,6 +1,7 @@
 import os
 from typing import Type, Callable, Iterable, Optional, Any
 import uuid
+import time
 
 
 def input_menu(
@@ -87,12 +88,20 @@ def simple_iterables_show(
 def pause(message: Optional[str] = None) -> None:
     if message is None:
         message = "Press any key to continue"
-    input(message)
+    try:
+        input(message)
+    except KeyboardInterrupt:
+        return
 
 
-def alert(message: str):
+def alert(message: str, seconds: Optional[float] = None, clean: bool = False) -> None:
+    if clean:
+        os.system("clear")
     print(f"{message}\n")
-    pause()
+    if seconds is not None and seconds >= 0:
+        time.sleep(seconds)
+    else:
+        pause()
 
 
 def show_selection(
