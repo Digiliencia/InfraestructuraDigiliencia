@@ -167,6 +167,11 @@ class WEForumScraper(AbstractScraper):
             self.load_time * 5
         )  # As there are probably more than one redirection, wait a bit more
         time.sleep(self.load_time)
+        self._close_button_poppup()
+
+    def _close_button_poppup(self):
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "button[aria-label='close modal']"): # type: ignore
+            self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='close modal']").click()
 
     def _get_websites_to_scrap(self, max_age_date: int = 7) -> list[dict[str, str]]:
         """
@@ -195,11 +200,12 @@ class WEForumScraper(AbstractScraper):
         aside_div = self.driver.find_element(
             By.CSS_SELECTOR,
             ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d",
+                               "TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
             # By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
             # By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
         )
         '''
-        aside_div = self.driver.find_element(By.ID, "topic-content")
+        aside_div = self.driver.find_element(By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d")
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
 
