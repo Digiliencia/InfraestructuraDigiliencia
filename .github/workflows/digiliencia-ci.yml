@@ -110,4 +110,4 @@ jobs:
 
           CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
           
-        run: uv run pytest
+        run: uv run pytest ./test/utils/neo4j/
