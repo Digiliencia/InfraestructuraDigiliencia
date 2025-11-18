@@ -30,7 +30,7 @@ jobs:
     env:
 
       TESTING: "true"
-      
+
       # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
@@ -61,7 +61,7 @@ jobs:
       WEFORUM_EMAIL: ${{ vars.WEFORUM_EMAIL || secrets.WEFORUM_EMAIL }}
       WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
       LLM_URL: ${{ vars.LLM_URL || secrets.LLM_URL }}
-      CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
+      CHATBOT_LLM: ${{ vars.CHATBOT_LLM }}
       
       CLASSIFICATION_MODEL: ${{ vars.CLASSIFICATION_MODEL }}
       WEBDRIVERWAIT_TIMEOUT: ${{ vars.WEBDRIVERWAIT_TIMEOUT }}
