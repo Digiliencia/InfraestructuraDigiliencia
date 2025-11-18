@@ -91,7 +91,11 @@ jobs:
           timeout 60s bash -c 'until nc -z localhost 7687; do sleep 2; done'
           
           echo "Waiting for Neo4j HTTP..."
-          timeout 120s bash -c 'until curl -s http://127.0.0.1:7474 > /dev/null; do sleep 2; done'
+          if ! timeout 120s bash -c 'until curl -s --fail http://localhost:7474 > /dev/null || curl -s --fail http://127.0.0.1:7474 > /dev/null; do sleep 2; done'; then
+            echo "ERROR: Neo4j HTTP check timed out. Showing logs:"
+            docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
+            exit 1
+          fi
           
           echo "Waiting for Postgres..."
           timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
@@ -100,7 +104,11 @@ jobs:
           timeout 30s bash -c 'until nc -z localhost 6379; do sleep 2; done'
 
           echo "Waiting for FastAPI..."
-          timeout 60s bash -c 'until curl -s http://localhost:8080/health || nc -z localhost 8080; do sleep 2; done'
+          if ! timeout 60s bash -c 'until curl -s http://localhost:8080/health > /dev/null || nc -z localhost 8080; do sleep 2; done'; then
+            echo "ERROR: FastAPI check timed out. Showing logs:"
+            docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+            exit 1
+          fi
 
       - name: Show running containers
         if: failure()
