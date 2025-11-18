@@ -14,45 +14,49 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      # Postgres Settings
+      # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-      APP_DB_NAME: diligencia
+      POSTGRES_USER: ${{ vars.POSTGRES_USER || 'postgres' }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB || 'postgres' }}
+      APP_DB_NAME: ${{ vars.APP_DB_NAME || 'diligencia' }}
       
-      # Users setup
-      DB_OWNER_USER: diligenciauser
+      # --- Users setup ---
+      DB_OWNER_USER: ${{ vars.DB_OWNER_USER || 'diligenciauser' }}
       DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD || 'diligencia' }}
-      APP_USER: chatUser
+      
+      APP_USER: ${{ vars.APP_USER || 'chatUser' }}
       APP_USER_PASSWORD: ${{ secrets.APP_USER_PASSWORD || 'chatUser' }}
-      APP_USER_LOGIN: userLogin
+      
+      APP_USER_LOGIN: ${{ vars.APP_USER_LOGIN || 'userLogin' }}
       APP_USER_LOGIN_PASSWORD: ${{ secrets.APP_USER_LOGIN_PASSWORD || 'userLogin' }}
 
-      # API Settings
-      ALLOWED_ORIGINS: '["*"]'
+      # --- API Settings ---
+      ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS || '["*"]' }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test_secret_key_for_ci' }}
-      JWT_ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM || 'HS256' }}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES || '30' }}
 
-      # Neo4j Settings
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: testpassword
+      # --- Neo4j Settings ---
+      NEO4J_USERNAME: ${{ vars.NEO4J_USERNAME || 'neo4j' }}
+      NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD || 'testpassword' }}
+
       NEO4J_URL: neo4j+s://localhost:7687
       DDBB_URI: bolt://localhost:7687
       
-      # LLM & External
-      WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
+      # --- LLM & External ---
+      WEFORUM_EMAIL: ${{ vars.WEFORUM_EMAIL || secrets.WEFORUM_EMAIL }}
       WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
-      LLM_URL: ${{ secrets.LLM_URL }}
+      LLM_URL: ${{ vars.LLM_URL || secrets.LLM_URL }}
       CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
       
-      CLASSIFICATION_MODEL: gemma3:12b
-      WEBDRIVERWAIT_TIMEOUT: 10
-
-      EMBEDDINGS_PROVIDER: ollama
-      EMBEDDINGS_SERVICE: http://localhost:11434 
-      EMBEDDINGS_MODEL: qwen3-embedding:8b
-      EMBEDDINGS_DIMENSION: 4096
+      CLASSIFICATION_MODEL: ${{ vars.CLASSIFICATION_MODEL || 'gemma3:12b' }}
+      WEBDRIVERWAIT_TIMEOUT: ${{ vars.WEBDRIVERWAIT_TIMEOUT || '10' }}
+      
+      # --- Embeddings ---
+      EMBEDDINGS_PROVIDER: ${{ vars.EMBEDDINGS_PROVIDER || 'ollama' }}
+      EMBEDDINGS_SERVICE: ${{ vars.EMBEDDINGS_SERVICE || 'http://localhost:11434' }}
+      EMBEDDINGS_MODEL: ${{ vars.EMBEDDINGS_MODEL || 'qwen3-embedding:8b' }}
+      EMBEDDINGS_DIMENSION: ${{ vars.EMBEDDINGS_DIMENSION || '4096' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +74,7 @@ jobs:
 
       - name: Start Docker Compose Stack
         run: |
-          # Docker Compose tomará automáticamente las variables del 'env' definido arriba
+          # Docker Compose leerá las variables del bloque 'env' superior
           docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Wait for Services (Neo4j, Postgres, Redis, FastAPI)
@@ -88,7 +92,6 @@ jobs:
           timeout 30s bash -c 'until nc -z localhost 6379; do sleep 2; done'
 
           echo "Waiting for FastAPI..."
-          # Check de salud simple
           timeout 60s bash -c 'until curl -s http://localhost:8080/health || nc -z localhost 8080; do sleep 2; done'
 
       - name: Show running containers
@@ -108,8 +111,7 @@ jobs:
         working-directory: digiliencia
 
       - name: Run tests
-
-        run: uv run pytest #./test/utils/neo4j/
+        run: uv run pytest
 
       - name: Stop containers
         if: always()
