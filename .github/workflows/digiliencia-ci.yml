@@ -28,6 +28,9 @@ jobs:
     environment: Testing
 
     env:
+
+      TESTING: "true"
+      
       # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
