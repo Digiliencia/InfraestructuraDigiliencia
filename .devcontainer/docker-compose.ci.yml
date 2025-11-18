@@ -9,10 +9,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=db
-      - REDIS_HOST=redis
-      - NEO4J_URL=bolt://neo4j:7687
-      - DDBB_URI=bolt://neo4j:7687
+      - DB_HOST=${DB_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+      - NEO4J_URL=${NEO4J_URL}
+      - DDBB_URI=${DDBB_URI}
 
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
