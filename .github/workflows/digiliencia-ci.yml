@@ -85,7 +85,7 @@ jobs:
 
       - name: Start Docker Compose Stack
         run: |
-          docker compose -f .devcontainer/docker-compose.yml -f docker-compose.ci.yml up -d --build
+          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.ci.yml up -d --build
 
       - name: Wait for Services (Neo4j, Postgres, Redis, FastAPI)
         run: |
