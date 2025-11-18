@@ -134,6 +134,10 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
+      - name: Show FastAPI logs (Post-Test)
+        if: failure()
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+
       - name: Stop containers
         if: always()
         run: docker compose down
