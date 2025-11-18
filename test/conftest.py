@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -20,17 +21,27 @@ faker = Faker()
 
 # Configuration constants
 TEST_DB_CONFIG = {
-    "DDBB_URI": "bolt://neo4j:testpassword@neo4j-test:7687",
-    "TESTING": "true",
-    "WEFORUM_EMAIL": "test@example.com",
-    "WEFORUM_PASSWD": "testpassword",
-    "WEBDRIVERWAIT_TIMEOUT": "5",
-    "IMPLICIT_WAIT": "2",
-    "LLM_URL": "http://localhost:11434",
-    "CLASSIFICATION_MODEL": "test_model",
-    "EMBEDDINGS_SERVICE": "http://localhost:8000",
-    "COMPOSE_PROJECT_DIR": "../.devcontainer",
-    "SERVICE_NAME": "embedding-api-service",
+    # En CI (main.yml) esto vendrá inyectado como bolt://user:pass@localhost:7687
+    "DDBB_URI": os.getenv("DDBB_URI", "bolt://neo4j:testpassword@neo4j-test:7687"),
+    
+    "TESTING": os.getenv("TESTING", "true"),
+    
+    "WEFORUM_EMAIL": os.getenv("WEFORUM_EMAIL", "test@example.com"),
+    "WEFORUM_PASSWD": os.getenv("WEFORUM_PASSWD", "testpassword"),
+    
+    "WEBDRIVERWAIT_TIMEOUT": os.getenv("WEBDRIVERWAIT_TIMEOUT", "5"),
+    "IMPLICIT_WAIT": os.getenv("IMPLICIT_WAIT", "2"),
+    
+    "LLM_URL": os.getenv("LLM_URL", "http://localhost:11434"),
+    "CLASSIFICATION_MODEL": os.getenv("CLASSIFICATION_MODEL", "test_model"),
+    
+    "EMBEDDINGS_SERVICE": os.getenv("EMBEDDINGS_SERVICE", "http://localhost:8000"),
+    "EMBEDDINGS_PROVIDER": os.getenv("EMBEDDINGS_PROVIDER", "custom"),
+    "EMBEDDINGS_MODEL": os.getenv("EMBEDDINGS_MODEL", "test_model"),
+    "EMBEDDINGS_DIMENSION": os.getenv("EMBEDDINGS_DIMENSION", "4096"),
+    
+    "COMPOSE_PROJECT_DIR": os.getenv("COMPOSE_PROJECT_DIR", "../.devcontainer"),
+    "SERVICE_NAME": os.getenv("SERVICE_NAME", "embedding-api-service"),
 }
 
 
