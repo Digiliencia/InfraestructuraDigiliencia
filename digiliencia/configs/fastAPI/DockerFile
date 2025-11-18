@@ -24,9 +24,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # The .dockerignore file will prevent unnecessary files from being copied.
 COPY digiliencia/configs/fastAPI .
 
-# Stage 4: enviroment variables
-COPY .env .
-
 # Expose the port that the Uvicorn server will run on.
 # This makes the port available to the Docker host.
 EXPOSE 8080
