@@ -1,0 +1,67 @@
+services:
+  embedding-api-service:
+    profiles: ["donotstart"]
+
+  fastapi-service:
+    ports:
+      - "8080:8080"
+    env_file: []
+    environment:
+      - DDBB_HOST=db
+      - REDIS_HOST=redis
+      - NEO4J_URL=bolt://neo4j:7687
+      - DDBB_URI=bolt://neo4j:7687
+      
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - APP_DB_NAME=${APP_DB_NAME}
+      - DB_OWNER_USER=${DB_OWNER_USER}
+      - DB_OWNER_PASSWORD=${DB_OWNER_PASSWORD}
+      - APP_USER=${APP_USER}
+      - APP_USER_PASSWORD=${APP_USER_PASSWORD}
+      - APP_USER_LOGIN=${APP_USER_LOGIN}
+      - APP_USER_LOGIN_PASSWORD=${APP_USER_LOGIN_PASSWORD}
+      
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      
+      - WEFORUM_EMAIL=${WEFORUM_EMAIL}
+      - WEFORUM_PASSWD=${WEFORUM_PASSWD}
+      - LLM_URL=${LLM_URL}
+      - CHATBOT_LLM=${CHATBOT_LLM}
+      - CLASSIFICATION_MODEL=${CLASSIFICATION_MODEL}
+      - EMBEDDINGS_SERVICE=${EMBEDDINGS_SERVICE}
+      - EMBEDDINGS_DIMENSION=${EMBEDDINGS_DIMENSION}
+
+  db:
+    ports:
+      - "5432:5432"
+    env_file: []
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - APP_DB_NAME=${APP_DB_NAME}
+      - DB_OWNER_USER=${DB_OWNER_USER}
+      - DB_OWNER_PASSWORD=${DB_OWNER_PASSWORD}
+      - APP_USER=${APP_USER}
+      - APP_USER_PASSWORD=${APP_USER_PASSWORD}
+      - APP_USER_LOGIN=${APP_USER_LOGIN}
+      - APP_USER_LOGIN_PASSWORD=${APP_USER_LOGIN_PASSWORD}
+
+  neo4j:
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  devcontainer:
+    profiles: ["donotstart"]
