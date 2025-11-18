@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from typing import cast
+import asyncio
 
 from core.endpoints import CONVERSATIONS, CHATS_PATH
 from db.models import User, Chat, Message, IAPrompt
@@ -232,6 +233,7 @@ async def ask_question_to_chat(
         ai_response_text = (
             f"Simulated response to '{payload.text}' using model {payload.model_id}"
         )
+        await asyncio.sleep(0.2)
 
         # Save the AI's response
         ai_message = Message(

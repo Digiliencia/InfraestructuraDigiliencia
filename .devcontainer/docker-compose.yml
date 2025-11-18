@@ -34,7 +34,6 @@ services:
 
   neo4j:
     image: neo4j:latest
-    restart: always
     environment:
       NEO4J_AUTH: neo4j/testpassword
     ports:
@@ -47,7 +46,6 @@ services:
 
   neo4j-test:
     image: neo4j:latest
-    restart: always
     environment:
       NEO4J_AUTH: neo4j/testpassword
     ports:

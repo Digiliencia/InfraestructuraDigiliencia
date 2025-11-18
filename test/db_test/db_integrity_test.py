@@ -1,6 +1,6 @@
 import pytest
 import psycopg2
-from psycopg2.errors import NotNullViolation, UniqueViolation, ForeignKeyViolation
+from psycopg2.errors import NotNullViolation, UniqueViolation, RestrictViolation,ForeignKeyViolation
 import uuid
 
 # This file contains tests to verify data constraints and integrity.
@@ -145,7 +145,7 @@ def test_on_delete_restrict_behavior(get_db_connection_for_role):
     cursor.execute("SELECT model_id FROM MESSAGES WHERE model_id IS NOT NULL LIMIT 1;")
     model_id_in_use = cursor.fetchone()[0]
 
-    with pytest.raises(ForeignKeyViolation):
+    with pytest.raises(RestrictViolation):
         cursor.execute("DELETE FROM models WHERE id = %s;", (model_id_in_use,))
     conn.rollback()
 
@@ -155,7 +155,7 @@ def test_on_delete_restrict_behavior(get_db_connection_for_role):
     )
     prompt_id_in_use = cursor.fetchone()[0]
 
-    with pytest.raises(ForeignKeyViolation):
+    with pytest.raises(RestrictViolation):
         cursor.execute("DELETE FROM IA_PROMPTS WHERE id = %s;", (prompt_id_in_use,))
     conn.rollback()
 
@@ -206,7 +206,7 @@ def test_default_values(get_db_connection_for_role):
     )
     is_active, is_superuser, is_verified = cursor.fetchone()
 
-    assert not is_active, "is_active should default to TRUE"
+    assert is_active, "is_active should default to TRUE"
     assert not is_superuser, "is_superuser should default to FALSE"
     assert not is_verified, "is_verified should default to FALSE"
 

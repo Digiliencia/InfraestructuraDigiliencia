@@ -1,4 +1,5 @@
 import os
+import multiprocessing
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -16,6 +17,11 @@ from digiliencia.configs.fastAPI.db.models import (
     IAPrompt,
     Model,
 )
+
+try:
+    multiprocessing.set_start_method("spawn")
+except RuntimeError:
+    pass # It was configurated yet
 
 faker = Faker()
 
