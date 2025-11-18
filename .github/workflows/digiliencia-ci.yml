@@ -25,6 +25,8 @@ jobs:
   test-integration:
     runs-on: ubuntu-latest
     
+    environment: Testing
+
     env:
       # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
