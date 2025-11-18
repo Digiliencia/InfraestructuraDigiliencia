@@ -91,7 +91,7 @@ jobs:
           timeout 60s bash -c 'until nc -z localhost 7687; do sleep 2; done'
           
           echo "Waiting for Neo4j HTTP..."
-          timeout 60s bash -c 'until curl -s http://localhost:7474 > /dev/null; do sleep 2; done'
+          timeout 120s bash -c 'until curl -s http://127.0.0.1:7474 > /dev/null; do sleep 2; done'
           
           echo "Waiting for Postgres..."
           timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
@@ -119,7 +119,7 @@ jobs:
         working-directory: digiliencia
 
       - name: Run tests
-        run: uv run pytest ./test/utils/neo4j/
+        run: uv run pytest
 
       - name: Stop containers
         if: always()
