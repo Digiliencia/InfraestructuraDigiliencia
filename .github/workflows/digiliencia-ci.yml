@@ -56,7 +56,7 @@ jobs:
       NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
       NEO4J_URL: bolt://${{ vars.NEO4J_USERNAME }}:${{ secrets.NEO4J_PASSWORD }}@localhost:7687
       DDBB_URI: bolt://${{ vars.NEO4J_USERNAME }}:${{ secrets.NEO4J_PASSWORD }}@localhost:7687
-      
+
       # --- LLM & External ---
       WEFORUM_EMAIL: ${{ vars.WEFORUM_EMAIL || secrets.WEFORUM_EMAIL }}
       WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}

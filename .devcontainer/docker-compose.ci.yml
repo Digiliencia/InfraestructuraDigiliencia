@@ -9,8 +9,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=${DB_HOST}
-      - REDIS_HOST=${REDIS_HOST}
+      - DB_HOST=db
+      - REDIS_HOST=redis
       - NEO4J_URL=${NEO4J_URL}
       - DDBB_URI=${DDBB_URI}
 

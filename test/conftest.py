@@ -21,7 +21,6 @@ faker = Faker()
 
 # Configuration constants
 TEST_DB_CONFIG = {
-    # En CI (main.yml) esto vendrá inyectado como bolt://user:pass@localhost:7687
     "DDBB_URI": os.getenv("DDBB_URI", "bolt://neo4j:testpassword@neo4j-test:7687"),
     
     "TESTING": os.getenv("TESTING", "true"),
