@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DDBB_HOST=db
+      - DB_HOST=db
       - REDIS_HOST=redis
       - NEO4J_URL=bolt://neo4j:7687
       - DDBB_URI=bolt://neo4j:7687
