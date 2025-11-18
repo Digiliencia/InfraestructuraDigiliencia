@@ -24,6 +24,11 @@ from digiliencia.configs.fastAPI.core.endpoints import (
     USERS_ME,
 )
 
+try:
+    multiprocessing.set_start_method("spawn")
+except RuntimeError:
+    pass # It was configurated yet
+
 # =============================================================================
 # FastAPI Async SQLAlchemy Test Data Fixture
 # =============================================================================
