@@ -2,58 +2,78 @@ name: Digiliencia CI
 
 on:
   push:
-    branches:
-      - "**"
+    branches: ["**"]
     paths:
       - "digiliencia/**"
       - "test/**"
+      - ".github/**"
+      - "**docker-compose*.yml"
+      - "pyproject.toml"
+      - "uv.lock"
   pull_request:
-    branches:
-      - main
+    branches: ["main"]
     paths:
       - "digiliencia/**"
       - "test/**"
+      - ".github/**"
+      - "**docker-compose*.yml"
+      - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch:
 
 jobs:
-  build:
+  test-integration:
     runs-on: ubuntu-latest
-    services:
-      neo4j:
-        image: neo4j:latest
-        env:
-          NEO4J_AUTH: neo4j/testpassword
-        ports:
-          - 7474:7474
-          - 7687:7687
+    
+    environment: Testing
+
+    env:
+
+      TESTING: "true"
+
+      # --- Postgres Settings ---
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      APP_DB_NAME: ${{ vars.APP_DB_NAME }}
+      
+      # --- Users setup ---
+      DB_OWNER_USER: ${{ vars.DB_OWNER_USER }}
+      DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD }}
+      APP_USER: ${{ vars.APP_USER }}
+      APP_USER_PASSWORD: ${{ secrets.APP_USER_PASSWORD }}
+      APP_USER_LOGIN: ${{ vars.APP_USER_LOGIN }}
+      APP_USER_LOGIN_PASSWORD: ${{ secrets.APP_USER_LOGIN_PASSWORD }}
+
+      # --- API Settings ---
+      ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM }}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
+
+      # --- Neo4j Settings ---
+      NEO4J_USERNAME: ${{ vars.NEO4J_USERNAME }}
+      NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+      NEO4J_URL: bolt://${{ vars.NEO4J_USERNAME }}:${{ secrets.NEO4J_PASSWORD }}@localhost:7687
+      DDBB_URI: bolt://${{ vars.NEO4J_USERNAME }}:${{ secrets.NEO4J_PASSWORD }}@localhost:7687
+
+      # --- LLM & External ---
+      WEFORUM_EMAIL: ${{ vars.WEFORUM_EMAIL || secrets.WEFORUM_EMAIL }}
+      WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
+      LLM_URL: ${{ vars.LLM_URL || secrets.LLM_URL }}
+      CHATBOT_LLM: ${{ vars.CHATBOT_LLM }}
+      
+      CLASSIFICATION_MODEL: ${{ vars.CLASSIFICATION_MODEL }}
+      WEBDRIVERWAIT_TIMEOUT: ${{ vars.WEBDRIVERWAIT_TIMEOUT }}
+      
+      # --- Embeddings ---
+      EMBEDDINGS_PROVIDER: ${{ vars.EMBEDDINGS_PROVIDER }}
+      EMBEDDINGS_SERVICE: ${{ vars.EMBEDDINGS_SERVICE }}
+      EMBEDDINGS_MODEL: ${{ vars.EMBEDDINGS_MODEL }}
+      EMBEDDINGS_DIMENSION: ${{ vars.EMBEDDINGS_DIMENSION }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Add neo4j-test alias to /etc/hosts
-        run: |
-          echo "127.0.0.1 neo4j-test" | sudo tee -a /etc/hosts
-
-      - name: Wait for Neo4j HTTP API to be ready
-        run: |
-          for i in {1..30}; do
-            echo "Waiting for Neo4j HTTP API (attempt $i)..."
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://neo4j-test:7474 || echo "000")
-            if [ "$http_code" = "200" ]; then
-              echo "Neo4j HTTP API is ready!"
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Check container status and logs
-        run: |
-          echo "Running containers:"
-          docker ps -a
-
-          echo "Neo4j logs:"
-          docker ps -a --filter ancestor=neo4j:latest
-          docker logs $(docker ps -q --filter ancestor=neo4j:latest)
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -66,20 +86,42 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Debug Neo4j port
+      - name: Start Docker Compose Stack
         run: |
-          echo "Waiting for Neo4j..."
-          timeout 60 bash -c 'until echo > /dev/tcp/localhost/7687; do sleep 5; done'
+          docker compose -f .devcontainer/docker-compose.ci.yml up -d --build
 
-      - name: Wait for Neo4j to be ready
+      - name: Wait for Services (Neo4j, Postgres, Redis, FastAPI)
         run: |
-          for i in {1..30}; do
-            nc -z localhost 7687 && echo "Neo4j is up!" && exit 0
-            echo "Waiting for Neo4j..."
-            sleep 2
-          done
-          echo "Neo4j did not start in time" >&2
-          exit 1
+          echo "Waiting for Neo4j Bolt..."
+          timeout 60s bash -c 'until nc -z localhost 7687; do sleep 2; done'
+          
+          echo "Waiting for Neo4j HTTP..."
+          if ! timeout 120s bash -c 'until curl -s --fail http://localhost:7474 > /dev/null || curl -s --fail http://127.0.0.1:7474 > /dev/null; do sleep 2; done'; then
+            echo "ERROR: Neo4j HTTP check timed out. Showing logs:"
+            docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
+            exit 1
+          fi
+          
+          echo "Waiting for Postgres..."
+          timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
+          
+          echo "Waiting for Redis..."
+          timeout 30s bash -c 'until nc -z localhost 6379; do sleep 2; done'
+
+          echo "Waiting for FastAPI..."
+          if ! timeout 60s bash -c 'until curl -s http://localhost:8080/health > /dev/null || nc -z localhost 8080; do sleep 2; done'; then
+            echo "ERROR: FastAPI check timed out. Showing logs:"
+            docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+            exit 1
+          fi
+
+      - name: Show running containers
+        if: failure()
+        run: docker compose ps -a
+
+      - name: Show FastAPI logs
+        if: failure()
+        run: docker compose logs fastapi-service
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -90,24 +132,12 @@ jobs:
         working-directory: digiliencia
 
       - name: Run tests
-        env:
-          DDBB_URI: bolt://localhost:7687
-          DDBB_USERNAME: neo4j
-          DDBB_PASSWD: testpassword
-          WEFORUM_EMAIL: ${{ secrets.WEFORUM_EMAIL }}
-          WEFORUM_PASSWD: ${{ secrets.WEFORUM_PASSWD }}
-          NEO4J_USERNAME: neo4j
-          NEO4J_PASSWORD: testpassword
-          NEO4J_URL: neo4j+s://localhost:7687
-          WEBDRIVERWAIT_TIMEOUT: 10
-          LLM_URL: ${{ secrets.LLM_URL }}
-          CLASSIFICATION_MODEL: gemma3:12b
-
-          EMBEDDINGS_PROVIDER: ollama
-          EMBEDDINGS_SERVICE: http://localhost:11434
-          EMBEDDINGS_MODEL: qwen3-embedding:8b
-          EMBEDDINGS_DIMENSION: 4096
-
-          CHATBOT_LLM: ${{ secrets.CHATBOT_LLM }}
-          
         run: uv run pytest
+
+      - name: Show FastAPI logs (Post-Test)
+        if: failure()
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+
+      - name: Stop containers
+        if: always()
+        run: docker compose -f .devcontainer/docker-compose.ci.yml down

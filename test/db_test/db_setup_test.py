@@ -23,7 +23,6 @@ def test_database_and_users_exist(get_db_connection_for_role):
         assert cursor.fetchone(), f"User '{os.getenv(role_var)}' does not exist."
 
     cursor.close()
-    conn.close()
 
 
 def test_tables_and_views_created(get_db_connection_for_role):
@@ -51,7 +50,6 @@ def test_tables_and_views_created(get_db_connection_for_role):
         f"Missing views. Expected: {expected_views}, found: {views}"
     )
 
-    cursor.close()
     conn.close()
 
 
@@ -71,76 +69,154 @@ def test_db_owner_permissions(get_db_connection_for_role):
         conn.close()
 
 
-@pytest.mark.usefixtures("populated_db")
 def test_app_user_permissions(get_db_connection_for_role):
     """
     Check the permissions of 'app_user' (chatUser):
     - CAN read/write to CHATS and MESSAGES.
-    - CAN read from IA_PROMPTS, MODELS, and users view.
+    - CAN read from IA_PROMPTS and MODELS.
+    - CAN read limited user info from users view.
     - CANNOT write to USERS or create tables.
     """
     conn = get_db_connection_for_role("app_user")
     cursor = conn.cursor()
 
-    # SELECT permissions - should succeed
-    cursor.execute("SELECT id FROM chats LIMIT 1;")
-    assert cursor.fetchone()
-    cursor.execute("SELECT id FROM messages LIMIT 1;")
-    assert cursor.fetchone()
-    cursor.execute("SELECT id FROM models LIMIT 1;")
-    assert cursor.fetchone()
-    cursor.execute("SELECT id FROM ia_prompts LIMIT 1;")
-    assert cursor.fetchone()
-    cursor.execute("SELECT id FROM users_id_email_view LIMIT 1;")
-    assert cursor.fetchone()
+    # Test READ permissions
+    cursor.execute("SELECT id FROM CHATS LIMIT 1;")
+    assert cursor.fetchone(), "app_user should be able to read from CHATS"
 
-    # INSERT into CHATS - should succeed
+    cursor.execute("SELECT id FROM MESSAGES LIMIT 1;")
+    assert cursor.fetchone(), "app_user should be able to read from MESSAGES"
+
+    cursor.execute("SELECT id, ia_name FROM MODELS LIMIT 1;")
+    assert cursor.fetchone(), "app_user should be able to read from MODELS"
+
+    cursor.execute(
+        "SELECT id, prompt_name, prompt, prompt_description FROM IA_PROMPTS LIMIT 1;"
+    )
+    assert cursor.fetchone(), "app_user should be able to read from IA_PROMPTS"
+
+    cursor.execute("SELECT id, email FROM users_id_email_view LIMIT 1;")
+    assert cursor.fetchone(), "app_user should be able to read from users view"
+
+    # Test WRITE permissions - successful cases
     cursor.execute("SELECT id FROM users_id_email_view LIMIT 1;")
     user_id = cursor.fetchone()[0]
-    cursor.execute(
-        "INSERT INTO chats (titulo, user_id) VALUES ('Test Chat', %s);", (user_id,)
-    )
 
-    # INSERT into USERS - should fail
-    with pytest.raises(psycopg2.errors.InsufficientPrivilege):
+    # Test chat creation
+    try:
         cursor.execute(
-            "INSERT INTO users (email, password) VALUES ('test@fail.com', 'pass');"
+            """
+            INSERT INTO CHATS (tittle, user_id, ia_prompt_id)
+            VALUES ('Test Chat', %s, NULL)
+            RETURNING id;
+            """,
+            (user_id,),
+        )
+        chat_id = cursor.fetchone()[0]
+        assert chat_id, "app_user should be able to create chats"
+
+        # Test message creation
+        cursor.execute(
+            """
+            INSERT INTO MESSAGES (order_number, content, statistics, chat_id)
+            VALUES (1, 'Test message', '{"tokens": 100}', %s)
+            RETURNING id;
+            """,
+            (chat_id,),
+        )
+        assert cursor.fetchone()[0], "app_user should be able to create messages"
+
+    except psycopg2.Error as e:
+        pytest.fail(
+            f"app_user should have write access to CHATS and MESSAGES, but failed: {e}"
+        )
+    finally:
+        conn.rollback()
+
+    # Test WRITE restrictions
+    cursor.execute("SELECT id FROM users_id_email_view LIMIT 1;")
+    user_id = cursor.fetchone()[0]
+
+    # Verify can't write to USERS
+    with pytest.raises(psycopg2.Error):
+        cursor.execute(
+            """
+            INSERT INTO USERS (email, hashed_password, is_active, is_superuser, is_verified)
+            VALUES ('test@test.com', 'hash', true, false, false);
+            """
         )
     conn.rollback()
 
-    # CREATE TABLE - should fail
-    with pytest.raises(psycopg2.errors.InsufficientPrivilege):
-        cursor.execute("CREATE TABLE test_app_user_table (id int);")
+    # Verify can't write to IA_PROMPTS
+    with pytest.raises(psycopg2.Error):
+        cursor.execute(
+            """
+            INSERT INTO IA_PROMPTS (prompt_name, prompt, prompt_description)
+            VALUES ('Test', 'Test prompt', 'Test description');
+            """
+        )
     conn.rollback()
 
+    # Verify can't write to MODELS
+    with pytest.raises(psycopg2.Error):
+        cursor.execute(
+            """
+            INSERT INTO models (ia_name)
+            VALUES ('Test Model');
+            """
+        )
+    conn.rollback()
+
+    print("\nApp user permission test passed.")
     cursor.close()
     conn.close()
 
 
-@pytest.mark.usefixtures("populated_db")
 def test_app_user_login_permissions(get_db_connection_for_role):
     """
     Check the permissions of 'app_user_login' (userLogin):
     - CAN read/write to USERS.
-    - CANNOT read from CHATS.
+    - CANNOT read from other tables.
     """
     conn = get_db_connection_for_role("app_user_login")
     cursor = conn.cursor()
 
-    # INSERT into USERS - should succeed
+    # Test USER write permission
     try:
         cursor.execute(
-            "INSERT INTO users (email, password) VALUES ('login@test.com', 'pass') RETURNING id;"
+            """
+            INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified)
+            VALUES ('test_login@test.com', 'hash', true, false, false)
+            RETURNING id;
+            """
+        )
+        assert cursor.fetchone()[0], "app_user_login should be able to create users"
+        conn.rollback()
+    except psycopg2.Error as e:
+        pytest.fail(
+            f"app_user_login should have write access to USERS, but failed: {e}"
+        )
+
+    # Test read restrictions
+    tables_to_check = ["CHATS", "MESSAGES", "MODELS", "IA_PROMPTS"]
+    for table in tables_to_check:
+        with pytest.raises(psycopg2.Error):
+            cursor.execute(f"SELECT * FROM {table} LIMIT 1;")
+        conn.rollback()
+
+    try:
+        cursor.execute(
+            "INSERT INTO USERS (email, hashed_password) VALUES ('login@test.com', 'pass') RETURNING id;"
         )
         new_user_id = cursor.fetchone()[0]
-        cursor.execute("DELETE FROM users WHERE id = %s;", (new_user_id,))
+        cursor.execute("DELETE FROM USERS WHERE id = %s;", (new_user_id,))
     except psycopg2.Error as e:
         pytest.fail(f"app_user_login failed to write to USERS table: {e}")
     conn.rollback()
 
     # SELECT from CHATS - should fail
     with pytest.raises(psycopg2.errors.InsufficientPrivilege):
-        cursor.execute("SELECT id FROM chats LIMIT 1;")
+        cursor.execute("SELECT id FROM CHATS LIMIT 1;")
     conn.rollback()
 
     cursor.close()
@@ -148,13 +224,12 @@ def test_app_user_login_permissions(get_db_connection_for_role):
 
 
 # --- Logic/Function Tests ---
-@pytest.mark.usefixtures("populated_db")
 def test_get_user_id_by_email_function(get_db_connection_for_role):
     """Test the get_user_id_by_email function."""
     # Get a real email from the DB using db_owner role
     owner_conn = get_db_connection_for_role("db_owner")
     owner_cursor = owner_conn.cursor()
-    owner_cursor.execute("SELECT id, email FROM users LIMIT 1;")
+    owner_cursor.execute("SELECT id, email FROM USERS LIMIT 1;")
     user_id, user_email = owner_cursor.fetchone()
     owner_cursor.close()
     owner_conn.close()

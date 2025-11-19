@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic[email]
+pydantic-settings
+sqlalchemy
+asyncpg
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]
+slowapi
+pytest-asyncio
+pytest
+httpx
+fastapi-users[sqlalchemy,jwt]
+redis[hiredis]

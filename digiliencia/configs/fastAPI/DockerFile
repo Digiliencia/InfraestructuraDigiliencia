@@ -1,0 +1,34 @@
+# Stage 1: Base Image
+# Use an official, lightweight Python image as a parent.
+# 'slim' is a good balance between size and having necessary tools.
+FROM python:3.11-slim
+
+# Set environment variables for Python
+# 1. Prevents Python from writing .pyc files to the container.
+# 2. Ensures that Python output is sent straight to the terminal without buffering.
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Stage 2: Install Dependencies
+# Copy the requirements file first. This step is cached by Docker. The cache
+# will only be invalidated if requirements.txt changes, speeding up builds.
+COPY digiliencia/configs/fastAPI/requirements.txt .
+
+# Install the Python dependencies specified in requirements.txt.
+# --no-cache-dir disables the pip cache, which is not needed in a container.
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Copy Application Code
+# Copy the rest of the application source code from the build context
+# into the container's working directory (/app).
+# The .dockerignore file will prevent unnecessary files from being copied.
+COPY digiliencia/configs/fastAPI .
+
+# Expose the port that the Uvicorn server will run on.
+# This makes the port available to the Docker host.
+EXPOSE 8080
+
+# Command to Run the Application
+# This command starts the Uvicorn server.
+# --host 0.0.0.0 makes the server accessible from outside the container.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

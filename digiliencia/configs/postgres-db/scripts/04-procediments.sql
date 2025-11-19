@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION get_user_id_by_email(user_email VARCHAR(255))
-RETURNS INTEGER AS $$
+RETURNS UUID AS $$
 DECLARE
-    user_id INTEGER;
+    user_id UUID;
 BEGIN
     SELECT ID INTO user_id
     FROM users_id_email_view

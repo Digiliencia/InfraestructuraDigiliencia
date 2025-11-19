@@ -1,0 +1,20 @@
+FROM postgres:18.1
+
+
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_DB=postgres
+
+RUN apt-get update && apt-get install -y \
+    gettext \
+    bash \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY digiliencia/configs/postgres-db/scripts /app-scripts
+
+COPY digiliencia/configs/postgres-db/execute_scripts.sh /docker-entrypoint-initdb.d/
+
+RUN chmod +x /docker-entrypoint-initdb.d/execute_scripts.sh && \
+    chmod -R 755 /app-scripts
+
+EXPOSE 5432

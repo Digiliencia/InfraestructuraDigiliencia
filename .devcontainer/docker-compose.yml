@@ -20,14 +20,13 @@ services:
       - neo4j
 
   db:
-    image: postgres:17-bookworm
-    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: digiliencia/configs/postgres-db/DockerFile
+    env_file:
+      - ../.env
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
+      - postgres-data:/var/lib/postgresql
     ports:
       - "5432:5432"
     networks:
@@ -35,7 +34,6 @@ services:
 
   neo4j:
     image: neo4j:latest
-    restart: always
     environment:
       NEO4J_AUTH: neo4j/testpassword
     ports:
@@ -48,7 +46,6 @@ services:
 
   neo4j-test:
     image: neo4j:latest
-    restart: always
     environment:
       NEO4J_AUTH: neo4j/testpassword
     ports:
@@ -67,3 +64,22 @@ services:
       networks:
         - dev-network
       runtime: nvidia
+  fastapi-service:
+    build:
+      context: ..
+      dockerfile: digiliencia/configs/fastAPI/DockerFile
+    env_file:
+      - ../.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - dev-network
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network
