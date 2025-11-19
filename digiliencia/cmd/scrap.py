@@ -36,6 +36,14 @@ def scrap(from_days_ago: int = 5):
         AmericaCyberAgencyScraper,
         Nist,
     ]
+    scrapers = [
+        CanadianScraper,
+        WEForumScraper,
+        IncibeScraper,
+        Ncsc,
+        AmericaCyberAgencyScraper,
+        Nist,
+    ]
     for scraper in scrapers:
         try:
             scraped_news: List[ScrapedNews] = scraper().scrap_news(from_days_ago)

@@ -13,8 +13,6 @@ from digiliencia.data.models.neomodel.organization.organization import Organizat
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 
 class Topic(StructuredNode):
     """Topic node model."""

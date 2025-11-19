@@ -86,6 +86,12 @@ class Nist(AbstractScraper):
         show_line_str = elem_show_line.split()
         return int(show_line_str[5])
 
+    def _get_all_events(self) -> int:
+        """Give all events of website"""
+        elem_show_line = self.driver.find_element(By.CLASS_NAME, "dataTables_info").text
+        show_line_str = elem_show_line.split()
+        return int(show_line_str[5])
+
     def scrap_events(self, from_days_ago: int = 0) -> list[ScrapedEventsModel]:
         """
         Access the cybersegurity section of the NIST website and extract information of events.
