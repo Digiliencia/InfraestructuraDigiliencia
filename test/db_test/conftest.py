@@ -20,8 +20,8 @@ from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
 # =============================================================================
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_databaseSQL(setup_database):
+@pytest.fixture(scope="session", autouse=True,params="setup_database")
+def setup_databaseSQL():
     """
     Ensures the database is seeded via the main root conftest fixture
     before running any SQL-specific tests.
@@ -50,10 +50,7 @@ def get_db_connection_for_role():
         master_pass = fastapi_settings.POSTGRES_PASSWORD
 
         user_creds_map = {
-            "superuser": (master_user, master_pass),
-            "db_owner": (master_user, master_pass),
-            "app_user": (master_user, master_pass),
-            "app_user_login": (master_user, master_pass),
+            "diligenciauser": (master_user, master_pass),
         }
 
         user, password = user_creds_map.get(role_name, (None, None))

@@ -21,7 +21,7 @@ def test_database_and_users_exist(get_db_connection_for_role):
     Verify that the configured database and the main user exist.
     """
     # Use 'superuser' key which maps to the main user in conftest
-    conn = get_db_connection_for_role("superuser")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Check DB existence
@@ -42,7 +42,7 @@ def test_tables_and_views_created(get_db_connection_for_role):
     """
     Verify that all expected tables and views exist in the 'public' schema.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Check Base Tables
@@ -80,7 +80,7 @@ def test_app_user_capabilities(get_db_connection_for_role):
 
     In the single-user architecture, we verify capability, not restriction.
     """
-    conn = get_db_connection_for_role("app_user")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Test READ Access
@@ -146,7 +146,7 @@ def test_get_user_id_by_email_function(get_db_connection_for_role):
 
     Prerequisite: The function must exist (created via 04-procediments.sql).
     """
-    conn = get_db_connection_for_role("app_user")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # Check if function exists first

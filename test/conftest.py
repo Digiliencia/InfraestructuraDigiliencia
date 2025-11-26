@@ -10,7 +10,8 @@ This module sets up the test environment assuming:
 
 import asyncio
 import os
-from typing import AsyncGenerator, Generator
+from typing import Generator
+import logging
 
 from passlib.context import CryptContext
 import pytest
@@ -60,6 +61,7 @@ TEST_DB_CONFIG = {
 
 # Engine for Direct DB Seeding
 engine = create_async_engine(fastapi_settings.DATABASE_URL, echo=False, future=True)
+logging.info(f"Database URL: {fastapi_settings.DATABASE_URL}")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -169,13 +171,3 @@ async def setup_database():
         await session.commit()
 
     yield
-
-
-@pytest_asyncio.fixture(scope="function")
-async def db_session(setup_database) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Function-scoped fixture that provides a direct database session for
-    verification within tests (if needed).
-    """
-    async with TestingSessionLocal() as session:
-        yield session

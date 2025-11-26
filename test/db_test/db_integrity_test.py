@@ -18,13 +18,14 @@ from psycopg2.errors import (
     ForeignKeyViolation,
     UndefinedColumn,
 )
+from digiliencia.configs.fastAPI.core.config import settings
 
 
 def test_unique_email_constraint(get_db_connection_for_role):
     """
     Verifies the UNIQUE constraint on the 'email' column of the 'users' table.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role()
     cursor = conn.cursor()
 
     # 1. Get an existing email
@@ -49,7 +50,7 @@ def test_not_null_constraints(get_db_connection_for_role):
     """
     Verifies NOT NULL constraints across users, chats, and messages tables.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # Test 'users' table constraints
@@ -85,7 +86,7 @@ def test_foreign_key_constraints(get_db_connection_for_role):
     """
     Verifies that inserting a record with a non-existent Foreign Key fails.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     non_existent_user_id = str(uuid.uuid4())
@@ -104,7 +105,7 @@ def test_on_delete_cascade_behavior(get_db_connection_for_role):
     """
     Verifies ON DELETE CASCADE behavior for User -> Chats -> Messages.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Setup: Pick a user who has chats
@@ -141,7 +142,7 @@ def test_on_delete_set_null_behavior(get_db_connection_for_role):
     Note: The schema refactor changed this from RESTRICT to SET NULL
     to prevent losing chat history when a template is deleted.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Find a chat using a specific prompt
@@ -171,7 +172,7 @@ def test_unique_order_number_within_chat(get_db_connection_for_role):
     """
     Verifies the composite UNIQUE constraint (chat_id, order_number) in messages.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Get an existing message details
@@ -195,7 +196,7 @@ def test_default_values(get_db_connection_for_role):
     """
     Verifies default values for new Users (is_active=True, is_superuser=False).
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     cursor.execute(
@@ -221,7 +222,7 @@ def test_users_view_security(get_db_connection_for_role):
 
     Note: Assumes '03-views.sql' created this view correctly.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     # 1. Check that we CANNOT select sensitive fields
