@@ -1,6 +1,13 @@
 # /api/routers/custom_auth.py
+"""
+This module handles custom authentication routes.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+It allows users to authenticate using a JSON payload (Email/Password) instead of
+the standard OAuth2 form data, facilitating integration with Single Page Applications (SPAs)
+and mobile clients.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from auth.manager import get_user_manager, UserManager
 from schemas.user import UserLogin
 from auth.transport import auth_backend
@@ -11,12 +18,13 @@ router = APIRouter()
 
 @router.post(
     LOGIN,
-    summary="Login with Email",
-    description="Authenticate a user using email and password credentials",
-    response_description="JWT token for authenticated user",
+    summary="User Login (JSON)",
+    description="Authenticates a user via email and password, returning a JWT access token.",
+    response_description="JSON response containing the access token and token type.",
+    status_code=status.HTTP_200_OK,
     responses={
         200: {
-            "description": "Successful authentication",
+            "description": "Login successful.",
             "content": {
                 "application/json": {
                     "example": {
@@ -26,18 +34,13 @@ router = APIRouter()
                 }
             },
         },
+        400: {"description": "Bad Request (Invalid credentials format)."},
         401: {
-            "description": "Authentication failed",
+            "description": "Authentication failed (Invalid email, password, or inactive user).",
             "content": {
                 "application/json": {
                     "example": {"detail": "Incorrect email or password"}
                 }
-            },
-        },
-        422: {
-            "description": "Validation error",
-            "content": {
-                "application/json": {"example": {"detail": "Invalid email format"}}
             },
         },
     },
@@ -45,60 +48,36 @@ router = APIRouter()
 async def login_with_json(
     credentials: UserLogin,
     user_manager: UserManager = Depends(get_user_manager),
-):
+) -> Response:
     """
-    Authenticate a user with email and password to obtain a JWT token.
+    Authenticates a user and issues an access token.
 
-    This endpoint validates the user credentials and returns a JWT token for authenticated access.
-    The token should be included in subsequent requests in the Authorization header.
+    This endpoint checks the provided credentials against the database. If valid
+    and the user is active, it utilizes the configured authentication backend
+    to generate a session/token.
 
-    Parameters:
-        credentials (UserLogin): User login credentials
-            - email: User's registered email address
-            - password: User's password (min length: 8)
-        user_manager (UserManager): User management service (injected)
+    Args:
+        credentials (UserLogin): A Pydantic model containing the user's email and password.
+        user_manager (UserManager): The user management service injected by FastAPI.
 
     Returns:
-        dict: Authentication response containing:
-            - access_token (str): JWT token for API access
-            - token_type (str): Token type (always "bearer")
+        Response: A FastAPI Response object containing the auth token (usually JSON for JWT).
 
     Raises:
-        HTTPException:
-            - 401: Invalid credentials or inactive user
-            - 422: Invalid email format or password requirements not met
-
-    Example:
-        Request Body:
-        ```json
-        {
-            "email": "user@example.com",
-            "password": "secure_password"
-        }
-        ```
-
-        Response:
-        ```json
-        {
-            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            "token_type": "bearer"
-        }
-        ```
-
-    Note:
-        The returned JWT token must be included in the Authorization header
-        of subsequent requests as: `Authorization: Bearer <token>`
+        HTTPException(401): If authentication fails or the user is inactive.
     """
-    # 2. Default authentication logic from fastapi-users
+    # Attempt to authenticate the user using the provided credentials.
     user = await user_manager.authenticate_json(credentials)
 
+    # Verify if the user exists and is active.
+    # We use a generic error message to prevent user enumeration attacks.
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
 
-    # 3. Default login response from fastapi-users
+    # Generate the login response (e.g., JWT token) using the transport backend.
     response = await auth_backend.login(auth_backend.get_strategy(), user)
 
     return response

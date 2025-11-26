@@ -1,27 +1,24 @@
 # /schemas/user.py
 """
-This module defines the Pydantic models (schemas) for user-related operations,
-leveraging the base schemas provided by the `fastapi-users` library.
+This module defines the Pydantic schemas for user authentication and management.
 
-These schemas are used for API request/response validation, data serialization,
-and automatic OpenAPI documentation for endpoints related to user registration,
-authentication, and management.
+It leverages `fastapi-users` base schemas for standard operations and defines
+custom schemas for public registration and JSON-based login flows.
 """
 
 import uuid
+
 from fastapi_users import schemas
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
     """
-    Schema for reading user data.
+    Public schema for reading user profile data.
 
-    This model represents the public-facing view of a user object. It inherits
-    from the `fastapi-users` base schema and automatically includes fields like
-    `id`, `email`, `is_active`, etc., while omitting sensitive data like
-    `hashed_password`. It is used as the response model for endpoints that
-    return user information.
+    Inherits from `fastapi-users` default schema. It automatically serializes
+    the user ID, email, and status flags (is_active, is_superuser), while
+    excluding sensitive data like the password hash.
     """
 
     pass
@@ -29,11 +26,10 @@ class UserRead(schemas.BaseUser[uuid.UUID]):
 
 class UserUpdate(schemas.BaseUserUpdate):
     """
-    Schema for updating an existing user's data.
+    Schema for updating user profile information.
 
-    This model is used as the request body for endpoints that allow a user
-    to update their own profile information. It inherits from the `fastapi-users`
-    base update schema, which makes all fields optional.
+    Used for the 'PATCH /users/me' endpoint. All fields are optional, allowing
+    partial updates.
     """
 
     pass
@@ -41,11 +37,10 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 class UserCreate(schemas.BaseUserCreate):
     """
-    Internal schema for creating a new user.
+    Internal schema for user creation.
 
-    This model includes all required fields for creating a user record in the
-    database, as expected by the internal logic of `fastapi-users`. It is
-    distinct from the public-facing registration schema.
+    This schema is used by the internal `UserManager` logic. It strictly follows
+    the `fastapi-users` requirements for creating a user entry in the database.
     """
 
     pass
@@ -53,33 +48,50 @@ class UserCreate(schemas.BaseUserCreate):
 
 class UserRegistration(BaseModel):
     """
-    Schema for the public user registration endpoint.
+    Public schema for the user sign-up endpoint.
 
-    This model defines the fields a new user must provide when signing up.
-    It serves as the request body for the `/register` endpoint.
+    This represents the data actually sent by the frontend client during registration.
 
     Attributes:
-        email (EmailStr): The user's email address. It is validated to ensure
-                          it has a correct email format.
-        password (str): The user's desired password. Further validation
-                        (e.g., for strength) is handled by the user manager.
+        email (EmailStr): A valid email address.
+        password (str): The plain text password (min length 8).
     """
 
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(
+        ...,
+        title="User Email",
+        description="The email address for account registration.",
+        examples=["user@example.com"],
+    )
+    password: str = Field(
+        ...,
+        title="Password",
+        description="The user's password. Must meet complexity requirements.",
+        min_length=8,
+        examples=["StrongPass123!"],
+    )
 
 
 class UserLogin(BaseModel):
     """
-    Schema for the user login endpoint.
+    Schema for JSON-based login credentials.
 
-    This model defines the credentials required for a user to authenticate.
-    It is used as the request body for the `/auth/login` endpoint.
+    Used for the custom '/auth/login' endpoint.
 
     Attributes:
-        email (EmailStr): The user's registered email address.
+        email (EmailStr): The registered email address.
         password (str): The user's password.
     """
 
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(
+        ...,
+        title="User Email",
+        description="The registered email address.",
+        examples=["user@example.com"],
+    )
+    password: str = Field(
+        ...,
+        title="Password",
+        description="The password associated with the email.",
+        examples=["StrongPass123!"],
+    )

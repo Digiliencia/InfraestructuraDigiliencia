@@ -1,116 +1,123 @@
 # /core/config.py
 """
-This module defines the application's configuration settings management.
+This module defines the application's configuration settings.
 
-It uses Pydantic's `BaseSettings` to load configuration variables from a .env
-file and environment variables, providing type validation and a centralized
-place for all application settings.
+It uses Pydantic's `BaseSettings` to validate and load configuration variables
+from environment variables and .env files.
 """
 
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List
 import json
-from dotenv import load_dotenv
+from typing import List
 
+from dotenv import load_dotenv
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load environment variables from .env file explicitly
 load_dotenv()
 
 
 class Settings(BaseSettings):
     """
-    Manages all application settings, loading them from the .env file.
+    Application settings schema.
 
-    This class centralizes configuration, ensuring that all required variables
-    are present and correctly typed upon application startup.
+    Centralizes all configuration (Database, Redis, Auth, CORS) and enforces
+    type safety using Pydantic.
     """
 
-    # --- Database Configuration ---
-    # These variables are used to construct the database connection URL.
-    DB_OWNER_USER: str
-    DB_OWNER_PASSWORD: str
-    DB_HOST: str = "localhost"
-    DB_HOST_TEST: str = "localhost"
-    DB_PORT: int = 5432
-    APP_DB_NAME: str
+    FASTAPI_HOST: str
+    FASTAPI_PORT: int = 8080
 
+    @property
+    def FASTAPI_URL(self) -> str:
+        """
+        Constructs the asynchronous PostgreSQL connection string.
+
+        Returns:
+            str: The full SQLAlchemy async connection URL.
+        """
+        if self.LOCAL:
+            self.FASTAPI_HOST = "localhost"
+        return f"http://{self.FASTAPI_HOST}:{self.FASTAPI_PORT}"
+
+    # --- Database Configuration ---
+    # Standardized names compatible with typical Docker environments
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
-    APP_USER: str
-    APP_USER_PASSWORD: str
-    APP_USER_LOGIN: str
-    APP_USER_LOGIN_PASSWORD: str
+    POSTGRES_SERVER: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str
 
     @property
     def DATABASE_URL(self) -> str:
         """
-        Constructs the full asynchronous database connection URL.
+        Constructs the asynchronous PostgreSQL connection string.
 
         Returns:
-            str: The complete `postgresql+asyncpg` connection string.
+            str: The full SQLAlchemy async connection URL.
         """
-        return f"postgresql+asyncpg://{self.DB_OWNER_USER}:{self.DB_OWNER_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.APP_DB_NAME}"
+        if self.LOCAL:
+            self.POSTGRES_SERVER = "localhost"
+        print(f"DB Server: {self.POSTGRES_SERVER}")
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    # --- Redis Configuration ---
+    REDIS_HOST: str
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str | None = None
+
+    # --- Local environment flag ---
+    LOCAL: bool = False  # By default, not local
 
     @property
-    def DATABASE_TEST_URL(self) -> str:
+    def REDIS_URL(self) -> str:
         """
-        Constructs the full asynchronous database connection URL for testing.
+        Constructs the Redis connection URL.
 
         Returns:
-            str: The complete `postgresql+asyncpg` connection string.
+            str: The full Redis connection string.
         """
-        return f"postgresql+asyncpg://{self.DB_OWNER_USER}:{self.DB_OWNER_PASSWORD}@{self.DB_HOST_TEST}:{self.DB_PORT}/{self.APP_DB_NAME}"
+        if self.LOCAL:
+            self.REDIS_HOST = "localhost"
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
 
     # --- JWT Authentication ---
-    # Secret key and algorithm for encoding and decoding JWTs.
     JWT_SECRET_KEY: str
-    JWT_ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600  # Default to 1 hour if not set
 
-    # --- CORS (Cross-Origin Resource Sharing) ---
-    # A list of origins that are allowed to make requests to the API.
+    # --- CORS Configuration ---
     ALLOWED_ORIGINS: List[str] = []
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
-    def validate_allowed_origins(cls, v):
+    def parse_allowed_origins(cls, v: str | List[str]) -> List[str]:
         """
-        Validates and parses the ALLOWED_ORIGINS setting.
-
-        This validator allows ALLOWED_ORIGINS to be defined in the .env file
-        as a JSON-formatted string (e.g., '["http://localhost:3000"]').
-
-        Args:
-            v: The raw value of ALLOWED_ORIGINS from the environment.
-
-        Returns:
-            The parsed list of origin strings.
-
-        Raises:
-            ValueError: If the string is not a valid JSON list of strings.
+        Parses a JSON string of allowed origins into a list.
         """
-        if isinstance(v, str):
+        if isinstance(v, str) and not v.startswith("["):
+            # Handle comma-separated strings just in case
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, str):
             try:
                 parsed = json.loads(v)
-                if isinstance(parsed, list) and all(
-                    isinstance(item, str) for item in parsed
-                ):
+                if isinstance(parsed, list):
                     return parsed
-                raise ValueError("ALLOWED_ORIGINS must be a JSON list of strings")
+                raise ValueError("ALLOWED_ORIGINS must be a JSON list.")
             except json.JSONDecodeError:
-                raise ValueError("ALLOWED_ORIGINS is not valid JSON")
+                raise ValueError("ALLOWED_ORIGINS is not valid JSON.")
         return v
 
-    # Redis Configuration
-    REDIS_HOST: str = "localhost"
-    REDIS_HOST_TEST: str = "localhost"
-    REDIS_PORT: int = 6379
-
-    # Pydantic model configuration.
-    model_config = {
-        "extra": "ignore",  # Ignores any extra environment variables not defined in this model.
-    }
+    # --- Pydantic Configuration ---
+    model_config = SettingsConfigDict(
+        case_sensitive=True, env_file=".env", extra="ignore"
+    )
 
 
-# A global instance of the Settings class that can be imported and used
-# throughout the application to access configuration values.
+# Global settings instance
 settings = Settings()

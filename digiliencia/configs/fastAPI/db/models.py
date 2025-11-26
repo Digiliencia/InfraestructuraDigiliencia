@@ -3,7 +3,12 @@
 This module defines the SQLAlchemy ORM models for the application's database schema.
 
 It includes models for users, chat conversations, messages, AI prompts (templates),
-and AI models. The relationships between these entities are also defined here.
+and AI models.
+
+Key Refactoring Changes:
+- Renamed 'IAPrompt' to 'AIPrompt' (English consistency).
+- Renamed table 'ia_prompts' to 'ai_prompts'.
+- Renamed columns to standard snake_case (e.g., 'AI_name' -> 'name').
 """
 
 import uuid
@@ -19,130 +24,118 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, declarative_base
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
 
-# The declarative base class for all SQLAlchemy models in this application.
+# The declarative base class for all SQLAlchemy models.
 Base = declarative_base()
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     """
-    Represents a user in the system.
+    Represents a registered user in the system.
 
-    This model inherits from the `fastapi-users` base table, providing standard
-    fields for authentication and user management (e.g., email, hashed_password).
+    Inherits standard authentication fields (email, hashed_password, is_active, etc.)
+    from `fastapi-users`.
 
     Relationships:
-        - A one-to-many relationship to Chat (`chats`).
+        chats (list[Chat]): A list of chat conversations initiated by the user.
     """
 
     __tablename__ = "users"
 
-    # Relationship to Chat: one user can have many chats.
-    # `cascade="all, delete-orphan"` ensures that when a user is deleted,
-    # all of their associated chats are also deleted.
-    chats = relationship("Chat", back_populates="owner", cascade="all, delete-orphan")
+    # Relationship: One User -> Many Chats
+    # cascade="all, delete-orphan" ensures that if a User is deleted,
+    # all their Chat history is also removed from the database.
+    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
 
 
 class Chat(Base):
     """
-    Represents a single chat conversation.
+    Represents a generic chat conversation session.
 
-    Each chat is owned by a user and consists of a sequence of messages. It is
-    also associated with an initial AI prompt template.
+    A chat belongs to a single user and is initialized with a specific AI Prompt (template).
+    It acts as a container for a sequence of Messages.
 
     Attributes:
-        id (UUID): The primary key for the chat.
-        tittle (str): The user-defined title of the conversation.
-        user_id (UUID): A foreign key linking to the `users` table.
-        ia_prompt_id (UUID): A foreign key linking to the `ia_prompts` table.
-
-    Relationships:
-        - A many-to-one relationship to User (`owner`).
-        - A one-to-many relationship to Message (`messages`).
-        - A many-to-one relationship to IAPrompt (`ia_prompt`).
+        id (UUID): Primary Key.
+        title (str): The display title of the conversation.
+        user_id (UUID): Foreign Key to the User table.
+        ai_prompt_id (UUID): Foreign Key to the AIPrompt table.
     """
 
     __tablename__ = "chats"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tittle = Column(String(255), index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    ia_prompt_id = Column(UUID(as_uuid=True), ForeignKey("ia_prompts.id"))
+    title = Column(String(255), index=True)
 
-    owner = relationship("User", back_populates="chats")
+    # Foreign Keys
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    ai_prompt_id = Column(UUID(as_uuid=True), ForeignKey("ai_prompts.id"))
+
+    # Relationships
+    user = relationship("User", back_populates="chats")
+    ai_prompt = relationship("AIPrompt", back_populates="chats")
+
+    # 'messages' relationship ensures that if a Chat is deleted, messages are gone too.
     messages = relationship(
         "Message", back_populates="chat", cascade="all, delete-orphan"
     )
-    ia_prompt = relationship("IAPrompt", back_populates="chats")
 
 
-class IAPrompt(Base):
+class AIPrompt(Base):
     """
-    Represents an AI prompt template.
+    Represents a system template or 'Persona' for the AI.
 
-    These are predefined system prompts that can be used to initialize a chat
-    conversation with a specific context or persona for the AI.
+    Examples: "General Assistant", "Code Debugger", "Creative Writer".
+    This helps condition the AI before the conversation starts.
 
     Attributes:
-        id (UUID): The primary key for the prompt.
-        prompt_name (str): The display name of the template.
-        prompt (str): The actual system prompt text.
-        prompt_description (str): A user-friendly description of the template.
-
-    Relationships:
-        - A one-to-many relationship to Chat (`chats`).
+        id (UUID): Primary Key.
+        name (str): The display name of the template (e.g., 'Code Helper').
+        prompt_text (str): The actual system instruction sent to the LLM.
+        description (str): A user-facing description.
     """
 
-    __tablename__ = "ia_prompts"
+    __tablename__ = "ai_prompts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    prompt_name = Column(String(255), nullable=False)
-    prompt = Column(Text, nullable=False)
-    prompt_description = Column(Text, nullable=True)
+    name = Column(String(255), nullable=False)
+    prompt_text = Column(Text, nullable=False)  # Renamed from 'prompt' for clarity
+    description = Column(Text, nullable=True)
 
-    chats = relationship("Chat", back_populates="ia_prompt")
+    # Relationship: One Template -> Many Chats
+    chats = relationship("Chat", back_populates="ai_prompt")
 
 
 class Model(Base):
     """
-    Represents an available AI model.
-
-    This table stores the names of the AI models that can be used to generate
-    responses (e.g., 'GPT-4', 'Claude 3').
+    Represents a supported Large Language Model (LLM).
 
     Attributes:
-        id (UUID): The primary key for the model.
-        ia_name (str): The unique name of the AI model.
-
-    Relationships:
-        - A one-to-many relationship to Message (`messages`).
+        id (UUID): Primary Key.
+        name (str): The unique identifier/name of the model (e.g., 'gpt-4', 'claude-3').
     """
 
     __tablename__ = "models"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    ia_name = Column(String(255), nullable=False, unique=True)
+    name = Column(String(255), nullable=False, unique=True)  # Renamed from AI_name
 
+    # Relationship: One Model -> Many Messages (generated by it)
     messages = relationship("Message", back_populates="model")
 
 
 class Message(Base):
     """
-    Represents a single message within a chat conversation.
+    Represents an individual message within a chat.
 
-    Each message has an order number to maintain the sequence of the dialogue.
-    It can be a user's message or an AI's response.
+    Can be a message from the user or a response from the AI.
 
     Attributes:
-        id (UUID): The primary key for the message.
-        order_number (int): The sequence number of the message within the chat.
-        content (str): The text content of the message.
-        statistics (JSON): A field to store structured metadata, such as token counts.
-        chat_id (UUID): A foreign key linking to the `chats` table.
-        model_id (UUID): A foreign key linking to the `models` table.
-
-    Relationships:
-        - A many-to-one relationship to Chat (`chat`).
-        - A many-to-one relationship to Model (`model`).
+        id (UUID): Primary Key.
+        order_number (int): The sequential index of the message in the conversation.
+        content (str): The actual text content.
+        statistics (JSON): Metadata (tokens usage, latency, etc.).
+        chat_id (UUID): Foreign Key to the Chat.
+        model_id (UUID): Foreign Key to the Model used (optional, usually for AI responses).
     """
 
     __tablename__ = "messages"
@@ -150,9 +143,12 @@ class Message(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_number = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
-    statistics = Column(JSON)
-    chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"), nullable=False)
-    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id"))
+    statistics = Column(JSON, nullable=True)
 
+    # Foreign Keys
+    chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"), nullable=False)
+    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id"), nullable=True)
+
+    # Relationships
     chat = relationship("Chat", back_populates="messages")
     model = relationship("Model", back_populates="messages")

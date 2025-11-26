@@ -7,25 +7,26 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=db
-      - REDIS_HOST=redis
-      - NEO4J_URL=${NEO4J_URL}
-      - DDBB_URI=${DDBB_URI}
-
+      # --- Database Connection ---
+      # Ahora coinciden con core/config.py
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - APP_DB_NAME=${APP_DB_NAME}
-      - DB_OWNER_USER=${DB_OWNER_USER}
-      - DB_OWNER_PASSWORD=${DB_OWNER_PASSWORD}
-      - APP_USER=${APP_USER}
-      - APP_USER_PASSWORD=${APP_USER_PASSWORD}
-      - APP_USER_LOGIN=${APP_USER_LOGIN}
-      - APP_USER_LOGIN_PASSWORD=${APP_USER_LOGIN_PASSWORD}
+
+      # --- Redis Connection ---
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      # --- Security & JWT ---
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - ACCESS_TOKEN_EXPIRE_SECONDS=${ACCESS_TOKEN_EXPIRE_SECONDS}
+
+      # --- External Services / LLM ---
+      - NEO4J_URL=${NEO4J_URL}
       - WEFORUM_EMAIL=${WEFORUM_EMAIL}
       - WEFORUM_PASSWD=${WEFORUM_PASSWD}
       - LLM_URL=${LLM_URL}
@@ -49,13 +50,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - APP_DB_NAME=${APP_DB_NAME}
-      - DB_OWNER_USER=${DB_OWNER_USER}
-      - DB_OWNER_PASSWORD=${DB_OWNER_PASSWORD}
-      - APP_USER=${APP_USER}
-      - APP_USER_PASSWORD=${APP_USER_PASSWORD}
-      - APP_USER_LOGIN=${APP_USER_LOGIN}
-      - APP_USER_LOGIN_PASSWORD=${APP_USER_LOGIN_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql
     networks:

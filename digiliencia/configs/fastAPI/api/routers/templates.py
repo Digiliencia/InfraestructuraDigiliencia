@@ -1,21 +1,21 @@
 # /api/routers/templates.py
 """
-This module defines the API route for retrieving the list of available
-AI prompts, also referred to as templates.
+This module defines the API routes for retrieving available AI prompt templates.
 
-This endpoint is public and does not require user authentication, allowing any
-client to discover the predefined templates for initiating chat conversations.
+It exposes a public endpoint that allows clients to discover predefined
+"personas" or templates (e.g., "General Assistant", "Code Helper") used to
+initialize chat conversations.
 """
 
+import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-import uuid
 
-from db.models import IAPrompt
-from schemas import chat as chat_schema
-from db.session import get_db
 from core.endpoints import TEMPLATE_LIST
+from db.models import AIPrompt
+from db.session import get_db
+from schemas import chat as chat_schema
 
 router = APIRouter()
 
@@ -23,27 +23,24 @@ router = APIRouter()
 @router.get(
     TEMPLATE_LIST,
     response_model=chat_schema.Templates,
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_200_OK,
     summary="List Available Chat Templates",
-    description="Retrieves a list of all available AI prompt templates that can be used to start new chat conversations. This is a public endpoint.",
-    response_description="A list containing a summary for each available template.",
+    description="Retrieves a list of all available AI prompt templates configured in the system.",
+    response_description="A collection of template summaries.",
     responses={
-        202: {
-            "description": "The request was accepted and the list of templates is returned.",
+        200: {
+            "description": "Successfully retrieved the list of templates.",
             "content": {
                 "application/json": {
-                    "example": [
-                        {
-                            "idTemplate": "76f81605-08ac-4694-8122-18f6958c8797",
-                            "template_name": "General Assistant",
-                            "template_description": "A helpful assistant for general questions.",
-                        },
-                        {
-                            "idTemplate": "a2f4c0c4-7e8d-4a1a-9f2d-8b6c5e0d1b3a",
-                            "template_name": "Code Helper",
-                            "template_description": "An assistant specialized in programming queries.",
-                        },
-                    ]
+                    "example": {
+                        "templates": [
+                            {
+                                "id": "76f81605-08ac-4694-8122-18f6958c8797",
+                                "name": "General Assistant",
+                                "description": "A helpful assistant for general questions.",
+                            }
+                        ]
+                    }
                 }
             },
         }
@@ -53,26 +50,26 @@ async def get_template_list(
     db: AsyncSession = Depends(get_db),
 ) -> chat_schema.Templates:
     """
-    Retrieves a list of all configured AI prompt templates from the database.
+    Fetches all configured AI prompt templates from the database.
 
     Args:
-        db (AsyncSession): The database session, injected by dependency.
+        db (AsyncSession): The database session dependency.
 
     Returns:
-        A tuple where each item is a `TemplateSummary` object, containing the
-        ID, name, and description of a template.
+        chat_schema.Templates: An object containing a tuple of template summaries.
     """
-    result = await db.execute(
-        select(IAPrompt.id, IAPrompt.prompt_name, IAPrompt.prompt_description)
-    )
-    templates = result.fetchall()
+    query = select(AIPrompt.id, AIPrompt.name, AIPrompt.description)
 
-    template_list: tuple[chat_schema.TemplateSummary, ...] = tuple(
+    result = await db.execute(query)
+    rows = result.fetchall()
+
+    template_list = tuple(
         chat_schema.TemplateSummary(
-            idTemplate=uuid.UUID(str(template.id)),
-            template_name=template.prompt_name,
-            template_description=template.prompt_description,
+            id=uuid.UUID(str(row.id)),
+            name=str(row.name),
+            description=str(row.description),
         )
-        for template in templates
+        for row in rows
     )
+
     return chat_schema.Templates(templates=template_list)
