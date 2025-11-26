@@ -195,17 +195,12 @@ class WEForumScraper(AbstractScraper):
         age_words = TimeUtils.format_days_ago(max_age_date)
         processed_articles = []
         processed_urls = set()  # Para evitar artículos duplicados
-        '''
-        # Configuración inicial # TODO mirrar esta linea
-        aside_div = self.driver.find_element(
-            By.CSS_SELECTOR,
-            ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d",
-                               "TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
-            # By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
-            # By.CSS_SELECTOR, ".JoinUsUpgradeBanner__StyledContainer-sc-f8fd0daa-0.eEeGan.TopicFeed__StyledJoinUsUpgradeBanner-sc-78fa9275-3.dnTBNx"
-        )
-        '''
         aside_div = self.driver.find_element(By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d")
+
+        # Intento de simular un scroll con el cursor del ratón
+        ScrapUtils().move_cursor_mouse(self.driver, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d")
+
+        time.sleep(3600)
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
         time.sleep(self.load_time)
 

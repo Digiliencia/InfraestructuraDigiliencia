@@ -7,9 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
 from digiliencia.configs.env import Env
-
+from selenium.webdriver.common.action_chains import ActionChains
 
 class ScrapUtils:
     def __init__(self):
@@ -123,3 +122,24 @@ class ScrapUtils:
         """
         logger.debug("Enabling JavaScript in driver")
         driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
+
+    @staticmethod
+    def move_cursor_mouse(driver: WebDriver, selector_css: str) -> None:
+        """
+        """
+        logger.debug("Llego a la funcion move cursor")
+        try:
+            actions = ActionChains(driver)
+            #element = driver.find_element(By.CSS_SELECTOR, selector_css)
+            # Mueve el puntero al elemento
+            #actions.move_to_element(element)
+            # Hace clic y MANTIENE presionado el botón izquierdo del ratón en el elemento.
+            #actions.click_and_hold(element)
+
+            # test de funcionamiento
+            while True:
+                actions.move_by_offset(0, 500)
+                actions.move_by_offset(0, -500)
+
+        except NoSuchElementException:
+            logger.warning("param 'Element' is null in function move_cursor_mouse() ")

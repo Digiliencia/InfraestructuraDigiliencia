@@ -1,0 +1,61 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+import time
+
+def desplazar_con_drag_and_drop(url, desplazamiento_y):
+    """
+    Desplaza la página simulando el arrastre y soltado del ratón.
+    
+    :param url: URL de la página a visitar.
+    :param desplazamiento_y: Número negativo para scroll hacia abajo, positivo para scroll hacia arriba.
+    """
+    driver = webdriver.Chrome()
+    driver.get(url)
+    driver.maximize_window()
+    time.sleep(2)
+
+    try:
+        # 1. Localizar el elemento que contiene la barra de desplazamiento
+        # Usaremos el cuerpo de la página (body) como punto de partida.
+        scroll_area = driver.find_element(By.TAG_NAME, "body")
+        print("Punto de inicio localizado (Body).")
+        time.sleep(1)
+
+        # 2. Inicializar ActionChains
+        actions = ActionChains(driver)
+
+        # 3. Realizar el Scroll mediante el arrastre:
+        # a. Mueve el puntero al elemento (opcional, pero buena práctica)
+        actions.move_to_element(scroll_area) 
+        
+        # b. Hace clic y MANTIENE presionado el botón izquierdo del ratón en el elemento.
+        actions.click_and_hold(scroll_area) 
+
+        # c. Mueve el puntero por el offset deseado. 
+        #    Un valor negativo en 'y' mueve el ratón hacia arriba, lo que provoca un SCROLL HACIA ABAJO.
+        #    Un valor positivo en 'y' mueve el ratón hacia abajo, lo que provoca un SCROLL HACIA ARRIBA.
+        actions.move_by_offset(0, desplazamiento_y)
+
+        # d. Suelta el botón del ratón y ejecuta la cadena de acciones.
+        actions.release().perform()
+
+        print(f"--> Desplazamiento por arrastre simulado: {abs(desplazamiento_y)} píxeles {'abajo' if desplazamiento_y < 0 else 'arriba'}.")
+        time.sleep(3)
+        
+        # Puedes repetir el proceso para seguir bajando
+        # Aquí movemos 500 píxeles más hacia arriba (scroll hacia abajo)
+        actions.click_and_hold(scroll_area).move_by_offset(0, -500).release().perform()
+        print("--> Segundo desplazamiento realizado.")
+        time.sleep(3)
+
+    except Exception as e:
+        print(f"Ocurrió un error: {e}")
+
+    finally:
+        driver.quit()
+        print("Navegador cerrado.")
+
+# Ejecutar la función. Usamos -800 para arrastrar 800 píxeles hacia arriba (Scroll Down)
+url_prueba = "https://es.wikipedia.org/wiki/Inteligencia_artificial" 
+desplazar_con_drag_and_drop(url_prueba, -800)
