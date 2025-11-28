@@ -6,7 +6,6 @@ Handles user login, registration, logout, and account deletion by communicating
 with the backend authentication endpoints.
 """
 
-
 import httpx
 from starlette import status
 

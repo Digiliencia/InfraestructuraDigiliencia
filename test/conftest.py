@@ -20,6 +20,7 @@ from faker import Faker
 from sqlalchemy import insert, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+import random
 
 from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
 
@@ -87,87 +88,155 @@ def event_loop() -> Generator:
 @pytest_asyncio.fixture(scope="session")
 async def setup_database():
     """
-    Session-scoped fixture to seed the database with initial data.
-
-    PRECONDITION: The database containers are running and tables exist.
-    This fixture connects directly to the DB to populate it before tests run.
+    Fixture de ámbito de sesión para sembrar la base de datos.
+    Limpia las tablas y las rellena con datos coherentes basados en tu esquema SQL.
     """
 
+    # 1. Limpieza inicial (TRUNCATE)
     async with engine.begin() as conn:
+        # Nota: RESTART IDENTITY no afecta a UUIDs, pero CASCADE es vital.
         await conn.execute(
-            text(
-                "TRUNCATE users, chats, messages, ai_prompts, models RESTART IDENTITY CASCADE;"
-            )
+            text("TRUNCATE users, chats, messages, ai_prompts, models CASCADE;")
         )
 
     async with TestingSessionLocal() as session:
         async with session.begin():
-            # 1. Users
-            users_data = [
-                {
-                    "email": faker.unique.email(),
-                    "hashed_password": faker.password(length=12),
-                    "is_active": True,
-                    "is_superuser": False,
-                    "is_verified": True,
-                }
-                for _ in range(5)
-            ]
-            result_users = await session.execute(
-                insert(User).returning(User.id), users_data
-            )
-            user_ids = [row.id for row in result_users]
-
-            # 2. AI Prompts (Templates)
-            prompts_data = [
-                {
-                    "name": faker.unique.job(),
-                    "prompt_text": faker.text(max_nb_chars=100),
-                    "description": faker.sentence(),
-                }
-                for _ in range(3)
-            ]
-            result_prompts = await session.execute(
-                insert(AIPrompt).returning(AIPrompt.id), prompts_data
-            )
-            prompt_ids = [row.id for row in result_prompts]
-
-            # 3. Models
-            models_data = [{"name": faker.unique.word()} for _ in range(3)]
+            # ------------------------------------------------------------------
+            # 2. Modelos de IA (Catalogo)
+            # ------------------------------------------------------------------
+            models_list = ["GPT-4", "Claude-3", "Llama-3", "Mistral-Large"]
+            models_data = [{"name": name} for name in models_list]
+            
             result_models = await session.execute(
                 insert(Model).returning(Model.id), models_data
             )
-            model_ids = [row.id for row in result_models]
+            # Guardamos los IDs para asignarlos a los mensajes luego
+            model_ids = [row.id for row in result_models.all()]
 
-            # 4. Chats
-            chats_data = [
+            # ------------------------------------------------------------------
+            # 3. AI Prompts (Catalogo)
+            # ------------------------------------------------------------------
+            prompts_data = [
                 {
-                    "title": faker.sentence(nb_words=3),
-                    "user_id": faker.random_element(user_ids),
-                    "ai_prompt_id": faker.random_element(prompt_ids),
+                    "name": "General Assistant",
+                    "prompt_text": "You are a helpful AI assistant.",
+                    "description": "Standard assistant."
+                },
+                {
+                    "name": "Code Expert",
+                    "prompt_text": "You are a Python expert. Write clean code.",
+                    "description": "Programming helper."
+                },
+                {
+                    "name": "Translator",
+                    "prompt_text": "Translate the following text to Spanish.",
+                    "description": "English to Spanish translator."
                 }
-                for _ in range(10)
             ]
+            # Añadimos algunos aleatorios
+            for _ in range(2):
+                prompts_data.append({
+                    "name": faker.unique.job(),  # Usamos job para un nombre corto único
+                    "prompt_text": faker.paragraph(),
+                    "description": faker.sentence()
+                })
+
+            result_prompts = await session.execute(
+                insert(AIPrompt).returning(AIPrompt.id), prompts_data
+            )
+            prompt_ids = [row.id for row in result_prompts.all()]
+
+            # ------------------------------------------------------------------
+            # 4. Usuarios
+            # ------------------------------------------------------------------
+            # Creamos un usuario "conocido" para tests específicos
+            users_data = [
+                {
+                    "email": "test@example.com",
+                    "hashed_password": "hashed_secret_password", # En realidad usarías una función hash
+                    "is_active": True,
+                    "is_superuser": False,
+                    "is_verified": True,
+                },
+                {
+                    "email": "admin@example.com",
+                    "hashed_password": "hashed_admin_password",
+                    "is_active": True,
+                    "is_superuser": True,
+                    "is_verified": True,
+                }
+            ]
+            # Rellenamos con usuarios aleatorios
+            for _ in range(8):
+                users_data.append({
+                    "email": faker.unique.email(),
+                    "hashed_password": faker.sha256(),
+                    "is_active": faker.boolean(chance_of_getting_true=90),
+                    "is_superuser": False,
+                    "is_verified": faker.boolean(chance_of_getting_true=80),
+                })
+
+            result_users = await session.execute(
+                insert(User).returning(User.id), users_data
+            )
+            user_ids = [row.id for row in result_users.all()]
+
+            # ------------------------------------------------------------------
+            # 5. Chats (Relación Usuario - Prompt)
+            # ------------------------------------------------------------------
+            chats_data = []
+            # Generamos 20 chats distribuidos entre los usuarios
+            for _ in range(20):
+                chats_data.append({
+                    "title": faker.sentence(nb_words=4).replace(".", ""),
+                    "user_id": random.choice(user_ids),
+                    "ai_prompt_id": random.choice(prompt_ids),
+                })
+
             result_chats = await session.execute(
                 insert(Chat).returning(Chat.id), chats_data
             )
-            chat_ids = [row.id for row in result_chats]
+            chat_ids = [row.id for row in result_chats.all()]
 
-            # 5. Messages
+            # ------------------------------------------------------------------
+            # 6. Mensajes (Contenido del Chat)
+            # ------------------------------------------------------------------
             messages_data = []
+            
             for chat_id in chat_ids:
-                for order in range(1, 4):
-                    messages_data.append(
-                        {
-                            "order_number": order,
-                            "content": faker.paragraph(),
-                            "statistics": {"tokens": faker.random_int(1, 100)},
-                            "chat_id": chat_id,
-                            "model_id": faker.random_element(model_ids),
-                        }
-                    )
-            await session.execute(insert(Message), messages_data)
+                # Simulamos una conversación de longitud variable (2 a 6 mensajes)
+                num_messages = random.randint(2, 6)
+                
+                for order in range(1, num_messages + 1):
+                    # Alternar roles o contenido (opcional, aquí solo texto aleatorio)
+                    # Si order es impar = Usuario, par = IA (modelo)
+                    is_ai_response = (order % 2 == 0)
+                    
+                    msg_content = faker.paragraph() if is_ai_response else faker.sentence()
+                    assigned_model = random.choice(model_ids) if is_ai_response else None
 
+                    messages_data.append({
+                        "order_number": order,
+                        "content": msg_content,
+                        "statistics": {
+                            "tokens_in": random.randint(10, 50),
+                            "tokens_out": random.randint(50, 200),
+                            "latency_ms": random.randint(100, 1500)
+                        },
+                        "chat_id": chat_id,
+                        # El modelo solo se asocia si la respuesta es de la IA (opcional según tu lógica de negocio)
+                        # Aquí asumimos que cada mensaje tiene un modelo asociado para simplificar, o solo los pares.
+                        "model_id": assigned_model 
+                    })
+
+            # Insertamos los mensajes en lotes grandes (bulk insert)
+            if messages_data:
+                await session.execute(insert(Message), messages_data)
+
+        # Confirmamos la transacción (Commit)
         await session.commit()
 
     yield
+    # (Opcional) teardown: borrar datos después de los tests
+    # async with engine.begin() as conn:
+    #     await conn.execute(text("TRUNCATE users, chats, messages, ai_prompts, models CASCADE;"))

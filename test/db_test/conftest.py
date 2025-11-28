@@ -20,8 +20,8 @@ from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
 # =============================================================================
 
 
-@pytest.fixture(scope="session", autouse=True,params="setup_database")
-def setup_databaseSQL():
+@pytest.fixture(scope="session", autouse=True)
+def setup_databaseSQL(setup_database):
     """
     Ensures the database is seeded via the main root conftest fixture
     before running any SQL-specific tests.
@@ -42,7 +42,7 @@ def get_db_connection_for_role():
     """
     open_connections = []
 
-    def _connect_as_role(role_name: str) -> psycopg2.extensions.connection:
+    def _connect_as_role(role_name: str = fastapi_settings.POSTGRES_USER) -> psycopg2.extensions.connection:
         """
         Creates a connection based on the requested logical role.
         """
