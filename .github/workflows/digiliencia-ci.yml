@@ -50,6 +50,8 @@ jobs:
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM }}
       ACCESS_TOKEN_EXPIRE_SECONDS: ${{ vars.ACCESS_TOKEN_EXPIRE_SECONDS }}
+      FASTAPI_HOST: ${{ vars.FASTAPI_HOST }}
+      FASTAPI_HOST: ${{ vars.FASTAPI_HOST }}
 
       # --- Neo4j Settings ---
       NEO4J_USERNAME: ${{ vars.NEO4J_USERNAME }}
