@@ -87,14 +87,8 @@ def event_loop() -> Generator:
 
 @pytest_asyncio.fixture(scope="session")
 async def setup_database():
-    """
-    Fixture de ámbito de sesión para sembrar la base de datos.
-    Limpia las tablas y las rellena con datos coherentes basados en tu esquema SQL.
-    """
 
-    # 1. Limpieza inicial (TRUNCATE)
     async with engine.begin() as conn:
-        # Nota: RESTART IDENTITY no afecta a UUIDs, pero CASCADE es vital.
         await conn.execute(
             text("TRUNCATE users, chats, messages, ai_prompts, models CASCADE;")
         )
@@ -102,7 +96,7 @@ async def setup_database():
     async with TestingSessionLocal() as session:
         async with session.begin():
             # ------------------------------------------------------------------
-            # 2. Modelos de IA (Catalogo)
+            # 2. AI Models
             # ------------------------------------------------------------------
             models_list = ["GPT-4", "Claude-3", "Llama-3", "Mistral-Large"]
             models_data = [{"name": name} for name in models_list]
@@ -114,7 +108,7 @@ async def setup_database():
             model_ids = [row.id for row in result_models.all()]
 
             # ------------------------------------------------------------------
-            # 3. AI Prompts (Catalogo)
+            # 3. AI Prompts
             # ------------------------------------------------------------------
             prompts_data = [
                 {
@@ -133,11 +127,10 @@ async def setup_database():
                     "description": "English to Spanish translator.",
                 },
             ]
-            # Añadimos algunos aleatorios
             for _ in range(2):
                 prompts_data.append(
                     {
-                        "name": faker.unique.job(),  # Usamos job para un nombre corto único
+                        "name": faker.unique.job(),
                         "prompt_text": faker.paragraph(),
                         "description": faker.sentence(),
                     }
@@ -149,13 +142,12 @@ async def setup_database():
             prompt_ids = [row.id for row in result_prompts.all()]
 
             # ------------------------------------------------------------------
-            # 4. Usuarios
+            # 4. Users
             # ------------------------------------------------------------------
-            # Creamos un usuario "conocido" para tests específicos
             users_data = [
                 {
                     "email": "test@example.com",
-                    "hashed_password": "hashed_secret_password",  # En realidad usarías una función hash
+                    "hashed_password": "hashed_secret_password",
                     "is_active": True,
                     "is_superuser": False,
                     "is_verified": True,
@@ -168,7 +160,6 @@ async def setup_database():
                     "is_verified": True,
                 },
             ]
-            # Rellenamos con usuarios aleatorios
             for _ in range(8):
                 users_data.append(
                     {
@@ -186,10 +177,9 @@ async def setup_database():
             user_ids = [row.id for row in result_users.all()]
 
             # ------------------------------------------------------------------
-            # 5. Chats (Relación Usuario - Prompt)
+            # 5. Chats
             # ------------------------------------------------------------------
             chats_data = []
-            # Generamos 20 chats distribuidos entre los usuarios
             for _ in range(20):
                 chats_data.append(
                     {
@@ -205,17 +195,14 @@ async def setup_database():
             chat_ids = [row.id for row in result_chats.all()]
 
             # ------------------------------------------------------------------
-            # 6. Mensajes (Contenido del Chat)
+            # 6. Messages
             # ------------------------------------------------------------------
             messages_data = []
 
             for chat_id in chat_ids:
-                # Simulamos una conversación de longitud variable (2 a 6 mensajes)
                 num_messages = random.randint(2, 6)
 
                 for order in range(1, num_messages + 1):
-                    # Alternar roles o contenido (opcional, aquí solo texto aleatorio)
-                    # Si order es impar = Usuario, par = IA (modelo)
                     is_ai_response = order % 2 == 0
 
                     msg_content = (
@@ -235,20 +222,15 @@ async def setup_database():
                                 "latency_ms": random.randint(100, 1500),
                             },
                             "chat_id": chat_id,
-                            # El modelo solo se asocia si la respuesta es de la IA (opcional según tu lógica de negocio)
-                            # Aquí asumimos que cada mensaje tiene un modelo asociado para simplificar, o solo los pares.
                             "model_id": assigned_model,
                         }
                     )
 
-            # Insertamos los mensajes en lotes grandes (bulk insert)
             if messages_data:
                 await session.execute(insert(Message), messages_data)
 
-        # Confirmamos la transacción (Commit)
         await session.commit()
 
     yield
-    # (Opcional) teardown: borrar datos después de los tests
     # async with engine.begin() as conn:
     #     await conn.execute(text("TRUNCATE users, chats, messages, ai_prompts, models CASCADE;"))

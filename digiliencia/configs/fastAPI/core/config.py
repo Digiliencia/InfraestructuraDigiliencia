@@ -7,6 +7,7 @@ from environment variables and .env files.
 """
 
 import json
+import logging
 from typing import List
 
 from dotenv import load_dotenv
@@ -58,7 +59,7 @@ class Settings(BaseSettings):
         """
         if self.LOCAL:
             self.POSTGRES_SERVER = "localhost"
-        print(f"DB Server: {self.POSTGRES_SERVER}")
+        logging.info(f"DB Server: {self.POSTGRES_SERVER}")
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
