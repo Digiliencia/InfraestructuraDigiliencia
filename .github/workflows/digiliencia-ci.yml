@@ -36,6 +36,8 @@ jobs:
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
       POSTGRES_DB: ${{ vars.POSTGRES_DB }}
       APP_DB_NAME: ${{ vars.APP_DB_NAME }}
+      POSTGRES_SERVER: ${{ vars.POSTGRES_SERVER }}
+      POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
       
       # --- Users setup ---
       DB_OWNER_USER: ${{ vars.DB_OWNER_USER }}
@@ -52,6 +54,11 @@ jobs:
       ACCESS_TOKEN_EXPIRE_SECONDS: ${{ vars.ACCESS_TOKEN_EXPIRE_SECONDS }}
       FASTAPI_HOST: ${{ vars.FASTAPI_HOST }}
       FASTAPI_PORT: ${{ vars.FASTAPI_PORT }}
+
+      # --- Redis ---
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      #REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
       # --- Neo4j Settings ---
       NEO4J_USERNAME: ${{ vars.NEO4J_USERNAME }}

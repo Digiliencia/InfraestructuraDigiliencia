@@ -106,7 +106,7 @@ async def setup_database():
             # ------------------------------------------------------------------
             models_list = ["GPT-4", "Claude-3", "Llama-3", "Mistral-Large"]
             models_data = [{"name": name} for name in models_list]
-            
+
             result_models = await session.execute(
                 insert(Model).returning(Model.id), models_data
             )
@@ -120,26 +120,28 @@ async def setup_database():
                 {
                     "name": "General Assistant",
                     "prompt_text": "You are a helpful AI assistant.",
-                    "description": "Standard assistant."
+                    "description": "Standard assistant.",
                 },
                 {
                     "name": "Code Expert",
                     "prompt_text": "You are a Python expert. Write clean code.",
-                    "description": "Programming helper."
+                    "description": "Programming helper.",
                 },
                 {
                     "name": "Translator",
                     "prompt_text": "Translate the following text to Spanish.",
-                    "description": "English to Spanish translator."
-                }
+                    "description": "English to Spanish translator.",
+                },
             ]
             # Añadimos algunos aleatorios
             for _ in range(2):
-                prompts_data.append({
-                    "name": faker.unique.job(),  # Usamos job para un nombre corto único
-                    "prompt_text": faker.paragraph(),
-                    "description": faker.sentence()
-                })
+                prompts_data.append(
+                    {
+                        "name": faker.unique.job(),  # Usamos job para un nombre corto único
+                        "prompt_text": faker.paragraph(),
+                        "description": faker.sentence(),
+                    }
+                )
 
             result_prompts = await session.execute(
                 insert(AIPrompt).returning(AIPrompt.id), prompts_data
@@ -153,7 +155,7 @@ async def setup_database():
             users_data = [
                 {
                     "email": "test@example.com",
-                    "hashed_password": "hashed_secret_password", # En realidad usarías una función hash
+                    "hashed_password": "hashed_secret_password",  # En realidad usarías una función hash
                     "is_active": True,
                     "is_superuser": False,
                     "is_verified": True,
@@ -164,17 +166,19 @@ async def setup_database():
                     "is_active": True,
                     "is_superuser": True,
                     "is_verified": True,
-                }
+                },
             ]
             # Rellenamos con usuarios aleatorios
             for _ in range(8):
-                users_data.append({
-                    "email": faker.unique.email(),
-                    "hashed_password": faker.sha256(),
-                    "is_active": faker.boolean(chance_of_getting_true=90),
-                    "is_superuser": False,
-                    "is_verified": faker.boolean(chance_of_getting_true=80),
-                })
+                users_data.append(
+                    {
+                        "email": faker.unique.email(),
+                        "hashed_password": faker.sha256(),
+                        "is_active": faker.boolean(chance_of_getting_true=90),
+                        "is_superuser": False,
+                        "is_verified": faker.boolean(chance_of_getting_true=80),
+                    }
+                )
 
             result_users = await session.execute(
                 insert(User).returning(User.id), users_data
@@ -187,11 +191,13 @@ async def setup_database():
             chats_data = []
             # Generamos 20 chats distribuidos entre los usuarios
             for _ in range(20):
-                chats_data.append({
-                    "title": faker.sentence(nb_words=4).replace(".", ""),
-                    "user_id": random.choice(user_ids),
-                    "ai_prompt_id": random.choice(prompt_ids),
-                })
+                chats_data.append(
+                    {
+                        "title": faker.sentence(nb_words=4).replace(".", ""),
+                        "user_id": random.choice(user_ids),
+                        "ai_prompt_id": random.choice(prompt_ids),
+                    }
+                )
 
             result_chats = await session.execute(
                 insert(Chat).returning(Chat.id), chats_data
@@ -202,32 +208,38 @@ async def setup_database():
             # 6. Mensajes (Contenido del Chat)
             # ------------------------------------------------------------------
             messages_data = []
-            
+
             for chat_id in chat_ids:
                 # Simulamos una conversación de longitud variable (2 a 6 mensajes)
                 num_messages = random.randint(2, 6)
-                
+
                 for order in range(1, num_messages + 1):
                     # Alternar roles o contenido (opcional, aquí solo texto aleatorio)
                     # Si order es impar = Usuario, par = IA (modelo)
-                    is_ai_response = (order % 2 == 0)
-                    
-                    msg_content = faker.paragraph() if is_ai_response else faker.sentence()
-                    assigned_model = random.choice(model_ids) if is_ai_response else None
+                    is_ai_response = order % 2 == 0
 
-                    messages_data.append({
-                        "order_number": order,
-                        "content": msg_content,
-                        "statistics": {
-                            "tokens_in": random.randint(10, 50),
-                            "tokens_out": random.randint(50, 200),
-                            "latency_ms": random.randint(100, 1500)
-                        },
-                        "chat_id": chat_id,
-                        # El modelo solo se asocia si la respuesta es de la IA (opcional según tu lógica de negocio)
-                        # Aquí asumimos que cada mensaje tiene un modelo asociado para simplificar, o solo los pares.
-                        "model_id": assigned_model 
-                    })
+                    msg_content = (
+                        faker.paragraph() if is_ai_response else faker.sentence()
+                    )
+                    assigned_model = (
+                        random.choice(model_ids) if is_ai_response else None
+                    )
+
+                    messages_data.append(
+                        {
+                            "order_number": order,
+                            "content": msg_content,
+                            "statistics": {
+                                "tokens_in": random.randint(10, 50),
+                                "tokens_out": random.randint(50, 200),
+                                "latency_ms": random.randint(100, 1500),
+                            },
+                            "chat_id": chat_id,
+                            # El modelo solo se asocia si la respuesta es de la IA (opcional según tu lógica de negocio)
+                            # Aquí asumimos que cada mensaje tiene un modelo asociado para simplificar, o solo los pares.
+                            "model_id": assigned_model,
+                        }
+                    )
 
             # Insertamos los mensajes en lotes grandes (bulk insert)
             if messages_data:

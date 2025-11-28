@@ -42,7 +42,9 @@ def get_db_connection_for_role():
     """
     open_connections = []
 
-    def _connect_as_role(role_name: str = fastapi_settings.POSTGRES_USER) -> psycopg2.extensions.connection:
+    def _connect_as_role(
+        role_name: str = fastapi_settings.POSTGRES_USER,
+    ) -> psycopg2.extensions.connection:
         """
         Creates a connection based on the requested logical role.
         """
