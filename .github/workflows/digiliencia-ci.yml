@@ -29,7 +29,8 @@ jobs:
 
     env:
 
-      TESTING: "true"
+      TESTING: ${{ vars.TESTING }}
+      LOCAL: ${{ vars.LOCAL }}
 
       # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
