@@ -15,7 +15,7 @@ VARIABLES_TO_SUBSTITUTE='$POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_DB'
 # 3. Execute the User/DB creation script
 # This runs against the default 'postgres' database to create our custom DB/User if needed.
 echo ">> [01] Processing 01-init-db.sql.template..."
-envsubst "$VARIABLES_TO_SUBSTITUTE" < /app-scripts/01-init-db.sql.template | psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres"
+envsubst "$VARIABLES_TO_SUBSTITUTE" < ./app-scripts/01-init-db.sql.template | psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres"
 
 # 4. Create Schema (Tables)
 # Now we connect to OUR specific database ($POSTGRES_DB) using the same user.

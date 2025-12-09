@@ -49,11 +49,7 @@ The application requires several environment variables to be set. Copy `.env_exa
 
 ```ini
 # Database Configuration
-DB_OWNER_USER=your_db_user
-DB_OWNER_PASSWORD=your_db_password
 DB_HOST=localhost            # Database host
-DB_PORT=5432                # PostgreSQL default port
-APP_DB_NAME=your_database   # Database name
 
 # Security Settings
 JWT_SECRET_KEY=replace_with_a_long_random_secret  # Min 32 characters recommended
