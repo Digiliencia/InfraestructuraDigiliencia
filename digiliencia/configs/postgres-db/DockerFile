@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     bash \
  && rm -rf /var/lib/apt/lists/*
 
-COPY digiliencia/configs/postgres-db/scripts /app-scripts
+COPY digiliencia/configs/postgres-db/app-scripts /app-scripts
 
 COPY digiliencia/configs/postgres-db/execute_scripts.sh /docker-entrypoint-initdb.d/
 
