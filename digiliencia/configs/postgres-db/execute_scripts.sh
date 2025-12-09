@@ -44,17 +44,30 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 if [ "$RUNNING_IN_DOCKER" = false ]; then
     # When running locally, use localhost explicitly
     POSTGRES_HOST="localhost"
+    
+    # Additional safety: if PGPASSFILE is not set, create a temporary .pgpass
+    if [ -z "$PGPASSFILE" ]; then
+        TEMP_PGPASS="/tmp/.pgpass_$$"
+        echo "${POSTGRES_HOST}:${POSTGRES_PORT}:postgres:${POSTGRES_USER}:${POSTGRES_PASSWORD}" > "$TEMP_PGPASS"
+        echo "${POSTGRES_HOST}:${POSTGRES_PORT}:${POSTGRES_DB}:${POSTGRES_USER}:${POSTGRES_PASSWORD}" >> "$TEMP_PGPASS"
+        chmod 600 "$TEMP_PGPASS"
+        export PGPASSFILE="$TEMP_PGPASS"
+    fi
 fi
 
 echo "Using PostgreSQL host: $POSTGRES_HOST:$POSTGRES_PORT"
 
-# Verify PostgreSQL is accessible
-echo ">> Verifying PostgreSQL connection..."
-if ! psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "\q" 2>/dev/null; then
-    echo "ERROR: Cannot connect to PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT"
-    echo "Make sure PostgreSQL is running and accessible."
-    echo "Check your .env configuration."
-    exit 1
+# Verify PostgreSQL is accessible (only for local, Docker init script runs as entrypoint)
+if [ "$RUNNING_IN_DOCKER" = false ]; then
+    echo ">> Verifying PostgreSQL connection..."
+    if ! psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "postgres" -c "\q" 2>/dev/null; then
+        echo "ERROR: Cannot connect to PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT"
+        echo "Make sure PostgreSQL is running and accessible."
+        echo "Check your .env configuration."
+        exit 1
+    fi
+else
+    echo ">> Running in Docker - skipping connection test (DB may not be fully initialized yet)"
 fi
 
 # 2. Define variables to substitute in the template
@@ -77,6 +90,20 @@ fi
 if [ -f "$APP_SCRIPTS_DIR/04-procediments.sql" ]; then
     echo ">> [04] Creating Procedures..."
     psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$APP_SCRIPTS_DIR/04-procediments.sql"
+fi
+
+# 6. Permissions
+# Since we are using a single owner user for the app, complex grants are likely unnecessary.
+# But if you have a legacy permission script, run it here.
+if [ -f "$APP_SCRIPTS_DIR/10-grant-permissions.sql.template" ]; then
+    echo ">> [10] Granting Permissions..."
+    VARIABLES_TO_SUBSTITUTE='$POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_DB'
+    envsubst "$VARIABLES_TO_SUBSTITUTE" < "$APP_SCRIPTS_DIR/10-grant-permissions.sql.template" | psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"
+fi
+
+# Cleanup temporary .pgpass if we created one
+if [ -n "$TEMP_PGPASS" ] && [ -f "$TEMP_PGPASS" ]; then
+    rm -f "$TEMP_PGPASS"
 fi
 
 echo "--- Database Initialization Completed Successfully ---"
