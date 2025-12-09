@@ -2,16 +2,16 @@
 """
 This module defines the API routes for retrieving available AI models.
 
-It exposes a public endpoint that allows clients to discover which AI models
+It exposes endpoints that allow clients to discover which AI models
 are currently supported and configured in the system for chat interactions.
 """
 
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.endpoints import MODEL_LIST
+from core.endpoints import MODEL_LIST, MODEL_DETAIL
 from db.models import Model
 from db.session import get_db
 from schemas import chat as chat_schema
@@ -75,3 +75,61 @@ async def get_models(
     )
 
     return chat_schema.Models(models=model_list)
+
+
+@router.get(
+    MODEL_DETAIL,
+    response_model=chat_schema.ModelSummary,
+    status_code=status.HTTP_200_OK,
+    summary="Get AI Model by ID",
+    description="Retrieves information about a specific AI model by its ID.",
+    response_description="The requested model information.",
+    responses={
+        200: {
+            "description": "Successfully retrieved the model.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "68b92fa2-fe59-4181-99a5-032190d68a73",
+                        "name": "GPT-4",
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "Model not found.",
+        },
+    },
+)
+async def get_model(
+    model_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> chat_schema.ModelSummary:
+    """
+    Fetches a specific AI model by its ID from the database.
+
+    Args:
+        model_id (uuid.UUID): The UUID of the model to retrieve.
+        db (AsyncSession): The database session dependency.
+
+    Returns:
+        chat_schema.ModelSummary: The model information.
+
+    Raises:
+        HTTPException: 404 if model is not found.
+    """
+    query = select(Model.id, Model.name).where(Model.id == model_id)
+
+    result = await db.execute(query)
+    row = result.first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Model with ID {model_id} not found.",
+        )
+
+    return chat_schema.ModelSummary(
+        id=uuid.UUID(str(row.id)),
+        name=str(row.name),
+    )

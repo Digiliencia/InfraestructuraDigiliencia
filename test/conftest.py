@@ -87,7 +87,6 @@ def event_loop() -> Generator:
 
 @pytest_asyncio.fixture(scope="session")
 async def setup_database():
-
     async with engine.begin() as conn:
         await conn.execute(
             text("TRUNCATE users, chats, messages, ai_prompts, models CASCADE;")

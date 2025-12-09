@@ -44,8 +44,14 @@ CONVERSATIONS: Final[str] = f"{CHATS_PATH}/conversations"
 # Endpoint: /api/chats/templates
 TEMPLATE_LIST: Final[str] = f"{CHATS_PATH}/templates"
 
+# Endpoint: /api/chats/templates/{id}
+TEMPLATE_DETAIL: Final[str] = f"{CHATS_PATH}/templates" + "/{template_id}"
+
 # Endpoint: /api/chats/models
 MODEL_LIST: Final[str] = f"{CHATS_PATH}/models"
+
+# Endpoint: /api/chats/models/{id}
+MODEL_DETAIL: Final[str] = f"{CHATS_PATH}/models" + "/{model_id}"
 
 
 # --- System & Root Endpoints ---
