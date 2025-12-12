@@ -37,8 +37,39 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per minute"
 # Initialize App
 app = FastAPI(
     title="Digiliencia Chat API",
-    description="Backend API for AI-powered chat conversations.",
+    description="""
+## Chat Backend API
+
+This API provides a complete conversation management system with AI language models.
+
+### Key Features
+
+* **JWT Authentication**: Secure token-based authentication system
+* **Chat Management**: Create, list, update, and delete conversations
+* **Multiple AI Models**: Support for different language models
+* **Templates**: Pre-configured prompts for specific use cases
+* **Security**: Rate limiting, CORS, and security headers
+* **Redis**: Distributed locking system for concurrent operations
+
+### Documentation
+
+* **Swagger UI**: [/api/docs](/api/docs) - Interactive interface for testing endpoints
+* **ReDoc**: [/api/redoc](/api/redoc) - Alternative detailed documentation
+* **OpenAPI Schema**: [/api/openapi.json](/api/openapi.json) - Complete OpenAPI specification
+
+### Authentication
+
+Most endpoints require authentication via JWT Bearer token.
+To obtain a token, use the `/api/auth/login` endpoint with valid credentials.
+    """,
     version="2.0.0",
+    contact={
+        "name": "Digiliencia Team",
+        "email": "dev@digiliencia.com",
+    },
+    license_info={
+        "name": "MIT License",
+    },
     docs_url=f"{API_PREFIX}/docs",
     redoc_url=f"{API_PREFIX}/redoc",
     openapi_url=f"{API_PREFIX}/openapi.json",
@@ -67,12 +98,35 @@ async def add_security_headers(request: Request, call_next):
     """
     Middleware to add security headers to every response.
     Enforces HSTS, CSP, and prevents content sniffing/framing.
+
+    Note: CSP is relaxed for API documentation endpoints (/api/docs, /api/redoc)
+    to allow Swagger UI and ReDoc to function properly. These pages require
+    inline scripts and styles to render.
     """
     response = await call_next(request)
     response.headers["Strict-Transport-Security"] = (
         "max-age=31536000; includeSubDomains"
     )
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
+
+    # Relax CSP for documentation endpoints to allow Swagger UI and ReDoc
+    # to load their inline scripts and styles
+    if (
+        request.url.path.startswith(f"{API_PREFIX}/docs")
+        or request.url.path.startswith(f"{API_PREFIX}/redoc")
+        or request.url.path.startswith(f"{API_PREFIX}/openapi.json")
+    ):
+        # Allow inline scripts and styles for documentation pages
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https://cdn.jsdelivr.net; "
+            "font-src 'self' data: https://cdn.jsdelivr.net;"
+        )
+    else:
+        # Strict CSP for all other endpoints
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     return response

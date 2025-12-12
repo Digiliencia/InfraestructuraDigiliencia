@@ -91,8 +91,6 @@ def main() -> None:
     print("-" * 50)
 
     try:
-        # Update: Changed from 'console_cli.console_cli' to 'console_cli.ConsoleCLI'
-        # to match the class name refactor in console_cli.py
         interface = console_cli.ConsoleCLI(api_url)
 
         # Start the main interaction loop
