@@ -75,6 +75,7 @@ def input_menu(
     input_schema: Dict[str, Type],
     previous_messages: Optional[Iterable[str]] = None,
     header_message: Optional[str] = None,
+    clean : bool = True
 ) -> Dict[str, Any]:
     """
     Prompts the user for multiple inputs based on a schema.
@@ -87,7 +88,8 @@ def input_menu(
     Returns:
         dict: The captured inputs with correct types.
     """
-    clear_screen()
+    if clean: 
+        clear_screen()
     print_message_list(previous_messages)
 
     if header_message:
@@ -135,12 +137,14 @@ def iterables_show(
     previous_messages: Optional[List[str]] = None,
     is_pasue: bool = False,
     pause_message: Optional[str] = None,
+    clean: bool = True
 ) -> None:
     """
     Displays a table of data (rows and columns).
     Used for showing lists of templates, models, etc.
     """
-    clear_screen()
+    if(clean):
+        clear_screen()
     print_message_list(previous_messages)
 
     if header:

@@ -186,12 +186,11 @@ class Chat:
         Returns:
             Tuple[Optional[str], str]: (AI Response Text, Status/Error message)
         """
-        # Update: Field name changed from 'text' to 'content'
         message_payload = {"content": question, "model_id": str(model_id)}
 
         try:
             response = self.client.patch(
-                f"{CHATS_PATH}/{str(chat_id)}", json=message_payload
+                f"{CHATS_PATH}/{str(chat_id)}", json=message_payload, timeout=1000
             )
 
             if response.status_code == status.HTTP_200_OK:

@@ -62,7 +62,8 @@ class ConsoleCLI:
         except httpx.RequestError as e:
             print(f"[!] Critical: Could not connect to API at {self.base_url}")
             print(f"    Error: {e}")
-            input("Press Enter to continue anyway (or Ctrl+C to exit)...")
+            input("Press Enter to retry anyway (or Ctrl+C to exit)...")
+            self._check_health()
         except Exception as e:
             print(f"[!] Unexpected error during health check: {e}")
 
@@ -233,40 +234,55 @@ class ConsoleCLI:
             chat_messages: The initial history of messages.
             selected_chat_id: The ID of the active chat.
         """
-        self.show_header()
-
-        formatted_history = [
-            f"{'User' if msg.model_id is None else 'AI'}: {msg.content}"
-            for msg in chat_messages
-        ]
-        menu.iterables_show(formatted_history, is_pasue=False)
-
         # Get available models for the response
         ai_models = self.chat.get_AI_models()
         if ai_models is None or not ai_models.models:
             menu.alert("No AI models available to reply.")
             return
 
-        target_model_id = ai_models.models[0].id
+        formatted_history = [
+            f"{'User' if msg.model_id is None else 'AI'}: {msg.content}"
+            for msg in chat_messages
+        ]
 
+
+        target_model_id = ai_models.models[0].id
         message_label = "Message"
         while True:
             try:
-                user_input = menu.input_menu({message_label: str})
+                self.show_header()
+                menu.iterables_show(formatted_history, is_pasue=False, clean=False)
+                user_input = menu.input_menu({message_label: str},clean = False)
                 message_text = user_input[message_label]
             except KeyboardInterrupt:
                 break
-
             # Send message to API
             response_text, error = self.chat.ask_question(
                 message_text, selected_chat_id, target_model_id
             )
-
             if response_text is None:
+                # Show error and allow user to retry
                 menu.alert(f"Error: {error}")
-                return
+                continue
 
-            print(f"AI: {response_text}")
+            # Attempt to reload the full conversation from server
+            chat_obj, err_msg = self.chat.get_chat(selected_chat_id)
+            if chat_obj is None:
+                # Fallback: append the local exchange
+                formatted_history.append(f"User: {message_text}")
+                formatted_history.append(f"AI: {response_text}")
+                # Refresh display
+                self.show_header()
+                menu.iterables_show(formatted_history, is_pasue=False, clean=False)
+            else:
+                # Build history from server-provided messages
+                formatted_history = [
+                    f"{'User' if msg.model_id is None else 'AI'}: {msg.content}"
+                    for msg in chat_obj
+                ]
+                # Refresh display with authoritative history
+                self.show_header()
+                menu.iterables_show(formatted_history, is_pasue=False, clean=False)
 
     def delete_chat_flow(self) -> None:
         """Flow to delete a chat."""

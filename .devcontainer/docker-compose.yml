@@ -25,6 +25,9 @@ services:
       dockerfile: digiliencia/configs/postgres-db/DockerFile
     env_file:
       - ../.env
+    environment:
+      - TESTING=false
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
     volumes:
       - postgres-data:/var/lib/postgresql
     ports:
@@ -72,10 +75,28 @@ services:
       - ../.env
     environment:
       - LOCAL=false
+      - TESTING=false
     ports:
       - "8080:8080"
     depends_on:
       - db
+      - redis
+    networks:
+      - dev-network
+
+  fastapi-service-test:
+    build:
+      context: ..
+      dockerfile: digiliencia/configs/fastAPI/DockerFile
+    env_file:
+      - ../.env
+    environment:
+      - LOCAL=false
+      - TESTING=true
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db # Test database is not created automaticly
       - redis
     networks:
       - dev-network
