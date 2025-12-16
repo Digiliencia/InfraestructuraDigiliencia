@@ -27,12 +27,9 @@ class Settings(BaseSettings):
     """
 
     FASTAPI_HOST: str
-    FASTAPI_HOST_TEST: str
     FASTAPI_PORT: int = 8080
-    FASTAPI_PORT_TEST: int = 8081
-
     # --- Test environment flag ---
-    TESTING: bool = False # By default, not test
+    TESTING: bool = False  # By default, not test
 
     # --- Local environment flag ---
     LOCAL: bool = False  # By default, not local
@@ -47,8 +44,6 @@ class Settings(BaseSettings):
         """
         if self.LOCAL:
             self.FASTAPI_HOST = "localhost"
-        if self.TESTING:
-            return f"http://{self.FASTAPI_HOST_TEST}:{self.FASTAPI_PORT}"    
         return f"http://{self.FASTAPI_HOST}:{self.FASTAPI_PORT}"
 
     # --- Database Configuration ---
@@ -73,9 +68,9 @@ class Settings(BaseSettings):
         logging.info(f"DB Server: {self.POSTGRES_SERVER}")
         if self.TESTING:
             return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB_TEST}"
-        )
+                f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+                f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB_TEST}"
+            )
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -85,7 +80,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str | None = None
-
 
     @property
     def REDIS_URL(self) -> str:

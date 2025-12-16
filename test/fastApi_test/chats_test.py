@@ -120,7 +120,7 @@ async def test_chat_creation_and_messages(
 ):
     """
     Happy Path: Create Chat -> Send Messages -> Get History.
-    
+
     Note: Messages are processed through the ConversationalAgent.
     The agent response may vary based on the LLM output.
     """
@@ -269,7 +269,7 @@ async def test_chat_message_order_preservation(
 ):
     """
     Verify messages are stored and retrieved in the correct sequence.
-    
+
     Note: With agent integration, each user message generates an AI response.
     Messages should maintain proper order_number sequencing.
     """
@@ -296,21 +296,23 @@ async def test_chat_message_order_preservation(
     history = history_resp.json()
 
     all_msgs = history["messages"]
-    
+
     # Verify total messages: 3 user + 3 AI = 6 messages
     assert len(all_msgs) == 6, f"Expected 6 messages, got {len(all_msgs)}"
 
     # Extract user messages (at indices 0, 2, 4)
     user_content_by_index = [all_msgs[i]["content"] for i in range(0, 6, 2)]
-    assert user_content_by_index == messages, \
+    assert user_content_by_index == messages, (
         f"User messages not in order. Got: {user_content_by_index}"
+    )
 
     # Verify Order Numbers are sequential
     order_nums = [m["order_number"] for m in all_msgs]
     expected_order = list(range(1, 7))
-    assert order_nums == expected_order, \
+    assert order_nums == expected_order, (
         f"Order numbers incorrect. Expected: {expected_order}, Got: {order_nums}"
-    
+    )
+
     # Verify AI responses are not empty
     ai_content_by_index = [all_msgs[i]["content"] for i in range(1, 6, 2)]
     for ai_msg in ai_content_by_index:
@@ -322,7 +324,7 @@ async def test_chat_concurrent_access(
 ):
     """
     Verify Redis Lock prevents race conditions.
-    
+
     Note: With agent integration, responses may take longer and some
     concurrent requests may timeout, returning 503 (Service Unavailable).
     Expected behavior: Only 1 request succeeds (200), others fail with
@@ -360,10 +362,11 @@ async def test_chat_concurrent_access(
     successes = status_codes.count(status.HTTP_200_OK)
     conflicts = status_codes.count(status.HTTP_409_CONFLICT)
     unavailable = status_codes.count(status.HTTP_503_SERVICE_UNAVAILABLE)
-    
+
     assert successes >= 1, "At least one request should succeed"
-    assert conflicts + unavailable == (num_reqs - successes), \
+    assert conflicts + unavailable == (num_reqs - successes), (
         "Remaining requests should be conflicts or service unavailable"
+    )
 
     # Verify messages were added (at least user message + AI response)
     history = await authenticated_client.get(f"{CHATS_PATH}/{chat_id}")

@@ -245,14 +245,13 @@ class ConsoleCLI:
             for msg in chat_messages
         ]
 
-
         target_model_id = ai_models.models[0].id
         message_label = "Message"
         while True:
             try:
                 self.show_header()
                 menu.iterables_show(formatted_history, is_pasue=False, clean=False)
-                user_input = menu.input_menu({message_label: str},clean = False)
+                user_input = menu.input_menu({message_label: str}, clean=False)
                 message_text = user_input[message_label]
             except KeyboardInterrupt:
                 break
