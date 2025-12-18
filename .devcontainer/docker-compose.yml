@@ -2,8 +2,10 @@ volumes:
   postgres-data:
   neo4j-data:
 
+
 networks:
   dev-network:
+
 
 services:
   devcontainer:
@@ -57,16 +59,16 @@ services:
     networks:
       - dev-network
   embedding-api-service:
-      build:
-        context: ../services/embeddings
-        dockerfile: Dockerfile 
-      environment:
-        - NVIDIA_VISIBLE_DEVICES=all
-      ports:
-        - "8000:8000"
-      networks:
-        - dev-network
-      runtime: nvidia
+    build:
+      context: ../services/embeddings
+      dockerfile: Dockerfile
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "8000:8000"
+    networks:
+      - dev-network
+    runtime: nvidia
   fastapi-service:
     build:
       context: ..
@@ -76,8 +78,6 @@ services:
     environment:
       - LOCAL=false
       - TESTING=false
-    ports:
-      - "8080:8080"
     depends_on:
       - db
       - redis
@@ -98,11 +98,26 @@ services:
     depends_on:
       - db # Test database is not created automaticly
       - redis
+      - nginx
     networks:
       - dev-network
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+    networks:
+      - dev-network
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: digiliencia/configs/nginx/DockerFile
+    env_file:
+      - ../.env
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ../certs:/etc/nginx/ssl:ro # Mount your certificates here
     networks:
       - dev-network

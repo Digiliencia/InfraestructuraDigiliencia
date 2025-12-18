@@ -70,9 +70,9 @@ To obtain a token, use the `/api/auth/login` endpoint with valid credentials.
     license_info={
         "name": "MIT License",
     },
-    docs_url=f"{API_PREFIX}/docs",
-    redoc_url=f"{API_PREFIX}/redoc",
-    openapi_url=f"{API_PREFIX}/openapi.json",
+    docs_url=f"{API_PREFIX}/docs" if settings.ENVIRONMENT != "production" else None,
+    redoc_url=f"{API_PREFIX}/redoc" if settings.ENVIRONMENT != "production" else None,
+    openapi_url=f"{API_PREFIX}/openapi.json" if settings.ENVIRONMENT != "production" else None,
 )
 
 # Attach limiter to app state (required by slowapi)
@@ -104,17 +104,24 @@ async def add_security_headers(request: Request, call_next):
     inline scripts and styles to render.
     """
     response = await call_next(request)
-    response.headers["Strict-Transport-Security"] = (
-        "max-age=31536000; includeSubDomains"
-    )
+    
+    # HSTS - Enforce HTTPS (only if in production or SSL enabled)
+    if settings.ENVIRONMENT == "production" or settings.SSL_CERTFILE:
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
 
     # Relax CSP for documentation endpoints to allow Swagger UI and ReDoc
     # to load their inline scripts and styles
-    if (
-        request.url.path.startswith(f"{API_PREFIX}/docs")
-        or request.url.path.startswith(f"{API_PREFIX}/redoc")
-        or request.url.path.startswith(f"{API_PREFIX}/openapi.json")
-    ):
+    doc_paths = [
+        f"{API_PREFIX}/docs",
+        f"{API_PREFIX}/redoc",
+        f"{API_PREFIX}/openapi.json"
+    ]
+    
+    is_doc_path = any(request.url.path.startswith(path) for path in doc_paths)
+
+    if is_doc_path and settings.ENVIRONMENT != "production":
         # Allow inline scripts and styles for documentation pages
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
@@ -125,10 +132,22 @@ async def add_security_headers(request: Request, call_next):
         )
     else:
         # Strict CSP for all other endpoints
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
 
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    
     return response
 
 

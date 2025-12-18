@@ -28,6 +28,12 @@ class Settings(BaseSettings):
 
     FASTAPI_HOST: str
     FASTAPI_PORT: int = 8080
+    ENVIRONMENT: str = "development"  # development, production
+
+    # --- SSL Configuration ---
+    SSL_CERTFILE: str | None = None
+    SSL_KEYFILE: str | None = None
+
     # --- Test environment flag ---
     TESTING: bool = False  # By default, not test
 
@@ -37,14 +43,12 @@ class Settings(BaseSettings):
     @property
     def FASTAPI_URL(self) -> str:
         """
-        Constructs the asynchronous PostgreSQL connection string.
-
-        Returns:
-            str: The full SQLAlchemy async connection URL.
+        Constructs the application base URL.
         """
         if self.LOCAL:
             self.FASTAPI_HOST = "localhost"
-        return f"http://{self.FASTAPI_HOST}:{self.FASTAPI_PORT}"
+        protocol = "https" if self.SSL_CERTFILE and self.SSL_KEYFILE else "http"
+        return f"{protocol}://{self.FASTAPI_HOST}:{self.FASTAPI_PORT}"
 
     # --- Database Configuration ---
     # Standardized names compatible with typical Docker environments

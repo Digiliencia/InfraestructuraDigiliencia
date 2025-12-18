@@ -25,10 +25,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY digiliencia/configs/fastAPI .
 
 # Expose the port that the Uvicorn server will run on.
-# This makes the port available to the Docker host.
+# This is documentation for Docker. The actual port is set in entrypoint.sh.
 EXPOSE 8080
 
-# Command to Run the Application
-# This command starts the Uvicorn server.
-# --host 0.0.0.0 makes the server accessible from outside the container.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Stage 4: Entrypoint
+# Make sure entrypoint script is executable
+RUN chmod +x entrypoint.sh
+
+# Command to Run the Application using the entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]

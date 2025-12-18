@@ -4,8 +4,8 @@ services:
     build:
       context: ..
       dockerfile: digiliencia/configs/fastAPI/DockerFile
-    ports:
-      - "8080:8080"
+    # ports:
+    #   - "8080:8080"
     environment:
       - FASTAPI_HOST=${FASTAPI_HOST}
       - FASTAPI_PORT=${FASTAPI_PORT}
@@ -77,17 +77,35 @@ services:
     networks:
       - dev-network
 
+  nginx:
+    build:
+      context: ..
+      dockerfile: digiliencia/configs/nginx/DockerFile
+    environment:
+      - NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
+      - NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ../certs:/etc/nginx/ssl:ro
+    depends_on:
+      - fastapi-service
+    networks:
+      - dev-network
+
   embedding-api-service:
     image: busybox
-    profiles: ["donotstart"] 
+    profiles: [ "donotstart" ]
 
   devcontainer:
     image: busybox
-    profiles: ["donotstart"]
+    profiles: [ "donotstart" ]
 
 volumes:
   postgres-data:
   neo4j-data:
+
 
 networks:
   dev-network:
