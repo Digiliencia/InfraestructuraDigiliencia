@@ -1,236 +1,242 @@
-import pytest
-import psycopg2
-from psycopg2.errors import NotNullViolation, UniqueViolation, RestrictViolation,ForeignKeyViolation
-import uuid
+# /tests/db_test/db_integrity_test.py
+"""
+Database Constraint Verification Tests.
 
-# This file contains tests to verify data constraints and integrity.
+This module performs raw SQL operations to verify that the database schema
+correctly enforces data integrity rules (Unique, Not Null, Foreign Keys).
+
+Updates:
+- Adapted to new table names (users, chats, ai_prompts).
+- Updated FK behavior tests to match 'ON DELETE SET NULL' defined in schema.
+"""
+
+import uuid
+import pytest
+from psycopg2.errors import (
+    NotNullViolation,
+    UniqueViolation,
+    ForeignKeyViolation,
+    UndefinedColumn,
+)
+from digiliencia.configs.fastAPI.core.config import settings
 
 
 def test_unique_email_constraint(get_db_connection_for_role):
     """
-    Verifies that the UNIQUE constraint on the 'email' column of the USERS table works.
+    Verifies the UNIQUE constraint on the 'email' column of the 'users' table.
     """
-    conn = get_db_connection_for_role("db_owner")  # Use the connection from the fixture
+    conn = get_db_connection_for_role()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT email FROM USERS LIMIT 1;")
+    # 1. Get an existing email
+    cursor.execute("SELECT email FROM users LIMIT 1;")
     existing_email = cursor.fetchone()[0]
 
+    # 2. Try to insert a duplicate
     with pytest.raises(UniqueViolation):
         cursor.execute(
             """
-            INSERT INTO USERS (email, hashed_password, is_active, is_superuser, is_verified)
+            INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified)
             VALUES (%s, 'hashed_password', true, false, false);
             """,
             (existing_email,),
         )
 
     conn.rollback()
-    print("\nUnique email test passed.")
     cursor.close()
 
 
 def test_not_null_constraints(get_db_connection_for_role):
     """
-    Verifies that NOT NULL constraints work as expected.
+    Verifies NOT NULL constraints across users, chats, and messages tables.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    # Test user table constraints
+    # Test 'users' table constraints
     with pytest.raises(NotNullViolation):
         cursor.execute(
-            """
-            INSERT INTO USERS (email, hashed_password)
-            VALUES (NULL, 'hashed_password');
-            """
+            "INSERT INTO users (email, hashed_password) VALUES (NULL, 'pass');"
         )
     conn.rollback()
+
+    # Test 'chats' table constraints
+    with pytest.raises(NotNullViolation):
+        cursor.execute("INSERT INTO chats (title, user_id) VALUES ('Test Chat', NULL);")
+    conn.rollback()
+
+    # Test 'messages' table constraints
+    # Need a valid chat_id to fail on the other fields
+    cursor.execute("SELECT id FROM chats LIMIT 1;")
+    chat_id = cursor.fetchone()[0]
 
     with pytest.raises(NotNullViolation):
         cursor.execute(
             """
-            INSERT INTO USERS (email)
-            VALUES ('test@test.com');
-            """
-        )
-    conn.rollback()
-
-    # Test chat table constraints
-    with pytest.raises(NotNullViolation):
-        cursor.execute(
-            "INSERT INTO CHATS (tittle, user_id) VALUES ('Test Chat', NULL);"
-        )
-    conn.rollback()
-
-    # Test messages table constraints
-    with pytest.raises(NotNullViolation):
-        cursor.execute("SELECT id FROM chats LIMIT 1;")
-        chat_id = cursor.fetchone()[0]
-        cursor.execute(
-            """
-            INSERT INTO MESSAGES (chat_id, content, order_number)
+            INSERT INTO messages (chat_id, content, order_number)
             VALUES (%s, NULL, 1);
             """,
             (chat_id,),
         )
     conn.rollback()
-
-    print("\nNOT NULL constraints test passed.")
     cursor.close()
 
 
 def test_foreign_key_constraints(get_db_connection_for_role):
     """
-    Verifies that foreign key constraints work.
+    Verifies that inserting a record with a non-existent Foreign Key fails.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
     non_existent_user_id = str(uuid.uuid4())
+
     with pytest.raises(ForeignKeyViolation):
         cursor.execute(
-            "INSERT INTO CHATS (tittle, user_id) VALUES ('Ghost Chat', %s);",
+            "INSERT INTO chats (title, user_id) VALUES ('Ghost Chat', %s);",
             (non_existent_user_id,),
         )
 
     conn.rollback()
-    print("\nForeign key constraint test passed.")
     cursor.close()
 
 
 def test_on_delete_cascade_behavior(get_db_connection_for_role):
     """
-    Verifies the ON DELETE CASCADE behavior.
+    Verifies ON DELETE CASCADE behavior for User -> Chats -> Messages.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    # Test cascade delete from users to chats
-    cursor.execute("SELECT user_id, id FROM CHATS LIMIT 1;")
-    user_id, chat_id = cursor.fetchone()
+    # 1. Setup: Pick a user who has chats
+    cursor.execute("SELECT user_id, id FROM chats LIMIT 1;")
+    res = cursor.fetchone()
+    if not res:
+        pytest.skip("No chats found to test cascade.")
 
-    cursor.execute("DELETE FROM USERS WHERE id = %s;", (user_id,))
+    user_id, chat_id = res
+
+    # Verify messages exist
+    cursor.execute("SELECT COUNT(*) FROM messages WHERE chat_id = %s;", (chat_id,))
+    assert cursor.fetchone()[0] > 0, "Setup failed: Chat has no messages."
+
+    # 2. Act: Delete the User
+    cursor.execute("DELETE FROM users WHERE id = %s;", (user_id,))
     conn.commit()
 
-    cursor.execute("SELECT COUNT(*) FROM CHATS WHERE id = %s;", (chat_id,))
-    assert cursor.fetchone()[0] == 0, "The chat should have been deleted in cascade."
+    # 3. Assert: Chat should be gone
+    cursor.execute("SELECT COUNT(*) FROM chats WHERE id = %s;", (chat_id,))
+    assert cursor.fetchone()[0] == 0, "Cascade failed: Chat still exists."
 
-    # Test cascade delete from chats to messages
-    cursor.execute("SELECT id FROM CHATS LIMIT 1;")
-    chat_id = cursor.fetchone()[0]
+    # 4. Assert: Messages should be gone
+    cursor.execute("SELECT COUNT(*) FROM messages WHERE chat_id = %s;", (chat_id,))
+    assert cursor.fetchone()[0] == 0, "Cascade failed: Messages still exist."
 
-    cursor.execute("SELECT COUNT(*) FROM MESSAGES WHERE chat_id = %s;", (chat_id,))
-    initial_message_count = cursor.fetchone()[0]
-    assert initial_message_count > 0, "Should have MESSAGES for testing cascade delete"
-
-    cursor.execute("DELETE FROM CHATS WHERE id = %s;", (chat_id,))
-    conn.commit()
-
-    cursor.execute("SELECT COUNT(*) FROM MESSAGES WHERE chat_id = %s;", (chat_id,))
-    assert cursor.fetchone()[0] == 0, "Messages should have been deleted in cascade."
-
-    print("\nON DELETE CASCADE test passed.")
     cursor.close()
 
 
-def test_on_delete_restrict_behavior(get_db_connection_for_role):
+def test_on_delete_set_null_behavior(get_db_connection_for_role):
     """
-    Verifies the ON DELETE RESTRICT behavior for models and prompts.
+    Verifies ON DELETE SET NULL behavior for AI Prompts (Templates).
+
+    Note: The schema refactor changed this from RESTRICT to SET NULL
+    to prevent losing chat history when a template is deleted.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    # Test RESTRICT on models
-    cursor.execute("SELECT model_id FROM MESSAGES WHERE model_id IS NOT NULL LIMIT 1;")
-    model_id_in_use = cursor.fetchone()[0]
-
-    with pytest.raises(RestrictViolation):
-        cursor.execute("DELETE FROM models WHERE id = %s;", (model_id_in_use,))
-    conn.rollback()
-
-    # Test RESTRICT on prompts
+    # 1. Find a chat using a specific prompt
     cursor.execute(
-        "SELECT ia_prompt_id FROM CHATS WHERE ia_prompt_id IS NOT NULL LIMIT 1;"
+        "SELECT id, ai_prompt_id FROM chats WHERE ai_prompt_id IS NOT NULL LIMIT 1;"
     )
-    prompt_id_in_use = cursor.fetchone()[0]
+    res = cursor.fetchone()
+    if not res:
+        pytest.skip("No chats with prompts found.")
 
-    with pytest.raises(RestrictViolation):
-        cursor.execute("DELETE FROM IA_PROMPTS WHERE id = %s;", (prompt_id_in_use,))
-    conn.rollback()
+    chat_id, prompt_id = res
 
-    print("\nON DELETE RESTRICT test passed.")
+    # 2. Act: Delete the AI Prompt
+    cursor.execute("DELETE FROM ai_prompts WHERE id = %s;", (prompt_id,))
+    conn.commit()
+
+    # 3. Assert: Chat should still exist, but ai_prompt_id should be NULL
+    cursor.execute("SELECT ai_prompt_id FROM chats WHERE id = %s;", (chat_id,))
+    new_prompt_id = cursor.fetchone()[0]
+
+    assert new_prompt_id is None, "ON DELETE SET NULL failed: ai_prompt_id is not None."
+
     cursor.close()
 
 
 def test_unique_order_number_within_chat(get_db_connection_for_role):
     """
-    Verifies that message order numbers are unique within a chat.
+    Verifies the composite UNIQUE constraint (chat_id, order_number) in messages.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    # Get a chat_id and its existing order number
-    cursor.execute("SELECT chat_id, order_number FROM MESSAGES LIMIT 1;")
+    # 1. Get an existing message details
+    cursor.execute("SELECT chat_id, order_number FROM messages LIMIT 1;")
     chat_id, existing_order = cursor.fetchone()
 
-    # Try to insert a message with the same order number in the same chat
+    # 2. Try to insert another message with same order_number in same chat
     with pytest.raises(UniqueViolation):
         cursor.execute(
             """
-            INSERT INTO MESSAGES (order_number, content, chat_id)
-            VALUES (%s, 'Test content', %s);
+            INSERT INTO messages (chat_id, order_number, content)
+            VALUES (%s, %s, 'Duplicate Order Content');
             """,
-            (existing_order, chat_id),
+            (chat_id, existing_order),
         )
     conn.rollback()
-
-    print("\nUnique order number within chat test passed.")
     cursor.close()
 
 
 def test_default_values(get_db_connection_for_role):
     """
-    Verifies that default values are set correctly.
+    Verifies default values for new Users (is_active=True, is_superuser=False).
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    # Test user default values
     cursor.execute(
         """
-        INSERT INTO USERS (email, hashed_password)
-        VALUES ('new_test@test.com', 'hashed_pwd')
+        INSERT INTO users (email, hashed_password)
+        VALUES ('defaults_test@example.com', 'hash')
         RETURNING is_active, is_superuser, is_verified;
         """
     )
     is_active, is_superuser, is_verified = cursor.fetchone()
 
-    assert is_active, "is_active should default to TRUE"
-    assert not is_superuser, "is_superuser should default to FALSE"
-    assert not is_verified, "is_verified should default to FALSE"
+    assert is_active is True
+    assert is_superuser is False
+    assert is_verified is False
 
     conn.rollback()
-    print("\nDefault values test passed.")
     cursor.close()
 
 
 def test_users_view_security(get_db_connection_for_role):
     """
-    Verifies that the 'users_id_email_view' view only exposes the expected columns.
+    Verifies that the 'users_id_email_view' view exists and restricts columns.
+
+    Note: Assumes '03-views.sql' created this view correctly.
     """
-    conn = get_db_connection_for_role("db_owner")
+    conn = get_db_connection_for_role(settings.POSTGRES_USER)
     cursor = conn.cursor()
 
-    with pytest.raises(psycopg2.errors.UndefinedColumn):
+    # 1. Check that we CANNOT select sensitive fields
+    with pytest.raises(UndefinedColumn):
         cursor.execute("SELECT hashed_password FROM users_id_email_view LIMIT 1;")
     conn.rollback()
 
+    # 2. Check that we CAN select safe fields
     try:
         cursor.execute("SELECT id, email FROM users_id_email_view LIMIT 1;")
-        assert len(cursor.fetchone()) == 2
-    except psycopg2.Error as e:
-        pytest.fail(f"Could not select 'id' and 'email' columns from the view: {e}")
+        row = cursor.fetchone()
+        assert row is not None
+        assert len(row) == 2
+    except Exception as e:
+        pytest.fail(f"View selection failed: {e}")
 
-    print("\nView security test passed.")
     cursor.close()

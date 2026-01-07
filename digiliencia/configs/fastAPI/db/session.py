@@ -1,48 +1,61 @@
 # /db/session.py
 """
-This module is responsible for setting up the asynchronous database connection.
+This module initializes the asynchronous database connection.
 
-It initializes the SQLAlchemy async engine, creates a session factory for
-generating new database sessions, and provides a FastAPI dependency (`get_db`)
-for injecting sessions into API route functions.
+It configures the SQLAlchemy engine using settings from `core.config`,
+creates the session factory, and provides the dependency used by FastAPI
+routers to access the database.
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
+from typing import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
 from core.config import settings
 
-# The asynchronous database engine is the core interface to the database.
-# It is configured once using the DATABASE_URL from the application settings.
-# `echo=True` logs all generated SQL statements, which is useful for debugging.
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
+# Initialize the asynchronous engine.
+# 'future=True' enables SQLAlchemy 2.0 style usage.
+# 'echo=False' disables SQL logging to console (set to True for local debugging only).
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    future=True,
+)
 
-# A factory for creating new AsyncSession objects. This is the primary way
-# the application will interact with the database. The settings ensure that
-# sessions behave correctly in an async environment.
+
+# Create a configured "Session" class.
+# This factory generates new AsyncSession instances for each request.
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
-    expire_on_commit=False,  # Prevents SQLAlchemy from expiring objects after commit
-    autocommit=False,  # Transactions are managed manually with `await session.commit()`
-    autoflush=False,  # Changes are not automatically sent to the DB
+    expire_on_commit=False,  # Objects remain accessible after commit (required for async)
+    autoflush=False,  # We manually flush/commit to control transaction boundaries
+    autocommit=False,  # We manually manage transactions
 )
 
-# A declarative base class used by all SQLAlchemy ORM models.
-# Although defined here, models in `db/models.py` will inherit from this Base.
-Base = declarative_base()
 
-
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    FastAPI dependency to provide a database session for a single request.
+    FastAPI Dependency for database sessions.
 
-    This function is a generator that yields a new `AsyncSession` for each
-    incoming API request. It uses a context manager (`async with`) to ensure
-    that the session is always closed properly after the request is finished,
-    even if errors occur.
+    Creates a new asynchronous database session for an incoming request
+    and ensures it is closed when the request completes.
 
     Yields:
-        AsyncSession: An active, asynchronous database session.
+        AsyncSession: An active database session context.
     """
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            # In case of an unhandled error within the route,
+            # we assume the session might be in a bad state.
+            # The context manager usually handles rollback on exit if needed,
+            # but explicit handling can be added here if custom logic is required.
+            await session.rollback()
+            raise
+        finally:
+            # The 'async with' block automatically closes the session,
+            # returning the connection to the pool.
+            pass

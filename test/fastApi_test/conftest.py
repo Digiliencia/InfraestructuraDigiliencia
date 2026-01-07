@@ -1,20 +1,25 @@
 # /tests/fastApi_test/conftest.py
-from pathlib import Path
-import time
+"""
+Configuration and Fixtures for FastAPI Integration Tests (Black-box testing).
 
-import pytest
+This module sets up a real Uvicorn server instance in a separate process
+to allow HTTP testing against the running API endpoints via '127.0.0.1'.
+"""
 
-from dotenv import load_dotenv
-
-import pytest_asyncio
-import httpx
-import multiprocessing
 import asyncio
-from typing import AsyncGenerator, Any
+import time
+from typing import Any, AsyncGenerator
+
+import httpx
+import pytest
+import pytest_asyncio
+from starlette import status
 from httpx import AsyncClient
 
-from test.conftest import faker
-from starlette import status
+from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
+
+# Import Schema and Config
+# We use the local project structure, assuming python path is set correctly
 from digiliencia.configs.fastAPI.schemas.chat import Templates, Models
 from digiliencia.configs.fastAPI.core.endpoints import (
     TEMPLATE_LIST,
@@ -24,81 +29,75 @@ from digiliencia.configs.fastAPI.core.endpoints import (
     USERS_ME,
 )
 
-#try:
-#    multiprocessing.set_start_method("spawn")
-#except RuntimeError:
-#    pass # It was configurated yet
+from test.conftest import faker
+
+# Constants
+HOST = "127.0.0.1"
+PORT = "8080"
+BASE_URL = f"http://{HOST}:{PORT}/api"
+HEALTH_CHECK_URL = f"{BASE_URL}/health"
+
 
 # =============================================================================
-# FastAPI Async SQLAlchemy Test Data Fixture
+# API Client
 # =============================================================================
 
-# Load environment variables from the project's .env file
-dotenv_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path)
 
-# --- HTTP Client Fixtures ---
-API_URL = "http://127.0.0.1:8080/api"
-HEALTH_CHECK_URL = "http://127.0.0.1:8080/api/health"
+@pytest_asyncio.fixture(scope="session")
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """
+    Creates an HTTPX AsyncClient connected to the RUNNING external API.
+
+    It does NOT spin up the FastAPI app internally. It expects the service
+    to be available at API_BASE_URL.
+    """
+    # We simply point httpx to the external URL
+    async with AsyncClient(base_url=BASE_URL) as ac:
+        yield ac
 
 
-def run_server():
-    """Target function to run the Uvicorn server in a separate process."""
-    # uvicorn.run(app, host="127.0.0.1", port=8080)
-    pass
+# =============================================================================
+# Server Process Management
+# =============================================================================
 
 
 async def wait_for_server(url: str, timeout: int = 10):
-    """Polls the health check endpoint until the server is responsive."""
+    """
+    Polls the health check endpoint until the server is responsive.
+    """
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
             async with httpx.AsyncClient() as client:
-                await client.get(url)
-                return
-        except httpx.ConnectError:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    return
+        except (httpx.ConnectError, httpx.ReadTimeout):
             await asyncio.sleep(0.1)
+
     raise TimeoutError("Test server did not start within the timeout period.")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def app_server(setup_database):
-    """
-    Session-scoped fixture to manage the lifecycle of the FastAPI test server.
-
-    It starts the server in a separate process before any tests run and
-    terminates it after all tests in the session are complete.
-    """
-    proc = multiprocessing.Process(target=run_server, daemon=True)
-    proc.start()
-    try:
-        asyncio.run(wait_for_server(HEALTH_CHECK_URL))
-    except TimeoutError as e:
-        proc.terminate()
-        proc.join()
-        pytest.fail(f"Server failed to start: {e}")
-
-    yield
-
-    proc.terminate()
-    proc.join()
+# =============================================================================
+# Client Fixtures
+# =============================================================================
 
 
 @pytest_asyncio.fixture(scope="function")
 async def api_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
     """
-    Function-scoped fixture providing an unauthenticated HTTP client.
+    Provides an unauthenticated HTTP client pointing to the live test server.
     """
-    async with httpx.AsyncClient(base_url=API_URL) as client:
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 def fake_user() -> dict:
     """
-    Function-scoped fixture that generates a dictionary with fake user data.
+    Generates a dictionary with valid fake user credentials.
     """
-    return {"email": faker.email(), "password": "ValidPassword123"}
+    return {"email": faker.email(), "password": "ValidPassword123!"}
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -106,63 +105,87 @@ async def authenticated_client(
     fake_user: dict,
 ) -> AsyncGenerator[httpx.AsyncClient, Any]:
     """
-    Function-scoped fixture that provides an authenticated HTTP client.
+    Provides an authenticated HTTP client.
 
-    It performs the complete authentication flow:
-    1. Registers a new user with fake data.
-    2. Logs the new user in to obtain a JWT.
-    3. Yields an HTTP client with the `Authorization` header pre-set.
-    4. Deletes the user after the test is complete for cleanup.
+    Flow:
+    1. Registers a user.
+    2. Logs in to get JWT.
+    3. Sets Authorization header.
+    4. Cleans up (deletes user) after test.
     """
-    async with httpx.AsyncClient(base_url=API_URL) as auth_client:
-        response = await auth_client.post(REGISTER, json=fake_user)
-        if response.status_code != status.HTTP_201_CREATED:
-            raise Exception(f"User registration failed in fixture: {response.text}")
+    async with httpx.AsyncClient(base_url=BASE_URL) as auth_client:
+        # 1. Register
+        # Endpoint: /api/auth/register
+        reg_response = await auth_client.post(REGISTER, json=fake_user)
+        if reg_response.status_code != status.HTTP_201_CREATED:
+            raise Exception(f"Registration failed: {reg_response.text}")
 
-        response = await auth_client.post(
+        # 2. Login
+        # Endpoint: /api/auth/login
+        login_response = await auth_client.post(
             LOGIN,
             json={"email": fake_user["email"], "password": fake_user["password"]},
         )
-        if response.status_code != status.HTTP_200_OK:
-            raise Exception(f"User login failed in fixture: {response.text}")
+        if login_response.status_code != status.HTTP_200_OK:
+            raise Exception(f"Login failed: {login_response.text}")
 
-        token = response.json()["access_token"]
+        # 3. Setup Header
+        token = login_response.json()["access_token"]
         auth_client.headers.update({"Authorization": f"Bearer {token}"})
 
         yield auth_client
 
-        response = await auth_client.delete(USERS_ME)
-        if response.status_code != status.HTTP_204_NO_CONTENT:
+        # 4. Cleanup
+        # Endpoint: /api/users/me
+        del_response = await auth_client.delete(USERS_ME)
+        if del_response.status_code != status.HTTP_204_NO_CONTENT:
             print(f"Warning: Failed to cleanup user {fake_user['email']}")
 
 
+# =============================================================================
+# Data Fetching Fixtures (Templates & Models)
+# =============================================================================
+
+
 @pytest_asyncio.fixture(scope="function")
-async def templates(authenticated_client: AsyncClient) -> Templates:
+async def templates(authenticated_client: httpx.AsyncClient) -> Templates:
     """
-    Function-scoped fixture that fetches the list of available prompt templates.
+    Fetches the list of available AI templates from the API.
     """
     response = await authenticated_client.get(TEMPLATE_LIST)
-    if response.status_code != status.HTTP_202_ACCEPTED:
-        raise Exception(f"Error getting templates: {response.status_code}")
 
-    templates = response.json()
-    if not templates:
-        raise Exception("No templates found in database to use in tests.")
+    # Updated check: Changed from 202 to 200 based on new router logic
+    if response.status_code != status.HTTP_200_OK:
+        raise Exception(
+            f"Error getting templates ({response.status_code}): {response.text}"
+        )
 
-    return Templates.model_validate(templates)
+    data = response.json()
+    # Check for empty list inside the 'templates' key if necessary,
+    # or the object itself depending on schema.
+    # Assuming schema is: { "templates": [...] }
+    if not data.get("templates"):
+        raise Exception("No templates found in database (seed failed?).")
+
+    return Templates.model_validate(data)
 
 
 @pytest_asyncio.fixture(scope="function")
-async def models(authenticated_client: AsyncClient) -> Models:
+async def models(authenticated_client: httpx.AsyncClient) -> Models:
     """
-    Function-scoped fixture that fetches the list of available AI models.
+    Fetches the list of available AI models from the API.
     """
     response = await authenticated_client.get(MODEL_LIST)
-    if response.status_code != status.HTTP_202_ACCEPTED:
-        raise Exception(f"Error getting models: {response.status_code}")
 
-    models = response.json()
-    if not models:
-        raise Exception("No models found in database to use in tests.")
+    # Updated check: Changed from 202 to 200
+    if response.status_code != status.HTTP_200_OK:
+        raise Exception(
+            f"Error getting models ({response.status_code}): {response.text}"
+        )
 
-    return Models.model_validate(models)
+    data = response.json()
+    # Assuming schema is: { "models": [...] }
+    if not data.get("models"):
+        raise Exception("No models found in database (seed failed?).")
+
+    return Models.model_validate(data)

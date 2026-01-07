@@ -56,7 +56,7 @@ Stores conversations or chats, associated with a user.
 | Column | Type | Description |
 | :---- | :---- | :---- |
 | id | UUID | **Primary Key**, default `gen_random_uuid()`. Unique chat identifier. |
-| tittle | VARCHAR(255) | Title or name of the chat. |
+| title | VARCHAR(255) | Title or name of the chat. |
 | user_id | UUID | **Not Null**, **Foreign Key** to `users(id)`. `ON DELETE CASCADE`, `ON UPDATE CASCADE`. |
 
 #### **IA_PROMPTS**
@@ -69,7 +69,7 @@ Stores system prompt templates for the AI.
 | prompt_name | TEXT | **Not Null**. Name of template. |
 | prompt | TEXT | **Not Null**. The text of the system prompt. |
 | prompt_description | TEXT | Description of the prompt's purpose. |
-| ia_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |
+| AI_name | VARCHAR(255) | **Unique**, **Not Null**. Name for the prompt. |
 
 #### **MODELS**
 
@@ -78,7 +78,7 @@ Stores the different available AI models.
 | Column | Type | Description |
 | :---- | :---- | :---- |
 | id | UUID | **Primary Key**, default `gen_random_uuid()`. |
-| ia_name | VARCHAR(255) | **Unique**, **Not Null**. Model name (e.g., 'GPT-4'). |
+| AI_name | VARCHAR(255) | **Unique**, **Not Null**. Model name (e.g., 'GPT-4'). |
 
 #### **MESSAGES**
 
@@ -92,7 +92,7 @@ Stores each individual message within a chat.
 | statistics | TEXT | Optional statistics for the message (stored as TEXT; may contain JSON). |
 | chat_id | UUID | **Not Null**, **Foreign Key** to `chats(id)`. `ON DELETE CASCADE`, `ON UPDATE CASCADE`. |
 | model_id | UUID | **Foreign Key** to `models(id)`. `ON DELETE RESTRICT`, `ON UPDATE RESTRICT`. |
-| ia_prompt_id | UUID | **Foreign Key** to `ia_prompts(id)`. `ON DELETE RESTRICT`, `ON UPDATE RESTRICT`. |
+| AI_prompt_id | UUID | **Foreign Key** to `ia_prompts(id)`. `ON DELETE RESTRICT`, `ON UPDATE RESTRICT`. |
 
 Unique constraints and notes:
 

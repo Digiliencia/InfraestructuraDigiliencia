@@ -29,27 +29,28 @@ jobs:
 
     env:
 
-      TESTING: "true"
+      TESTING: ${{ vars.TESTING }}
+      LOCAL: ${{ vars.LOCAL }}
 
       # --- Postgres Settings ---
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
       POSTGRES_DB: ${{ vars.POSTGRES_DB }}
-      APP_DB_NAME: ${{ vars.APP_DB_NAME }}
+      POSTGRES_SERVER: ${{ vars.POSTGRES_SERVER }}
+      POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
       
-      # --- Users setup ---
-      DB_OWNER_USER: ${{ vars.DB_OWNER_USER }}
-      DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD }}
-      APP_USER: ${{ vars.APP_USER }}
-      APP_USER_PASSWORD: ${{ secrets.APP_USER_PASSWORD }}
-      APP_USER_LOGIN: ${{ vars.APP_USER_LOGIN }}
-      APP_USER_LOGIN_PASSWORD: ${{ secrets.APP_USER_LOGIN_PASSWORD }}
-
       # --- API Settings ---
       ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM }}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
+      ACCESS_TOKEN_EXPIRE_SECONDS: ${{ vars.ACCESS_TOKEN_EXPIRE_SECONDS }}
+      FASTAPI_HOST: ${{ vars.FASTAPI_HOST }}
+      FASTAPI_PORT: ${{ vars.FASTAPI_PORT }}
+
+      # --- Redis ---
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      #REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
       # --- Neo4j Settings ---
       NEO4J_USERNAME: ${{ vars.NEO4J_USERNAME }}
@@ -96,32 +97,74 @@ jobs:
           timeout 60s bash -c 'until nc -z localhost 7687; do sleep 2; done'
           
           echo "Waiting for Neo4j HTTP..."
-          if ! timeout 120s bash -c 'until curl -s --fail http://localhost:7474 > /dev/null || curl -s --fail http://127.0.0.1:7474 > /dev/null; do sleep 2; done'; then
-            echo "ERROR: Neo4j HTTP check timed out. Showing logs:"
-            docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
-            exit 1
-          fi
+          for i in {1..180}; do
+            if curl -s --fail http://localhost:7474 > /dev/null 2>&1 || curl -s --fail http://127.0.0.1:7474 > /dev/null 2>&1; then
+              echo "Neo4j HTTP is ready!"
+              break
+            fi
+            if [ $i -eq 180 ]; then
+              echo "ERROR: Neo4j HTTP check timed out after 180s. Showing logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
+              exit 1
+            fi
+            sleep 1
+          done
           
           echo "Waiting for Postgres..."
-          timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
+          for i in {1..60}; do
+            if nc -z localhost 5432 2>/dev/null; then
+              echo "Postgres is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "ERROR: Postgres check timed out after 60s. Showing logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs db
+              exit 1
+            fi
+            sleep 1
+          done
           
           echo "Waiting for Redis..."
-          timeout 30s bash -c 'until nc -z localhost 6379; do sleep 2; done'
+          for i in {1..30}; do
+            if nc -z localhost 6379 2>/dev/null; then
+              echo "Redis is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "ERROR: Redis check timed out after 30s."
+              exit 1
+            fi
+            sleep 1
+          done
 
           echo "Waiting for FastAPI..."
-          if ! timeout 60s bash -c 'until curl -s http://localhost:8080/health > /dev/null || nc -z localhost 8080; do sleep 2; done'; then
-            echo "ERROR: FastAPI check timed out. Showing logs:"
-            docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
-            exit 1
-          fi
+          for i in {1..60}; do
+            echo "[$i/60] Checking FastAPI logs..."
+            LOGS=$(docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test 2>&1)
+            echo "Current logs:"
+            echo "$LOGS" | tail -5
+            
+            if echo "$LOGS" | grep -q "Application startup complete"; then
+              echo "✓ FastAPI is ready!"
+              sleep 3
+              break
+            fi
+            
+            if [ $i -eq 60 ]; then
+              echo "ERROR: FastAPI check timed out after 60s. Full logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs  fastapi-service-test
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Show running containers
         if: failure()
-        run: docker compose ps -a
+        run: docker compose -f .devcontainer/docker-compose.ci.yml ps -a
 
       - name: Show FastAPI logs
         if: failure()
-        run: docker compose logs fastapi-service
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -136,7 +179,7 @@ jobs:
 
       - name: Show FastAPI logs (Post-Test)
         if: failure()
-        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test
 
       - name: Stop containers
         if: always()

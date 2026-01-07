@@ -1,51 +1,77 @@
+# /core/endpoints.py
 """
-Constants for API endpoints and routes.
+API Route Constants.
+
+This module acts as the Single Source of Truth for all API path definitions.
 """
 
-from typing import List, Optional
+from typing import Final, List, Optional, Union
 from fastapi import APIRouter
 from enum import Enum
 
-# Base API URLs
-API_PREFIX = "/api"  # Matches the prefix in main.py
+# --- Global Prefix ---
+API_PREFIX: Final[str] = "/api"
 
-# Auth endpoints
-AUTH_PATH = "/auth"
-JWT_PATH = f"{API_PREFIX}{AUTH_PATH}/jwt"
-LOGIN = f"{AUTH_PATH}/login"  # Becomes /api/auth/jwt/login
-TOKEN = f"{JWT_PATH}/login"
-REGISTER = "/register"  # Becomes /api/register
-VERIFY = "/verify"  # Becomes /api/verify
-USERS_PATH = "/users"
-USERS_ME_PATH = "/me"  # Becomes /api/users/me
-HEALTH_PATH = "/health"  # Becomes /api/health
+# --- Authentication Routes ---
+# Prefix: /api/auth
+AUTH_PREFIX: Final[str] = "/auth"
 
-CHATS_PATH = "/chats"  # Becomes /api/chats
-CONVERSATIONS = "/conversations"  # Becomes /api/conversations
-TEMPLATE_LIST = f"{CHATS_PATH}/template_list"  # Becomes /api/chats/template_list
-MODEL_LIST = f"{CHATS_PATH}/model_list"  # Becomes /api/chats/model_list
+# Endpoint: /api/auth/login (POST)
+LOGIN: Final[str] = f"{AUTH_PREFIX}/login"
 
-# Health and root endpoints
-ROOT = f"{API_PREFIX}/"  # Becomes /api/
+# Endpoint: /api/auth/register (POST)
+REGISTER: Final[str] = f"{AUTH_PREFIX}/register"
 
-HEALTH = f"{API_PREFIX}/health"  # Becomes /api/health
+# Endpoint: /api/auth/jwt/login (Standard FastAPI Users path)
+TOKEN: Final[str] = f"{AUTH_PREFIX}/jwt/login"
 
-USERS_ME = f"{USERS_PATH}{USERS_ME_PATH}"
+
+# --- User Management Routes ---
+# Prefix: /api/users
+USERS_PREFIX: Final[str] = "/users"
+
+# Endpoint: /api/users/me
+USERS_ME: Final[str] = f"{USERS_PREFIX}/me"
+
+
+# --- Chat & Conversation Routes ---
+# Prefix: /api/chats
+CHATS_PATH: Final[str] = "/chats"
+
+# Endpoint: /api/chats/conversations
+CONVERSATIONS: Final[str] = f"{CHATS_PATH}/conversations"
+
+# Endpoint: /api/chats/templates
+TEMPLATE_LIST: Final[str] = f"{CHATS_PATH}/templates"
+
+# Endpoint: /api/chats/templates/{id}
+TEMPLATE_DETAIL: Final[str] = f"{CHATS_PATH}/templates" + "/{template_id}"
+
+# Endpoint: /api/chats/models
+MODEL_LIST: Final[str] = f"{CHATS_PATH}/models"
+
+# Endpoint: /api/chats/models/{id}
+MODEL_DETAIL: Final[str] = f"{CHATS_PATH}/models" + "/{model_id}"
+
+
+# --- System & Root Endpoints ---
+
+# Endpoint: /api/health
+HEALTH_PATH: Final[str] = "/health"
+HEALTH: Final[str] = f"{API_PREFIX}{HEALTH_PATH}"
+
+# Endpoint: /api/ (API Root)
+ROOT: Final[str] = f"{API_PREFIX}/"
+
+
+# --- Helper Utilities ---
 
 
 def get_prefixed_router(
-    prefix: str = "", tags: Optional[List[str | Enum]] = None, **kwargs
+    prefix: str = "", tags: Optional[List[Union[str, Enum]]] = None, **kwargs
 ) -> APIRouter:
     """
-    Create a router with the API prefix already set.
-
-    Args:
-        prefix: Additional prefix to append after API_PREFIX
-        tags: OpenAPI tags for the router
-        **kwargs: Additional arguments to pass to APIRouter
-
-    Returns:
-        APIRouter: Configured router with the correct prefix
+    Factory function to create an APIRouter with the global API_PREFIX applied.
     """
     full_prefix = f"{API_PREFIX}{prefix}" if prefix else API_PREFIX
     return APIRouter(prefix=full_prefix, tags=tags, **kwargs)
