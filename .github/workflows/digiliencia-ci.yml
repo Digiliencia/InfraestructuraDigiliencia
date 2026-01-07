@@ -140,7 +140,7 @@ jobs:
           echo "Waiting for FastAPI..."
           for i in {1..60}; do
             echo "[$i/60] Checking FastAPI logs..."
-            LOGS=$(docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service 2>&1)
+            LOGS=$(docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test 2>&1)
             echo "Current logs:"
             echo "$LOGS" | tail -5
             
@@ -152,7 +152,7 @@ jobs:
             
             if [ $i -eq 60 ]; then
               echo "ERROR: FastAPI check timed out after 60s. Full logs:"
-              docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+              docker compose -f .devcontainer/docker-compose.ci.yml logs  fastapi-service-test
               exit 1
             fi
             sleep 1
@@ -164,7 +164,7 @@ jobs:
 
       - name: Show FastAPI logs
         if: failure()
-        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test
 
       - name: Check ruff formatting
         run: uv run ruff format --check
@@ -179,7 +179,7 @@ jobs:
 
       - name: Show FastAPI logs (Post-Test)
         if: failure()
-        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service-test
 
       - name: Stop containers
         if: always()
