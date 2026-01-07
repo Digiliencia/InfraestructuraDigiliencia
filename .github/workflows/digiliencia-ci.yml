@@ -118,7 +118,7 @@ jobs:
 
       - name: Show running containers
         if: failure()
-        run: docker compose ps -a
+        run: docker compose -f .devcontainer/docker-compose.ci.yml ps -a
 
       - name: Show FastAPI logs
         if: failure()
