@@ -32,7 +32,7 @@ from digiliencia.configs.fastAPI.core.endpoints import (
 from test.conftest import faker
 
 # Constants
-HOST = "127.0.0.1"
+HOST = "fastapi-service-test"
 PORT = "8080"
 BASE_URL = f"http://{HOST}:{PORT}/api"
 HEALTH_CHECK_URL = f"{BASE_URL}/health"
