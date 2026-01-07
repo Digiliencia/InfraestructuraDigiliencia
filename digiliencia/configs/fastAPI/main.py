@@ -72,9 +72,7 @@ To obtain a token, use the `/api/auth/login` endpoint with valid credentials.
     },
     docs_url=f"{API_PREFIX}/docs" if settings.ENVIRONMENT != "production" else None,
     redoc_url=f"{API_PREFIX}/redoc" if settings.ENVIRONMENT != "production" else None,
-    openapi_url=f"{API_PREFIX}/openapi.json"
-    if settings.ENVIRONMENT != "production"
-    else None,
+    openapi_url=f"{API_PREFIX}/openapi.json" if settings.ENVIRONMENT != "production" else None,
 )
 
 # Attach limiter to app state (required by slowapi)
@@ -106,21 +104,22 @@ async def add_security_headers(request: Request, call_next):
     inline scripts and styles to render.
     """
     response = await call_next(request)
-
-    # HSTS - Enforce HTTPS (only if in production or SSL enabled)
-    if settings.ENVIRONMENT == "production" or settings.SSL_CERTFILE:
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=63072000; includeSubDomains; preload"
-        )
+    
+    # HSTS - Enforce HTTPS (always add for security, production uses longer max-age)
+    max_age = "63072000" if settings.ENVIRONMENT == "production" else "31536000"
+    response.headers["Strict-Transport-Security"] = (
+        f"max-age={max_age}; includeSubDomains; preload"
+    )
+    response.headers["X-HSTS-Added"] = "true"  # Debug marker
 
     # Relax CSP for documentation endpoints to allow Swagger UI and ReDoc
     # to load their inline scripts and styles
     doc_paths = [
         f"{API_PREFIX}/docs",
         f"{API_PREFIX}/redoc",
-        f"{API_PREFIX}/openapi.json",
+        f"{API_PREFIX}/openapi.json"
     ]
-
+    
     is_doc_path = any(request.url.path.startswith(path) for path in doc_paths)
 
     if is_doc_path and settings.ENVIRONMENT != "production":
@@ -149,7 +148,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-
+    
     return response
 
 
