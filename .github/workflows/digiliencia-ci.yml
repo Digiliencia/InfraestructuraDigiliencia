@@ -122,7 +122,7 @@ jobs:
 
       - name: Show FastAPI logs
         if: failure()
-        run: docker compose logs fastapi-service
+        run: docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
 
       - name: Check ruff formatting
         run: uv run ruff format --check
