@@ -12,7 +12,8 @@ echo "--- Initializing Database ---"
 # 1. Export the password so psql can use it without interactive prompt
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
-export PGHOST=localhost
+# Use Unix socket for initial connection (TCP not yet enabled during bootstrap)
+export PGHOST=/var/run/postgresql
 
 # 2. Define variables to substitute in the template
 VARIABLES_TO_SUBSTITUTE='$POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_DB'
