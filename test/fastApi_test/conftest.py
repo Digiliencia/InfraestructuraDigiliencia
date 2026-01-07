@@ -32,7 +32,7 @@ from digiliencia.configs.fastAPI.core.endpoints import (
 from test.conftest import faker
 
 # Constants
-HOST = "fastapi-service-test"
+HOST = "127.0.0.1"
 PORT = "8080"
 BASE_URL = f"http://{HOST}:{PORT}/api"
 HEALTH_CHECK_URL = f"{BASE_URL}/health"
@@ -52,7 +52,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     to be available at API_BASE_URL.
     """
     # We simply point httpx to the external URL
-    async with AsyncClient(base_url=fastapi_settings.FASTAPI_HOST) as ac:
+    async with AsyncClient(base_url=BASE_URL) as ac:
         yield ac
 
 
