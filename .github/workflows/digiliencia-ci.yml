@@ -138,13 +138,14 @@ jobs:
           done
 
           echo "Waiting for FastAPI..."
-          for i in {1..120}; do
-            if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 2>/dev/null; then
+          for i in {1..180}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/health 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "200" ]; then
               echo "FastAPI is ready!"
               break
             fi
-            if [ $i -eq 120 ]; then
-              echo "ERROR: FastAPI check timed out after 120s. Showing logs:"
+            if [ $i -eq 180 ]; then
+              echo "ERROR: FastAPI check timed out after 180s. Showing logs:"
               docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
               exit 1
             fi
