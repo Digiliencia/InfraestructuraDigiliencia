@@ -111,17 +111,45 @@ jobs:
           done
           
           echo "Waiting for Postgres..."
-          timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
+          for i in {1..60}; do
+            if nc -z localhost 5432 2>/dev/null; then
+              echo "Postgres is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "ERROR: Postgres check timed out after 60s. Showing logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs db
+              exit 1
+            fi
+            sleep 1
+          done
           
           echo "Waiting for Redis..."
-          timeout 30s bash -c 'until nc -z localhost 6379; do sleep 2; done'
+          for i in {1..30}; do
+            if nc -z localhost 6379 2>/dev/null; then
+              echo "Redis is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "ERROR: Redis check timed out after 30s."
+              exit 1
+            fi
+            sleep 1
+          done
 
           echo "Waiting for FastAPI..."
-          if ! timeout 60s bash -c 'until curl -s http://localhost:8080/health > /dev/null || nc -z localhost 8080; do sleep 2; done'; then
-            echo "ERROR: FastAPI check timed out. Showing logs:"
-            docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
-            exit 1
-          fi
+          for i in {1..120}; do
+            if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 2>/dev/null; then
+              echo "FastAPI is ready!"
+              break
+            fi
+            if [ $i -eq 120 ]; then
+              echo "ERROR: FastAPI check timed out after 120s. Showing logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs fastapi-service
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Show running containers
         if: failure()
