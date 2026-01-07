@@ -97,11 +97,18 @@ jobs:
           timeout 60s bash -c 'until nc -z localhost 7687; do sleep 2; done'
           
           echo "Waiting for Neo4j HTTP..."
-          if ! timeout 120s bash -c 'until curl -s --fail http://localhost:7474 > /dev/null || curl -s --fail http://127.0.0.1:7474 > /dev/null; do sleep 2; done'; then
-            echo "ERROR: Neo4j HTTP check timed out. Showing logs:"
-            docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
-            exit 1
-          fi
+          for i in {1..180}; do
+            if curl -s --fail http://localhost:7474 > /dev/null 2>&1 || curl -s --fail http://127.0.0.1:7474 > /dev/null 2>&1; then
+              echo "Neo4j HTTP is ready!"
+              break
+            fi
+            if [ $i -eq 180 ]; then
+              echo "ERROR: Neo4j HTTP check timed out after 180s. Showing logs:"
+              docker compose -f .devcontainer/docker-compose.ci.yml logs neo4j
+              exit 1
+            fi
+            sleep 1
+          done
           
           echo "Waiting for Postgres..."
           timeout 30s bash -c 'until nc -z localhost 5432; do sleep 2; done'
