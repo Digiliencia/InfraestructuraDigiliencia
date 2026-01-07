@@ -72,7 +72,9 @@ To obtain a token, use the `/api/auth/login` endpoint with valid credentials.
     },
     docs_url=f"{API_PREFIX}/docs" if settings.ENVIRONMENT != "production" else None,
     redoc_url=f"{API_PREFIX}/redoc" if settings.ENVIRONMENT != "production" else None,
-    openapi_url=f"{API_PREFIX}/openapi.json" if settings.ENVIRONMENT != "production" else None,
+    openapi_url=f"{API_PREFIX}/openapi.json"
+    if settings.ENVIRONMENT != "production"
+    else None,
 )
 
 # Attach limiter to app state (required by slowapi)
@@ -104,7 +106,7 @@ async def add_security_headers(request: Request, call_next):
     inline scripts and styles to render.
     """
     response = await call_next(request)
-    
+
     # HSTS - Enforce HTTPS (only if in production or SSL enabled)
     if settings.ENVIRONMENT == "production" or settings.SSL_CERTFILE:
         response.headers["Strict-Transport-Security"] = (
@@ -116,9 +118,9 @@ async def add_security_headers(request: Request, call_next):
     doc_paths = [
         f"{API_PREFIX}/docs",
         f"{API_PREFIX}/redoc",
-        f"{API_PREFIX}/openapi.json"
+        f"{API_PREFIX}/openapi.json",
     ]
-    
+
     is_doc_path = any(request.url.path.startswith(path) for path in doc_paths)
 
     if is_doc_path and settings.ENVIRONMENT != "production":
@@ -147,7 +149,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    
+
     return response
 
 
