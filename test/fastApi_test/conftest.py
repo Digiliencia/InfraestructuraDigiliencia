@@ -51,8 +51,8 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     It does NOT spin up the FastAPI app internally. It expects the service
     to be available at API_BASE_URL.
     """
-    # We simply point httpx to the external URL
-    async with AsyncClient(base_url=fastapi_settings.FASTAPI_HOST) as ac:
+    # Point httpx to the external URL with full protocol and port
+    async with AsyncClient(base_url=BASE_URL) as ac:
         yield ac
 
 
