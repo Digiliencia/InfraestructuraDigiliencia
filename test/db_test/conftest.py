@@ -66,7 +66,7 @@ def get_db_connection_for_role():
             db_name = fastapi_settings.POSTGRES_DB
             if fastapi_settings.TESTING:
                 db_name = f"{db_name}_test"
-            
+
             conn = psycopg2.connect(
                 host=fastapi_settings.POSTGRES_SERVER,
                 port=fastapi_settings.POSTGRES_PORT,
