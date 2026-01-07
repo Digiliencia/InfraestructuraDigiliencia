@@ -1,11 +1,11 @@
 services:
 
-  fastapi-service:
+  fastapi-service-test:
     build:
       context: ..
       dockerfile: digiliencia/configs/fastAPI/DockerFile
-    ports:
-      - "8080:8080"
+    # ports:
+    #   - "8080:8080"
     environment:
       - FASTAPI_HOST=${FASTAPI_HOST}
       - FASTAPI_PORT=${FASTAPI_PORT}
@@ -37,7 +37,7 @@ services:
       - EMBEDDINGS_SERVICE=${EMBEDDINGS_SERVICE}
       - EMBEDDINGS_DIMENSION=${EMBEDDINGS_DIMENSION}
     depends_on:
-      - db-test
+      - db
       - redis
     networks:
       - dev-network
@@ -52,25 +52,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - TESTING=false
+      - TESTING=${TESTING}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - dev-network
-
-  db-test:
-    build:
-      context: ..
-      dockerfile: digiliencia/configs/postgres-db/DockerFile
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - TESTING=true
-    volumes:
-      - postgres-data-test:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     networks:
       - dev-network
 
@@ -81,16 +65,8 @@ services:
       - "7687:7687"
     environment:
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
-    networks:
-      - dev-network
-
-  neo4j-test:
-    image: neo4j:latest
-    ports:
-      - "7475:7474"
-      - "7688:7687"
-    environment:
-      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+    #volumes:
+    #  - neo4j-data:/data
     networks:
       - dev-network
 
@@ -128,7 +104,6 @@ services:
 
 volumes:
   postgres-data:
-  postgres-data-test:
   neo4j-data:
 
 
