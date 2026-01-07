@@ -2,18 +2,27 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 
+# Derive test database name if TESTING=true
 if [ "$TESTING" = "true" ]; then
-    echo "TEST"
-    POSTGRES_DB=$POSTGRES_DB_TEST
+    echo "TEST MODE ENABLED"
+    POSTGRES_DB="${POSTGRES_DB}_test"
 fi
 
 echo "--- Initializing Database ---"
+echo "Database: $POSTGRES_DB"
+echo "User: $POSTGRES_USER"
+echo "TESTING: $TESTING"
 
 # 1. Export the password so psql can use it without interactive prompt
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
-# Use Unix socket for initial connection (TCP not yet enabled during bootstrap)
-export PGHOST=/var/run/postgresql
+
+if [ "$LOCAL" = "true" ]; then
+    echo "LOCAL"
+    export PGHOST=localhost
+else
+    export PGHOST=/var/run/postgresql
+fi
 
 # 2. Define variables to substitute in the template
 VARIABLES_TO_SUBSTITUTE='$POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_DB'
