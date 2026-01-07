@@ -4,8 +4,8 @@ services:
     build:
       context: ..
       dockerfile: digiliencia/configs/fastAPI/DockerFile
-      ports:
-        - "8080:8080"
+    ports:
+      - "8080:8080"
     environment:
       - FASTAPI_HOST=${FASTAPI_HOST}
       - FASTAPI_PORT=${FASTAPI_PORT}
