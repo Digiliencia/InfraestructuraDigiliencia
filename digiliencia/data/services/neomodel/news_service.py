@@ -425,13 +425,13 @@ class NewsService:
 
         # Add relationship patterns for filtering
         if topic is not None:
-            query_parts.append("MATCH (n)-[:HAS_TOPIC]->(t:Topic)")
+            query_parts.append("MATCH (n)-[:COVERS]->(t:Topic)")
             topic_name = getattr(topic, "value", topic)
             where_clauses.append("t.name = $topic_name")
             params["topic_name"] = topic_name
 
         if related_field is not None:
-            query_parts.append("MATCH (n)-[:HAS_FIELD]->(f:Field)")
+            query_parts.append("MATCH (n)-[:RELATED_TO]->(f:Field)")
             related_field_name = getattr(related_field, "name", str(related_field))
             where_clauses.append("f.name = $field_name")
             params["field_name"] = related_field_name

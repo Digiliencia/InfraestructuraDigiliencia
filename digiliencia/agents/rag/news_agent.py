@@ -2,11 +2,12 @@
 News Agent implementation using llama-index.
 
 This agent specializes in retrieving and presenting cybersecurity news
-from the database using the available tools.
+from the database using the available tools. It has access to shared memory
+for conversation context across all agents.
 """
 
 import asyncio
-from typing import List
+from typing import List, Optional
 
 from llama_index.core import Settings, VectorStoreIndex
 from llama_index.core.agent import ReActAgent
@@ -18,6 +19,7 @@ from loguru import logger
 import digiliencia.agents.tools.news_tools as news_tools
 from digiliencia.agents.base_agent import BaseAgent
 from digiliencia.agents.prompts import NEWS_AGENT_SYSTEM_PROMPT
+from digiliencia.agents.shared_memory import SharedConversationMemory
 from digiliencia.configs.env import Env
 from digiliencia.utils.embeddings import CustomAPIEmbedding
 
@@ -25,6 +27,9 @@ from digiliencia.utils.embeddings import CustomAPIEmbedding
 class NewsAgent(BaseAgent):
     """
     Specialized agent for handling news-related queries.
+
+    This agent uses shared memory to maintain context with other agents
+    in the system, enabling coherent multi-agent conversations.
     """
 
     def __init__(
@@ -32,6 +37,7 @@ class NewsAgent(BaseAgent):
         model_name: str,
         temperature: float = 0.0,  # Lower temperature for factual responses
         verbose: bool = True,
+        shared_memory: Optional[SharedConversationMemory] = None,
     ):
         """
         Initialize the News Agent.
@@ -40,6 +46,7 @@ class NewsAgent(BaseAgent):
             model_name: Name of the Ollama model to use
             temperature: LLM temperature (lower = more deterministic)
             verbose: Enable detailed logging
+            shared_memory: Shared memory for cross-agent context
         """
         super().__init__(
             name="NewsAgent",
@@ -47,15 +54,19 @@ class NewsAgent(BaseAgent):
             model_name=model_name,
             temperature=temperature,
             verbose=True,
+            shared_memory=shared_memory,
         )
 
         # Configure custom embeddings BEFORE initializing the agent
         # This prevents llama-index from trying to use OpenAI embeddings
+        env = Env()
         embed_model = CustomAPIEmbedding(
-            api_url=Env().embeddings_service,
+            api_url=env.embeddings_service,
             embed_batch_size=16,
             timeout=60 * 7,
-            embedding_dimension=Env().embeddings_dimension,
+            embedding_dimension=env.embeddings_dimension,
+            provider=env.embeddings_provider,
+            model=env.embeddings_model,
         )
 
         # Configure Settings globally to prevent OpenAI fallback
@@ -151,17 +162,64 @@ class NewsAgent(BaseAgent):
         handler = self._agent.run(user_msg=query)
         result = await handler
 
-        # The result is a Context object, extract the response
-        # Check different possible return formats
+        # Extract the response from the result
+        # Handle different return formats from llama-index
+        return self._extract_response_text(result)
+
+    def _extract_response_text(self, result) -> str:
+        """
+        Extract only the final answer text from llama-index response.
+
+        Filters out thinking/reasoning blocks to return only the user-facing response.
+        Handles ChatMessage with multiple blocks (llama-index >= 0.14).
+        """
         if isinstance(result, dict):
-            # If it's a dict, try to get 'response' key
             return str(result.get("response", result))
-        elif hasattr(result, "response"):
-            # If it has a 'response' attribute
-            return str(result.response)
+
+        if hasattr(result, "response"):
+            response = result.response
         else:
-            # Otherwise, convert the whole result to string
-            return str(result)
+            response = result
+
+        # Handle ChatMessage with blocks attribute (llama-index >= 0.14)
+        if hasattr(response, "blocks"):
+            text_parts = []
+            for block in response.blocks:
+                # Get block type - skip thinking/reasoning blocks
+                block_type = getattr(block, "block_type", None)
+                if block_type in ("thinking", "reasoning", "thought"):
+                    continue  # Skip thinking blocks - only return final answer
+
+                # Extract text from TextBlock or similar
+                if hasattr(block, "text"):
+                    text_parts.append(block.text)
+                elif hasattr(block, "content") and isinstance(block.content, str):
+                    text_parts.append(block.content)
+                elif isinstance(block, str):
+                    text_parts.append(block)
+
+            return "\n".join(text_parts) if text_parts else "No response generated."
+
+        # Handle content attribute
+        if hasattr(response, "content"):
+            content = response.content
+            if isinstance(content, str):
+                return content
+            if hasattr(content, "blocks"):
+                return self._extract_response_text(content)
+            return str(content)
+
+        # Handle message attribute (some llama-index versions)
+        if hasattr(response, "message"):
+            return self._extract_response_text(response.message)
+
+        # Try to get text directly
+        try:
+            return str(response)
+        except ValueError as e:
+            if "multiple blocks" in str(e) and hasattr(response, "blocks"):
+                return self._extract_response_text({"response": response})
+            raise
 
     def process_query(self, query: str, **kwargs) -> str:
         """
@@ -170,6 +228,8 @@ class NewsAgent(BaseAgent):
         The agent will automatically use the available tools (get_news, search_by_content)
         to retrieve real news data from the database before formulating a response.
         Multiple tool calls may be made if needed to fully answer the query.
+
+        Uses shared memory to provide conversation context.
 
         Args:
             query: User's news query
@@ -181,6 +241,22 @@ class NewsAgent(BaseAgent):
         try:
             logger.info(f"NewsAgent processing query with tools: {query[:100]}...")
 
+            # Get conversation context from shared memory
+            context = self.get_conversation_context()
+
+            # Enhance query with context if available
+            if context != "No previous conversation context.":
+                enhanced_query = f"""
+Conversation context for reference:
+{context}
+
+Current query: {query}
+
+Please answer the current query, using the conversation context if it helps provide a more relevant response.
+If the user refers to something from the conversation history, acknowledge it."""
+            else:
+                enhanced_query = query
+
             # Run the async query processing synchronously
             try:
                 # Try to get existing event loop
@@ -190,12 +266,21 @@ class NewsAgent(BaseAgent):
                     import nest_asyncio
 
                     nest_asyncio.apply()
-                    response = loop.run_until_complete(self._async_process_query(query))
+                    response = loop.run_until_complete(
+                        self._async_process_query(enhanced_query)
+                    )
                 else:
-                    response = loop.run_until_complete(self._async_process_query(query))
+                    response = loop.run_until_complete(
+                        self._async_process_query(enhanced_query)
+                    )
             except RuntimeError:
                 # No event loop exists, create a new one
-                response = asyncio.run(self._async_process_query(query))
+                response = asyncio.run(self._async_process_query(enhanced_query))
+
+            # Add response to shared memory
+            self._shared_memory.add_assistant_message(
+                str(response), agent_name=self.name
+            )
 
             self.record_query(success=True)
             logger.debug("NewsAgent query processed successfully with tools")
@@ -206,10 +291,14 @@ class NewsAgent(BaseAgent):
             logger.error(f"Error in NewsAgent.process_query: {e}")
             self.record_query(success=False)
 
-            return (
+            error_response = (
                 f"I encountered an error while retrieving news: {str(e)}. "
                 "Please try rephrasing your query or contact support if the issue persists."
             )
+            self._shared_memory.add_assistant_message(
+                error_response, agent_name=self.name
+            )
+            return error_response
 
     def reset_conversation(self):
         """Reset the agent's conversation state."""

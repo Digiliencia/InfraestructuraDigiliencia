@@ -16,7 +16,6 @@ import pytest_asyncio
 from starlette import status
 from httpx import AsyncClient
 
-from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
 
 # Import Schema and Config
 # We use the local project structure, assuming python path is set correctly

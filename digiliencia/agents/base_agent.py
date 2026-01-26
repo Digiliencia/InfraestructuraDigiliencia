@@ -6,11 +6,16 @@ in the INCIBE citizen awareness system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from llama_index.core.llms import LLM
 from llama_index.llms.ollama import Ollama
 from loguru import logger
+
+from digiliencia.agents.shared_memory import (
+    SharedConversationMemory,
+    get_shared_memory,
+)
 
 
 class BaseAgent(ABC):
@@ -29,6 +34,7 @@ class BaseAgent(ABC):
         temperature: float = 0.7,
         request_timeout: float = 600.0,  # 10 minutos para sistemas lentos
         verbose: bool = False,
+        shared_memory: Optional[SharedConversationMemory] = None,
     ):
         """
         Initialize the base agent.
@@ -40,6 +46,7 @@ class BaseAgent(ABC):
             temperature: LLM temperature (0.0 = deterministic, 1.0 = creative)
             request_timeout: Maximum time to wait for LLM response (default 600s = 10min)
             verbose: Enable detailed logging
+            shared_memory: Shared conversation memory instance (uses singleton if None)
         """
         self.name = name
         self.description = description
@@ -47,6 +54,9 @@ class BaseAgent(ABC):
         self.temperature = temperature
         self.request_timeout = request_timeout
         self.verbose = verbose
+
+        # Use shared memory singleton if not provided
+        self._shared_memory = shared_memory or get_shared_memory()
 
         # Initialize LLM
         self._llm = self._initialize_llm()
@@ -57,6 +67,11 @@ class BaseAgent(ABC):
         self._failed_queries = 0
 
         logger.info(f"Initialized {self.name} agent with model {model_name}")
+
+    @property
+    def shared_memory(self) -> SharedConversationMemory:
+        """Get the shared conversation memory."""
+        return self._shared_memory
 
     def _initialize_llm(self) -> LLM:
         """
@@ -142,6 +157,40 @@ class BaseAgent(ABC):
         self._failed_queries = 0
         logger.debug(f"Metrics reset for {self.name}")
 
+    def get_conversation_context(self) -> str:
+        """
+        Get the conversation context from shared memory.
+
+        Returns:
+            Formatted conversation context string
+        """
+        return self._shared_memory.get_context_for_agent(include_agent_info=True)
+
+    def build_prompt_with_context(self, query: str, system_prompt: str) -> str:
+        """
+        Build a complete prompt including conversation history.
+
+        Args:
+            query: The current user query
+            system_prompt: The agent's system prompt
+
+        Returns:
+            Complete prompt with context
+        """
+        context = self.get_conversation_context()
+
+        if context == "No previous conversation context.":
+            return f"{system_prompt}\n\nUser Query: {query}"
+
+        return f"""{system_prompt}
+
+{context}
+
+IMPORTANT: Use the conversation history above to provide contextually relevant responses.
+If the user refers to something mentioned earlier, acknowledge and build upon it.
+
+Current User Query: {query}"""
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(name='{self.name}', model='{self.model_name}')"
@@ -154,6 +203,10 @@ class ConversationalAgentBase(BaseAgent):
 
     These agents handle general questions and conversations using
     only the LLM's knowledge and reasoning capabilities.
+
+    Note: The conversation history is now managed through shared_memory,
+    the local _conversation_history is kept for backwards compatibility
+    but agents should use shared_memory for cross-agent context.
     """
 
     def __init__(self, *args, **kwargs):
@@ -163,6 +216,8 @@ class ConversationalAgentBase(BaseAgent):
     def add_to_history(self, role: str, content: str):
         """
         Add a message to the conversation history.
+
+        Note: This also adds to shared memory for cross-agent awareness.
 
         Args:
             role: 'user' or 'assistant'
@@ -174,6 +229,11 @@ class ConversationalAgentBase(BaseAgent):
                 "content": content,
             }
         )
+
+        # Also add to shared memory (assistant messages include agent name)
+        if role == "assistant":
+            self._shared_memory.add_assistant_message(content, agent_name=self.name)
+        # User messages are typically added by the router, not here
 
     def clear_history(self):
         """Clear the conversation history."""
