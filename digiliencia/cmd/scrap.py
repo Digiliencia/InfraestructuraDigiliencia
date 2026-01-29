@@ -9,7 +9,12 @@ from digiliencia.data.scrapping.incibe import IncibeScraper
 from digiliencia.data.scrapping.ncsc import Ncsc
 from digiliencia.data.scrapping.weforum import WEForumScraper
 from digiliencia.data.services.neomodel.news_service import NewsService
-
+from digiliencia.data.services.neomodel.topic.topic_classification_service import (
+    TopicClassificationService,
+)
+from digiliencia.data.services.neomodel.field.field_classification_service import (
+    FieldClassificationService,
+)
 
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
@@ -17,10 +22,10 @@ def scrap(from_days_ago: int = 5):
     Env()
 
     news_service = NewsService()
-    # topics_class_service = TopicClassificationService()
-    # fields_class_service = FieldClassificationService()
+    topics_class_service = TopicClassificationService()
+    fields_class_service = FieldClassificationService()
 
-    scrapers = [WEForumScraper]  # , CanadianScraper, IncibeScraper, Ncsc]
+    scrapers = [WEForumScraper, CanadianScraper, IncibeScraper, Ncsc]
 
     for scraper in scrapers:
         try:
@@ -38,7 +43,7 @@ def scrap(from_days_ago: int = 5):
                         topics=news.topics,
                     )
                     created_news = news_service.create_from_scraped_data(validated_data)
-                    """
+            
                     # Classify news into topics
                     topics = topics_class_service.classify_news_topics(created_news)
                     news_service.set_topics_relations(created_news, topics)
@@ -52,7 +57,7 @@ def scrap(from_days_ago: int = 5):
                     logger.info(
                         f"Classified news '{created_news.header}' into {len(fields)} fields"
                     )
-                    """
+                    
                     # Generate chunks and embeddings
                     news_service.generate_chunk_embeddings_for_news(created_news)
 
