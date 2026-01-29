@@ -219,7 +219,7 @@ class TimeUtils:
             False: format date is not arabe
         """
         return bool(re.search(r"[٠-٩]", date))
-    
+
     @staticmethod
     def detect_format_month(date: str = "") -> str | None:
         """
@@ -233,8 +233,8 @@ class TimeUtils:
              '%B': date has not got month abbreviated
               None: No recognizable month found
         """
-        meonth_abrev = [datetime(2000, i, 1).strftime('%b') for i in range(1, 13)]
-        month_compl = [datetime(2000, i, 1).strftime('%B') for i in range(1, 13)]
+        meonth_abrev = [datetime(2000, i, 1).strftime("%b") for i in range(1, 13)]
+        month_compl = [datetime(2000, i, 1).strftime("%B") for i in range(1, 13)]
 
         for month in meonth_abrev:
             if month in date:
@@ -242,7 +242,7 @@ class TimeUtils:
         for month in month_compl:
             if month in date:
                 return "%B"
-        return None  
+        return None
 
     @staticmethod
     def detect_fomat_date(date: str = "") -> str | None:
@@ -257,27 +257,27 @@ class TimeUtils:
             Or None, the format of date has not be to find.
         """
         fmts_commun = [
-            "%Y-%m-%d",          # 2025-10-20
-            "%d-%m-%Y",          # 20-10-2025
-            "%d/%m/%Y",          # 20/10/2025
-            "%m/%d/%Y",          # 10/20/2025
-            "%Y/%m/%d",          # 2025/10/20
-            "%d %b %Y",          # 20 Oct 2025
-            "%d %B %Y",          # 20 October 2025
-            "%b %d, %Y",         # Oct 20, 2025
-            "%B %d, %Y",         # October 20, 2025
-            "%B %d %Y"           # October 20 2025
+            "%Y-%m-%d",  # 2025-10-20
+            "%d-%m-%Y",  # 20-10-2025
+            "%d/%m/%Y",  # 20/10/2025
+            "%m/%d/%Y",  # 10/20/2025
+            "%Y/%m/%d",  # 2025/10/20
+            "%d %b %Y",  # 20 Oct 2025
+            "%d %B %Y",  # 20 October 2025
+            "%b %d, %Y",  # Oct 20, 2025
+            "%B %d, %Y",  # October 20, 2025
+            "%B %d %Y"  # October 20 2025
             "%Y-%m-%dEST%H:%M",
-            "%Y-%m-%dT%H:%M:%S", # 2025-10-20T13:45:00
-            "%Y-%m-%d %H:%M:%S", # 2025-10-20 13:45:00
-            "%Y-%m-%dT%H:%M",    # 2025-10-20T13:45
-            "%d %b %Y %H:%M",    # 20 Oct 2025 13:45
-            "%d %B %Y %H:%M",    # 20 October 2025 13:45
-            "%b. %d, %Y",        # Sept. 19, 2025
-            "%b. %d, %Y, %I %p %Z", # Sept. 19, 2025, 5 AM EDT
-            "%b %d, %Y, %I %p %Z" # Sept 19, 2025, 5 AM EDT
+            "%Y-%m-%dT%H:%M:%S",  # 2025-10-20T13:45:00
+            "%Y-%m-%d %H:%M:%S",  # 2025-10-20 13:45:00
+            "%Y-%m-%dT%H:%M",  # 2025-10-20T13:45
+            "%d %b %Y %H:%M",  # 20 Oct 2025 13:45
+            "%d %B %Y %H:%M",  # 20 October 2025 13:45
+            "%b. %d, %Y",  # Sept. 19, 2025
+            "%b. %d, %Y, %I %p %Z",  # Sept. 19, 2025, 5 AM EDT
+            "%b %d, %Y, %I %p %Z"  # Sept 19, 2025, 5 AM EDT
             "%B %Y",
-            "%b %Y"
+            "%b %Y",
         ]
 
         for fmt in fmts_commun:

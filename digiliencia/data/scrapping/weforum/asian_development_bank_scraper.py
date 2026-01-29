@@ -9,6 +9,7 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+
 class AsianDevelopmentBankScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """

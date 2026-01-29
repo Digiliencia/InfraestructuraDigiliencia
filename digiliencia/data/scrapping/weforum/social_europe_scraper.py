@@ -10,6 +10,7 @@ from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 from digiliencia.utils.scrap import ScrapUtils
 
+
 class SocialEuropeScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -36,25 +37,29 @@ class SocialEuropeScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-title"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-title"):  # type: ignore
             title = self.driver.find_element(By.CLASS_NAME, "entry-title").text
         else:
             text_list = self.driver.find_elements(By.CSS_SELECTOR, ".gb-text")
             title = text_list[0].text
 
-        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-author"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-author"):  # type: ignore
             authors_line = self.driver.find_element(By.CLASS_NAME, "entry-author").text
         else:
-            authors_line = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline").text
-        
+            authors_line = self.driver.find_element(
+                By.CSS_SELECTOR, ".m-post-byline"
+            ).text
+
         authors_line = authors_line.replace(",", " ").replace("and", " ")
         authors = [authors_line.strip()]
         author = "".join(authors)
 
-        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-time"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CLASS_NAME, "entry-time"):  # type: ignore
             time_elem = self.driver.find_element(By.CLASS_NAME, "entry-time").text
         else:
-            time_elem = self.driver.find_element(By.CSS_SELECTOR, ".m-post-byline +div +p").text
+            time_elem = self.driver.find_element(
+                By.CSS_SELECTOR, ".m-post-byline +div +p"
+            ).text
 
         date_without_suffix = TimeUtils.format_suffix_date(time_elem)
         date = datetime.strptime(date_without_suffix, "%d %B %Y")  # type: ignore

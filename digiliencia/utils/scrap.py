@@ -10,6 +10,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from digiliencia.configs.env import Env
 from selenium.webdriver.common.action_chains import ActionChains
 
+
 class ScrapUtils:
     def __init__(self):
         self.timeout = Env().webdriverwait_timeout
@@ -125,16 +126,15 @@ class ScrapUtils:
 
     @staticmethod
     def move_cursor_mouse(driver: WebDriver, selector_css: str) -> None:
-        """
-        """
+        """ """
         logger.debug("Llego a la funcion move cursor")
         try:
             actions = ActionChains(driver)
-            #element = driver.find_element(By.CSS_SELECTOR, selector_css)
+            # element = driver.find_element(By.CSS_SELECTOR, selector_css)
             # Mueve el puntero al elemento
-            #actions.move_to_element(element)
+            # actions.move_to_element(element)
             # Hace clic y MANTIENE presionado el botón izquierdo del ratón en el elemento.
-            #actions.click_and_hold(element)
+            # actions.click_and_hold(element)
 
             # test de funcionamiento
             while True:

@@ -9,6 +9,7 @@ from digiliencia.utils.time import TimeUtils
 from digiliencia.utils.scrap import ScrapUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+
 class InstitutMontaigneScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -35,10 +36,12 @@ class InstitutMontaigneScraper(AbstractNewsScraper):
 
         title = self.driver.find_element(By.CSS_SELECTOR, "h1[class='titre_3']").text
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.date"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.date"):  # type: ignore
             time_elem = self.driver.find_element(By.CSS_SELECTOR, "div.date").text
         else:
-            time_elem = self.driver.find_element(By.CSS_SELECTOR, ".section-publication__date").text
+            time_elem = self.driver.find_element(
+                By.CSS_SELECTOR, ".section-publication__date"
+            ).text
 
         fmt_date = TimeUtils().detect_fomat_date(time_elem)
         date = datetime.strptime(time_elem, fmt_date)  # type: ignore

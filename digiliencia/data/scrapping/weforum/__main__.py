@@ -170,8 +170,12 @@ class WEForumScraper(AbstractScraper):
         self._close_button_poppup()
 
     def _close_button_poppup(self):
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "button[aria-label='close modal']"): # type: ignore
-            self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='close modal']").click()
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "button[aria-label='close modal']"
+        ):  # type: ignore
+            self.driver.find_element(
+                By.CSS_SELECTOR, "button[aria-label='close modal']"
+            ).click()
 
     def _get_websites_to_scrap(self, max_age_date: int = 7) -> list[dict[str, str]]:
         """
@@ -195,10 +199,14 @@ class WEForumScraper(AbstractScraper):
         age_words = TimeUtils.format_days_ago(max_age_date)
         processed_articles = []
         processed_urls = set()  # Para evitar artículos duplicados
-        aside_div = self.driver.find_element(By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d")
+        aside_div = self.driver.find_element(
+            By.CSS_SELECTOR, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
+        )
 
         # Intento de simular un scroll con el cursor del ratón
-        ScrapUtils().move_cursor_mouse(self.driver, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d")
+        ScrapUtils().move_cursor_mouse(
+            self.driver, ".TopicDetailPanel__StyledContainer-sc-d83f56b5-0.kDBA-d"
+        )
 
         time.sleep(3600)
         self.driver.execute_script("arguments[0].scrollTo(0, 500);", aside_div)
@@ -289,10 +297,7 @@ class WEForumScraper(AbstractScraper):
                             )
                             href = link_element.get_attribute("href")
 
-                            if (
-                                href
-                                and href not in processed_urls
-                            ):
+                            if href and href not in processed_urls:
                                 processed_urls.add(href)  # Evitar duplicados
                                 processed_articles.append(
                                     {
@@ -573,9 +578,10 @@ class WEForumScraper(AbstractScraper):
         logger.info("WEForum scraping finished")
         return scraped_publications
 
-'''
+
+"""
 WARNINGs
 
 2025-10-18 16:59:01.940 | WARNING  | digiliencia.data.scrapping.weforum.__main__:scrap_news:567 - No scrapper function found for publisher: World Economic Forum
 2025-10-18 16:59:01.940 | WARNING  | digiliencia.data.scrapping.weforum.__main__:scrap_news:567 - No scrapper function found for publisher: Igarapé Institute
-'''
+"""

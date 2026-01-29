@@ -8,6 +8,7 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
 from digiliencia.utils.scrap import ScrapUtils
 
+
 class NatureScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -34,32 +35,46 @@ class NatureScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1.c-article-title"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "h1.c-article-title"
+        ):  # type: ignore
             elems["title"] = "h1.c-article-title"
-        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1.Theme-StoryTitle"): # type: ignore
+        elif ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "h1.Theme-StoryTitle"
+        ):  # type: ignore
             elems["title"] = "h1.Theme-StoryTitle"
         else:
             elems["title"] = "h1.c-article-magazine-title"
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "li.c-article-identifiers__item time"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "li.c-article-identifiers__item time"
+        ):  # type: ignore
             elems["date"] = "li.c-article-identifiers__item time"
-        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, ".Theme-Byline p"): # type: ignore
+        elif ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, ".Theme-Byline p"
+        ):  # type: ignore
             elems["date"] = ".Theme-Byline p"
         else:
             elems["date"] = "li time"
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.c-article-body p"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "div.c-article-body p"
+        ):  # type: ignore
             elems["content"] = "div.c-article-body p"
-        elif ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.main-content p"): # type: ignore
+        elif ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "div.main-content p"
+        ):  # type: ignore
             elems["content"] = "div.main-content p"
         else:
             elems["content"] = ".Theme-Layer-BodyText--inner p"
 
-        if ScrapUtils.if_element_exists(self.driver, By.XPATH, "//li[@class='c-article-author-list__item']/a"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.XPATH, "//li[@class='c-article-author-list__item']/a"
+        ):  # type: ignore
             elems["author"] = "//li[@class='c-article-author-list__item']/a"
             author = self.driver.find_element(By.XPATH, elems["author"]).text
         else:
-            author = "" # There are not author
+            author = ""  # There are not author
 
         title = self.driver.find_element(By.CSS_SELECTOR, elems["title"]).text
 

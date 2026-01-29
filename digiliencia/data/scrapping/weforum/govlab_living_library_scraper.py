@@ -8,6 +8,7 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from .abc_news_scraper import AbstractNewsScraper
 from digiliencia.utils.scrap import ScrapUtils
 
+
 class GovlabLivingLibraryScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -33,12 +34,14 @@ class GovlabLivingLibraryScraper(AbstractNewsScraper):
         self.driver.get(url)
         time.sleep(self.load_time)  # Reject cookies if visible
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1.entry-title"): # type: ignore
+        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "h1.entry-title"):  # type: ignore
             title = self.driver.find_element(By.CSS_SELECTOR, "h1.entry-title").text
         else:
             title = self.driver.find_element(By.CSS_SELECTOR, ".brxe-post-title").text
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "time.entry-date.published"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "time.entry-date.published"
+        ):  # type: ignore
             time_elem = self.driver.find_element(
                 By.CSS_SELECTOR, "time.entry-date.published"
             ).text
@@ -47,19 +50,25 @@ class GovlabLivingLibraryScraper(AbstractNewsScraper):
         else:
             date = datetime.today()
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "span.author.vcard"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "span.author.vcard"
+        ):  # type: ignore
             author = self.driver.find_element(By.CSS_SELECTOR, "span.author.vcard").text
         else:
             author = self.driver.find_element(By.CSS_SELECTOR, "h2.author-name").text
 
-        if ScrapUtils.if_element_exists(self.driver, By.CSS_SELECTOR, "div.entry-content p"): # type: ignore
+        if ScrapUtils.if_element_exists(
+            self.driver, By.CSS_SELECTOR, "div.entry-content p"
+        ):  # type: ignore
             content_container = self.driver.find_elements(
                 By.CSS_SELECTOR, "div.entry-content p"
             )
             content = [contents.text for contents in content_container]
             content = "".join(content)
         else:
-            content = self.driver.find_element(By.CSS_SELECTOR, ".brxe-post-content p").text
+            content = self.driver.find_element(
+                By.CSS_SELECTOR, ".brxe-post-content p"
+            ).text
 
         return ScrapedNews(
             header=title,

@@ -8,6 +8,7 @@ from digiliencia.exc.WEForum_exc import WEForumError
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+
 class ProPublicaScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """Access the given URL and scrapes the publication.
@@ -45,15 +46,18 @@ class ProPublicaScraper(AbstractNewsScraper):
 
         if time_data is not None:
             fmt_date = TimeUtils().detect_fomat_date(time_data)
-            if  fmt_date is not None:
+            if fmt_date is not None:
                 date = datetime.strptime(time_data, fmt_date)  # type: ignore
             else:
-                logger.warning("The format of date has not detected. By default, date is today.")
+                logger.warning(
+                    "The format of date has not detected. By default, date is today."
+                )
                 date = datetime.today()
         else:
-            logger.warning("The format of date has not detected. By default, date is today.")
+            logger.warning(
+                "The format of date has not detected. By default, date is today."
+            )
             date = datetime.today()
-            
 
         # Get the author
         authors_elem = self.driver.find_element(

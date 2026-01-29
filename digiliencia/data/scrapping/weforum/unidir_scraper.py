@@ -9,6 +9,7 @@ from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 
+
 class UnidirScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -43,10 +44,10 @@ class UnidirScraper(AbstractNewsScraper):
         time_elem = self.driver.find_element(
             By.CSS_SELECTOR, ".post-title__date-val"
         ).text
-        
+
         try:
             date_ft = time_elem.replace(",", "")
-            date = datetime.strptime(date_ft, TimeUtils().detect_fomat_date(time_elem))  # type: ignore 
+            date = datetime.strptime(date_ft, TimeUtils().detect_fomat_date(time_elem))  # type: ignore
         except ValueError:
             logger.warning("Date has not detected. By default date is today.")
             date = datetime.today()

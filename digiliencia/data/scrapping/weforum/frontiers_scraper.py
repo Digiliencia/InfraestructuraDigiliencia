@@ -10,6 +10,7 @@ from digiliencia.exc.WEForum_exc import WEForumError
 
 from .abc_news_scraper import AbstractNewsScraper
 
+
 class FrontiersScraper(AbstractNewsScraper):
     def scrap(self, url: str) -> ScrapedNews:
         """
@@ -31,7 +32,7 @@ class FrontiersScraper(AbstractNewsScraper):
                 "Attempted to scrape invalid page for Frontiers article scrapper"
             )
         # Access the URL
-        self.driver.get(url)            # The website take long time to load
+        self.driver.get(url)  # The website take long time to load
         time.sleep(self.load_time + 1)  # Reject cookies if visible
 
         title = self.driver.find_element(
