@@ -26,7 +26,6 @@ class HarvardBusinessReviewScraper(AbstractNewsScraper):
             ScrapedNews: an object with the publication information.
         """
         logger.debug(f"Scraping Harvard Business Review article: {url}")
-        elems = {}
         if "https://hbr.org/" not in url:
             raise WEForumError(
                 "Attempted to scrape invalid page for Harvard Business Review article scrapper"

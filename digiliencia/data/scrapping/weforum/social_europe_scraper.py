@@ -5,7 +5,6 @@ from pydantic import HttpUrl
 from selenium.webdriver.common.by import By
 from digiliencia.data.models.news_model import ScrapedNews
 from digiliencia.exc.WEForum_exc import WEForumError
-from digiliencia.utils.scrap import ScrapUtils
 from digiliencia.utils.time import TimeUtils
 from .abc_news_scraper import AbstractNewsScraper
 from digiliencia.utils.scrap import ScrapUtils
