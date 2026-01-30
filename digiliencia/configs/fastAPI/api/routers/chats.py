@@ -227,7 +227,6 @@ async def ask_question_to_chat(
         await redis_client.delete(lock_key)
 
 
-
 @router.patch(
     CHATS_PATH,
     response_model=chat_schema.ConversationSummary,
