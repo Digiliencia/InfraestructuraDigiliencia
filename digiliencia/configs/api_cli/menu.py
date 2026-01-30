@@ -137,7 +137,6 @@ def _print_table_row(row_items: Any, is_header: bool = False) -> None:
         print("-" * len(row_str.expandtabs()))
 
 
-
 def iterables_show(
     entries: Iterable[Iterable[Any]],
     header: Optional[Iterable[str]] = None,

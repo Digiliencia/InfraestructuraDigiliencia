@@ -243,8 +243,7 @@ class ConsoleCLI:
         # Ask user to select a model
         print("\n[!] Select an AI model for this conversation:")
         target_model_id = menu.selection(
-            tuple((model.name, model.id) for model in ai_models.models),
-            self.messages
+            tuple((model.name, model.id) for model in ai_models.models), self.messages
         )
 
         if target_model_id is None:
