@@ -16,6 +16,7 @@ from digiliencia.data.services.neomodel.field.field_classification_service impor
     FieldClassificationService,
 )
 
+
 def scrap(from_days_ago: int = 5):
     logger.info("Start scraping")
 
@@ -43,7 +44,7 @@ def scrap(from_days_ago: int = 5):
                         topics=news.topics,
                     )
                     created_news = news_service.create_from_scraped_data(validated_data)
-            
+
                     # Classify news into topics
                     topics = topics_class_service.classify_news_topics(created_news)
                     news_service.set_topics_relations(created_news, topics)
@@ -57,7 +58,7 @@ def scrap(from_days_ago: int = 5):
                     logger.info(
                         f"Classified news '{created_news.header}' into {len(fields)} fields"
                     )
-                    
+
                     # Generate chunks and embeddings
                     news_service.generate_chunk_embeddings_for_news(created_news)
 
