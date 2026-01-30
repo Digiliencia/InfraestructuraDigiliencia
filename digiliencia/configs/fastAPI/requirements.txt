@@ -13,3 +13,12 @@ pytest
 httpx
 fastapi-users[sqlalchemy,jwt]
 redis[hiredis]
+loguru
+llama-index
+llama-index-core
+llama-index-llms-ollama
+llama-index-vector-stores-neo4jvector
+python-dotenv
+neo4j
+neomodel
+numpy

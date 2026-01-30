@@ -13,6 +13,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 # Auth & Core Imports
+from contextlib import asynccontextmanager
+
 from auth.transport import auth_backend
 from auth.users import fastapi_users
 from core.config import settings
@@ -23,11 +25,27 @@ from core.endpoints import (
     ROOT,
 )
 
+from core.agent_manager import agent_manager
+
 # Schema Imports
 from schemas import user as user_schema
 
 # Router Imports
 from api.routers import chats, custom_auth, custom_users, models, templates
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for the FastAPI application.
+    Handles startup and shutdown events.
+    """
+    # Startup: Pre-initialize agents to reuse them across requests
+    if not settings.TESTING:
+        agent_manager.pre_initialize()
+    yield
+    # Shutdown: Clean up resources if needed
+
 
 # --- Configuration ---
 
@@ -37,6 +55,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per minute"
 # Initialize App
 app = FastAPI(
     title="Digiliencia Chat API",
+    lifespan=lifespan,
     description="""
 ## Chat Backend API
 

@@ -12,16 +12,22 @@ from uuid import UUID
 
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
+from loguru import logger
 from sqlalchemy import func
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from auth.users import fastapi_users
 from core.endpoints import CHATS_PATH, CONVERSATIONS
 from core.redis import get_redis
-from db.models import Chat, AIPrompt, Message, User
+from db.models import Chat, AIPrompt, Message, User, Model
 from db.session import get_db
 from schemas import chat as chat_schema
+
+from digiliencia.agents.shared_memory import SharedConversationMemory, MessageRole
+from core.agent_manager import agent_manager
+from digiliencia.configs.env import env
 
 # Reusable dependency for the currently authenticated, active user.
 current_user = fastapi_users.current_user(active=True)
@@ -116,7 +122,7 @@ async def get_full_conversation(
     f"{CHATS_PATH}/{{chat_id}}",
     response_model=chat_schema.AIResponse,
     summary="Send Message to Chat",
-    description="Sends a user message, generates a simulated AI response, and persists both.",
+    description="Processes a user's message and generates an AI response using Redis locking.",
     status_code=status.HTTP_200_OK,
     responses={
         200: {"description": "Message processed successfully."},
@@ -149,13 +155,46 @@ async def ask_question_to_chat(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
             )
 
+        # 0. Prepare history for the Agent
+        # Fetch existing messages to populate agent memory
+        history_query = (
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.order_number)
+        )
+        history_result = await db.execute(history_query)
+        past_messages = history_result.scalars().all()
+
+        # Initialize shared memory for this request
+        agent_memory = SharedConversationMemory()
+
+        # Populate memory with history
+        for msg in past_messages:
+            role = MessageRole.ASSISTANT if msg.model_id else MessageRole.USER
+            agent_memory.add_message(
+                role=role, content=str(msg.content), metadata=msg.statistics or {}
+            )
+
+        # Determine model name
+        model_name = env.chatbot_llm
+        if payload.model_id:
+            model_db = await db.get(Model, payload.model_id)
+            if model_db:
+                model_name = str(model_db.name)
+
+        # Get pre-initialized agent from Manager
+        agent = agent_manager.get_agent(model_name=model_name)
+
+        # Reuse existing agent but switch to the current chat memory
+        agent_manager.set_agent_context(agent, agent_memory)
+
+        # 1. Save User Message
         max_order_query = select(func.max(Message.order_number)).where(
             Message.chat_id == chat_id
         )
         max_order_result = await db.execute(max_order_query)
         last_order = max_order_result.scalar_one_or_none() or 0
 
-        # 1. Save User Message
         user_message = Message(
             chat_id=chat_id,
             order_number=last_order + 1,
@@ -164,20 +203,29 @@ async def ask_question_to_chat(
         )
         db.add(user_message)
 
-        # 2. Simulate AI
-        ai_response_text = (
-            f"Simulated response to '{payload.content}' using model {payload.model_id}"
-        )
-        await asyncio.sleep(0.2)
+        # 2. Get AI Response from Agent
+        # RouterAgent.send_msg adds the user query to its shared_memory and processes it
+        ai_response_text = await asyncio.to_thread(agent.send_msg, payload.content)
 
         # 3. Save AI Message
         ai_message = Message(
-            chat_id=chat_id, order_number=last_order + 2, content=ai_response_text
+            chat_id=chat_id,
+            order_number=last_order + 2,
+            content=ai_response_text,
+            model_id=payload.model_id,  # Storing the requested model_id
         )
         db.add(ai_message)
 
         await db.commit()
         return chat_schema.AIResponse(text=ai_response_text)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in ask_question_to_chat: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing message: {str(e)}",
+        )
     finally:
         await redis_client.delete(lock_key)
 

@@ -55,11 +55,11 @@ CREATE TABLE messages (
     UNIQUE (chat_id, order_number)
 );
 
--- --- OPTIONAL: SEED DATA (Datos iniciales para que la API funcione) ---
+-- --- OPTIONAL: SEED DATA (Initial data for the API to work) ---
 
 -- Insert default AI Models
-INSERT INTO models (name) VALUES ('GPT-4');
-INSERT INTO models (name) VALUES ('Claude-3');
+INSERT INTO models (name) VALUES ('qwen3:4b');
+INSERT INTO models (name) VALUES ('test-model');
 
 -- Insert default AI Prompts (Templates)
 INSERT INTO ai_prompts (name, prompt_text, description) 

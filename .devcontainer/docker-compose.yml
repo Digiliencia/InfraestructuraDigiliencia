@@ -30,6 +30,9 @@ services:
     environment:
       - TESTING=false
       - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres-data:/var/lib/postgresql
     ports:
@@ -81,6 +84,8 @@ services:
     depends_on:
       - db
       - redis
+      - nginx
+      - neo4j
     networks:
       - dev-network
 
@@ -99,6 +104,7 @@ services:
       - db # Test database is not created automaticly
       - redis
       - nginx
+      - neo4j-test
     networks:
       - dev-network
   redis:
