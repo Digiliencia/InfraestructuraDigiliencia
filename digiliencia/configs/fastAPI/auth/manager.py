@@ -20,8 +20,18 @@ from core.config import settings
 from db.models import User
 from schemas.user import UserCreate, UserLogin, UserRegistration
 
+from fastapi_users.password import PasswordHelper
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+
 # Initialize logger for this module
 logger = logging.getLogger(__name__)
+
+
+# Limit Argon2 threads to 1 to avoid "Threading failure" in restricted environments
+hasher = Argon2Hasher(parallelism=1)
+password_hash = PasswordHash((hasher,))
+password_helper = PasswordHelper(password_hash)
 
 SECRET = settings.JWT_SECRET_KEY
 
@@ -164,4 +174,4 @@ async def get_user_manager(
     Args:
         user_db: The user database adapter.
     """
-    yield UserManager(user_db)
+    yield UserManager(user_db, password_helper)
