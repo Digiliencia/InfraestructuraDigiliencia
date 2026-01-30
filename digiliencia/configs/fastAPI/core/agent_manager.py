@@ -37,11 +37,11 @@ class AgentManager:
             A pre-initialized RouterAgent instance.
         """
         name = model_name or env.chatbot_llm
-        
+
         if name not in self._agents:
             logger.info(f"Initializing new RouterAgent for model: {name}")
             self._agents[name] = RouterAgent(model_name=name)
-        
+
         return self._agents[name]
 
     def set_agent_context(self, agent: RouterAgent, memory: SharedConversationMemory):
@@ -52,13 +52,15 @@ class AgentManager:
         # Update RouterAgent's memory references
         agent._shared_memory = memory
         agent._memory = memory
-        
+
         # Propagate to all specialized sub-agents (NewsAgent, ConversationalAgent)
-        if hasattr(agent, '_agents'):
+        if hasattr(agent, "_agents"):
             for sub_agent in agent._agents.values():
                 sub_agent._shared_memory = memory
-        
-        logger.debug(f"RouterAgent context switched to memory: {memory.conversation_id}")
+
+        logger.debug(
+            f"RouterAgent context switched to memory: {memory.conversation_id}"
+        )
 
     def pre_initialize(self):
         """

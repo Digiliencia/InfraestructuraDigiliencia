@@ -27,6 +27,13 @@ from core.endpoints import (
 
 from core.agent_manager import agent_manager
 
+# Schema Imports
+from schemas import user as user_schema
+
+# Router Imports
+from api.routers import chats, custom_auth, custom_users, models, templates
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -38,11 +45,6 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown: Clean up resources if needed
 
-# Schema Imports
-from schemas import user as user_schema
-
-# Router Imports
-from api.routers import chats, custom_auth, custom_users, models, templates
 
 # --- Configuration ---
 

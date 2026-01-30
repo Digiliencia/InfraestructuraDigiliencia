@@ -184,7 +184,7 @@ async def ask_question_to_chat(
 
         # Get pre-initialized agent from Manager
         agent = agent_manager.get_agent(model_name=model_name)
-        
+
         # Reuse existing agent but switch to the current chat memory
         agent_manager.set_agent_context(agent, agent_memory)
 
