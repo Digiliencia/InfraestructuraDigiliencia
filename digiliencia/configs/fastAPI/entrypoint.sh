@@ -24,7 +24,11 @@ if [ -n "$TARGET_URL" ]; then
     # Default port if not present
     if [ "$HOST" = "$PORT" ]; then PORT=11434; fi
     
-    socat TCP-LISTEN:11434,fork,reuseaddr TCP:$HOST:$PORT &
+    if [ "$HOST" = "localhost" ] || [ "$HOST" = "127.0.0.1" ]; then
+        echo "Ollama host is localhost, skipping transparent proxy to avoid infinite loop"
+    else
+        socat TCP-LISTEN:11434,fork,reuseaddr TCP:$HOST:$PORT &
+    fi
 fi
 
 # Run the command

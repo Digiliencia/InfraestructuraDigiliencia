@@ -41,7 +41,8 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     # Startup: Pre-initialize agents to reuse them across requests
-    agent_manager.pre_initialize()
+    if not settings.TESTING:
+        agent_manager.pre_initialize()
     yield
     # Shutdown: Clean up resources if needed
 
