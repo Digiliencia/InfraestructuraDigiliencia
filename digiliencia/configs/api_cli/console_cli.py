@@ -240,12 +240,21 @@ class ConsoleCLI:
             menu.alert("No AI models available to reply.")
             return
 
+        # Ask user to select a model
+        print("\n[!] Select an AI model for this conversation:")
+        target_model_id = menu.selection(
+            tuple((model.name, model.id) for model in ai_models.models),
+            self.messages
+        )
+
+        if target_model_id is None:
+            return
+
         formatted_history = [
             f"{'User' if msg.model_id is None else 'AI'}: {msg.content}"
             for msg in chat_messages
         ]
 
-        target_model_id = ai_models.models[0].id
         message_label = "Message"
         while True:
             try:
