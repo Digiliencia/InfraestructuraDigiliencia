@@ -25,8 +25,8 @@ from db.models import Chat, AIPrompt, Message, User, Model
 from db.session import get_db
 from schemas import chat as chat_schema
 
-from digiliencia.agents.router_agent import RouterAgent
 from digiliencia.agents.shared_memory import SharedConversationMemory, MessageRole
+from core.agent_manager import agent_manager
 from digiliencia.configs.env import env
 
 # Reusable dependency for the currently authenticated, active user.
@@ -182,8 +182,11 @@ async def ask_question_to_chat(
             if model_db:
                 model_name = str(model_db.name)
 
-        # Initialize RouterAgent with the current memory
-        agent = RouterAgent(model_name=model_name, shared_memory=agent_memory)
+        # Get pre-initialized agent from Manager
+        agent = agent_manager.get_agent(model_name=model_name)
+        
+        # Reuse existing agent but switch to the current chat memory
+        agent_manager.set_agent_context(agent, agent_memory)
 
         # 1. Save User Message
         max_order_query = select(func.max(Message.order_number)).where(
