@@ -85,6 +85,7 @@ services:
       - db
       - redis
       - nginx
+      - neo4j
     networks:
       - dev-network
 
@@ -103,6 +104,7 @@ services:
       - db # Test database is not created automaticly
       - redis
       - nginx
+      - neo4j-test
     networks:
       - dev-network
   redis:

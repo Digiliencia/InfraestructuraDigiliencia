@@ -122,13 +122,20 @@ def input_menu(
     return inputs
 
 
-def _print_table_row(row_items: Iterable[Any], is_header: bool = False) -> None:
+def _print_table_row(row_items: Any, is_header: bool = False) -> None:
     """Helper to print aligned columns."""
+    if isinstance(row_items, str):
+        print(row_items)
+        if is_header:
+            print("-" * len(row_items))
+        return
+
     # Simple tab separation for CLI
     row_str = "\t".join(str(item) for item in row_items)
     print(row_str)
     if is_header:
         print("-" * len(row_str.expandtabs()))
+
 
 
 def iterables_show(
