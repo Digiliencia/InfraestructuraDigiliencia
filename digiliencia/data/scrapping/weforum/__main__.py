@@ -285,12 +285,6 @@ class WEForumScraper(AbstractScraper):
                                 By.CLASS_NAME, "shared__StyledTitle-sc-16a1486f-1"
                             ).text
 
-                            type_publication = article.find_element(
-                                # By.CSS_SELECTOR, ".UIActionButton__StyledButton-sc-c1d51331-2",
-                                By.CSS_SELECTOR,
-                                ".KnowledgeButtons__StyledButtonRow-sc-10cef3ff-0 span",
-                            ).text
-
                             link_element = article.find_element(
                                 By.CSS_SELECTOR,
                                 ".UIActionButton__StyledButton-sc-c1d51331-2",
