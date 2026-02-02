@@ -26,6 +26,7 @@ import authentication
 from chat import Chat
 
 
+
 def clear_screen():
     """Clears the console screen in a cross-platform way."""
     os.system("cls" if os.name == "nt" else "clear")
@@ -46,7 +47,7 @@ class ConsoleCLI:
         self.messages: List[str] = ["Diligencia CLI"]
         self.base_url = url
         # Set a timeout to avoid hanging indefinitely
-        self.client: httpx.Client = httpx.Client(base_url=url, timeout=10.0)
+        self.client: httpx.Client = httpx.Client(base_url=url, timeout=10.0, verify=False)
         self.chat: Chat = Chat(self.client)
         self.alert_time: float = 1.5
         self._check_health()
