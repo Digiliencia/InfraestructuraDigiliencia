@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
-from digiliencia.data.models.interface_model import IModel
+
+from pydantic import BaseModel
 
 
 @dataclass(frozen=True)
-class ScrapedEventsModel(IModel):
+class ScrapedEventsModel(BaseModel):
     """Represents an event scraped from the website."""
 
     type: str

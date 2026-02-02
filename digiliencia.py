@@ -1,5 +1,3 @@
-import sys
-
 from loguru import logger
 from digiliencia.configs.env import Env
 from digiliencia.cmd.scrap import scrap

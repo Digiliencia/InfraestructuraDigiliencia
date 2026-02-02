@@ -1,19 +1,20 @@
 """News service for managing news using neomodel."""
 
 import gc
-import os
 from datetime import datetime
 from typing import Iterable, List, Optional
 
-import requests
 from loguru import logger
 
 from digiliencia.data.models.neomodel.field import Field
 from digiliencia.data.models.neomodel.news import News
 from digiliencia.data.models.neomodel.topic import Topic
 from digiliencia.data.models.news_model import ScrapedNews
+from digiliencia.data.services.embedding_service import EmbeddingService
 from digiliencia.data.services.neomodel.chunk_service import ChunkService
 from digiliencia.data.services.neomodel.config import configure_neomodel
+from digiliencia.enums.related_fields import RelatedFields
+from digiliencia.enums.topics import Topics
 
 
 class NewsService:
@@ -197,35 +198,16 @@ class NewsService:
 
     def generate_embeddings_for_all_news(self):
         """
-        Generate embeddings for all news items.
-
-        Args:
-            embedding_service: Optional EmbeddingService instance. If None, creates a new one.
+        Generate embeddings for all news items using EmbeddingService.
         """
+
         news_items = self.get_all_news()
+        embedding_service = EmbeddingService()
         for news in news_items:
-            # Get the embeddings service URL from environment
-            embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-            if not embeddings_service_url:
-                logger.error("EMBEDDINGS_SERVICE_URL environment variable not set")
-                continue
-
             try:
-                # CONTENT
-                # Prepare the request payload
-                payload = {"texts": [news.header, news.content]}
-
-                # Make POST request to embeddings service
-                response = requests.post(
-                    embeddings_service_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
+                embeddings = embedding_service.generate_embeddings(
+                    [str(news.header), str(news.content)]
                 )
-                response.raise_for_status()
-
-                # Extract embedding from response
-                embeddings = response.json().get("embeddings")
-
                 if embeddings:
                     news.header_embedding = embeddings[0]
                     news.content_embedding = embeddings[1]
@@ -233,109 +215,66 @@ class NewsService:
                     logger.info(f"Generated embeddings for news: {news.header}")
                 else:
                     logger.error(f"No embeddings returned for news: {news.header}")
-
-            except requests.RequestException as e:
-                logger.error(f"Error generating embeddings for news {news.header}: {e}")
             except Exception as e:
-                logger.error(
-                    f"Unexpected error generating embeddings for news {news.header}: {e}"
-                )
+                logger.error(f"Error generating embeddings for news {news.header}: {e}")
+        embedding_service.close()
 
     def generate_embeddings_for_unembedded_news(
         self, limit: Optional[int] = None, batch_size: int = 10
     ):
         """
-        Generate embeddings for news items that don't have embeddings yet.
+        Generate embeddings for news items that don't have embeddings yet using EmbeddingService.
         Optimized for local GPU processing with memory management.
-
-        Args:
-            limit: Maximum number of news items to process. If None, processes all.
-            batch_size: Number of news items to process before forcing garbage collection.
         """
-        # Get the embeddings service URL from environment first
-        embeddings_service_url = os.getenv("EMBEDDINGS_SERVICE")
-        if not embeddings_service_url:
-            logger.error("EMBEDDINGS_SERVICE environment variable not set")
-            return
 
-        # Use a session for connection reuse
-        with requests.Session() as session:
-            session.headers.update({"Content-Type": "application/json"})
-
-            processed_count = 0
-            failed_count = 0
-            batch_count = 0
-
-            # Process news items in a memory-efficient way
-            # Instead of loading all at once, iterate and check one by one
-            for news in News.nodes.all():
-                # Check limit early to avoid unnecessary processing
-                if limit and processed_count >= limit:
-                    break
-
-                # Skip if already has embeddings (double-check to avoid race conditions)
-                if news.has_embeddings():
-                    continue
-
-                try:
-                    # Prepare the request payload
-                    payload = {"texts": [news.header, news.content]}
-
-                    # Make POST request to embeddings service using the session
-                    response = session.post(embeddings_service_url, json=payload)
-                    response.raise_for_status()
-
-                    # Extract embedding from response
-                    embeddings = response.json().get("embeddings")
-
-                    if embeddings and len(embeddings) >= 2:
-                        news.header_embedding = embeddings[0]
-                        news.content_embedding = embeddings[1]
-                        news.save()
-                        processed_count += 1
-
-                        # Log progress less frequently to reduce memory overhead
-                        if processed_count % 5 == 0 or processed_count == 1:
-                            logger.info(
-                                f"Generated embeddings for {processed_count} news items (latest: {news.header[:50]}...)"
-                            )
-                    else:
-                        failed_count += 1
-                        logger.warning(
-                            f"No embeddings returned for news: {news.header[:50]}..."
-                        )
-
-                except requests.RequestException as e:
-                    failed_count += 1
-                    logger.error(
-                        f"Network error for news {news.header[:50]}...: {str(e)[:100]}"
-                    )
-                except Exception as e:
-                    failed_count += 1
-                    logger.error(
-                        f"Unexpected error for news {news.header[:50]}...: {str(e)[:100]}"
-                    )
-
-                # Force garbage collection every batch_size items to free GPU/system memory
-                batch_count += 1
-                if batch_count >= batch_size:
-                    gc.collect()
-                    batch_count = 0
-                    logger.debug(
-                        f"Memory cleanup after processing {processed_count + failed_count} items"
-                    )
-
-            # Final cleanup
-            gc.collect()
-
-            if processed_count > 0:
-                logger.info(
-                    f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}"
+        embedding_service = EmbeddingService()
+        processed_count = 0
+        failed_count = 0
+        batch_count = 0
+        for news in News.nodes.all():
+            if limit and processed_count >= limit:
+                break
+            if news.has_embeddings():
+                continue
+            try:
+                embeddings = embedding_service.generate_embeddings(
+                    [news.header, news.content]
                 )
-            else:
-                logger.info("No news items found without embeddings")
+                if embeddings and len(embeddings) >= 2:
+                    news.header_embedding = embeddings[0]
+                    news.content_embedding = embeddings[1]
+                    news.save()
+                    processed_count += 1
+                    if processed_count % 5 == 0 or processed_count == 1:
+                        logger.info(
+                            f"Generated embeddings for {processed_count} news items (latest: {news.header[:50]}...)"
+                        )
+                else:
+                    failed_count += 1
+                    logger.warning(
+                        f"No embeddings returned for news: {news.header[:50]}..."
+                    )
+            except Exception as e:
+                failed_count += 1
+                logger.error(
+                    f"Error generating embeddings for news {news.header[:50]}...: {str(e)[:100]}"
+                )
+            batch_count += 1
+            if batch_count >= batch_size:
+                gc.collect()
+                batch_count = 0
+                logger.debug(
+                    f"Memory cleanup after processing {processed_count + failed_count} items"
+                )
+        gc.collect()
+        embedding_service.close()
+        if processed_count > 0:
+            logger.info(
+                f"Embedding generation completed. Processed: {processed_count}, Failed: {failed_count}"
+            )
+        else:
+            logger.info("No news items found without embeddings")
 
-    # ---------------------- Chunking and embeddings for chunks ----------------------
     def _split_text_into_chunks(
         self,
         text: str,
@@ -438,6 +377,7 @@ class NewsService:
 
     def generate_embeddings_for_missing_chunks(
         self,
+        model_name: str,
         limit: Optional[int] = None,
         batch_size: int = 32,
     ) -> int:
@@ -446,6 +386,140 @@ class NewsService:
         Returns number of chunks updated.
         """
         return ChunkService().generate_embeddings_for_missing_chunks(
+            model_name,
             limit=limit,
             batch_size=batch_size,
         )
+
+    def get(
+        self,
+        limit: int = 10,
+        topic: Optional[Topics] = None,
+        related_field: Optional[RelatedFields] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        organization: Optional[str] = None,
+    ) -> list[News]:
+        """
+        Retrieves news from the database based on various filters.
+        OPTIMIZED: Uses Cypher queries to filter at database level instead of Python loops.
+
+        Args:
+            limit (int): Maximum number of news items to retrieve.
+            topic (Optional[Topics]): Filter by a specific topic.
+            related_field (Optional[RelatedFields]): Filter by a specific related field.
+            start_date (Optional[str]): Start date for filtering news (inclusive, formato 'YYYY-MM-DD').
+            end_date (Optional[str]): End date for filtering news (inclusive, formato 'YYYY-MM-DD').
+            organization (Optional[str]): Filter by organization name (NewsAgency).
+        Returns:
+            List of news items matching the criteria.
+        """
+        from typing import Any, Dict
+
+        from neomodel import db
+
+        # Build dynamic Cypher query based on filters
+        query_parts = ["MATCH (n:News)"]
+        where_clauses = []
+        params: Dict[str, Any] = {"limit": limit}
+
+        # Add relationship patterns for filtering
+        if topic is not None:
+            query_parts.append("MATCH (n)-[:COVERS]->(t:Topic)")
+            topic_name = getattr(topic, "value", topic)
+            where_clauses.append("t.name = $topic_name")
+            params["topic_name"] = topic_name
+
+        if related_field is not None:
+            query_parts.append("MATCH (n)-[:RELATED_TO]->(f:Field)")
+            related_field_name = getattr(related_field, "name", str(related_field))
+            where_clauses.append("f.name = $field_name")
+            params["field_name"] = related_field_name
+
+        if organization is not None:
+            query_parts.append("MATCH (n)-[:PUBLISHED_BY]->(org:NewsAgency)")
+            where_clauses.append("org.name = $org_name")
+            params["org_name"] = organization
+
+        # Add date filters
+        if start_date:
+            try:
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+                where_clauses.append("n.date >= $start_date")
+                params["start_date"] = start_dt
+            except Exception as e:
+                logger.warning(f"Invalid start_date format: {start_date}, error: {e}")
+
+        if end_date:
+            try:
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+                where_clauses.append("n.date <= $end_date")
+                params["end_date"] = end_dt
+            except Exception as e:
+                logger.warning(f"Invalid end_date format: {end_date}, error: {e}")
+
+        # Combine query parts
+        query = " ".join(query_parts)
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+
+        # Add return and ordering
+        query += " RETURN n ORDER BY n.date DESC LIMIT $limit"
+
+        try:
+            results, meta = db.cypher_query(query, params)
+            # Inflate results to News objects
+            return [News.inflate(row[0]) for row in results]
+        except Exception as e:
+            logger.error(f"Error executing news query: {e}")
+            logger.error(f"Query: {query}")
+            logger.error(f"Params: {params}")
+            return []
+
+    def search_by_content(
+        self,
+        content: str,
+        limit: int = 10,
+    ) -> list[News]:
+        """
+        Searches for news items containing similar content.
+        Internally uses embeddings.
+
+        Args:
+            content (str): The content to search for within news items.
+            limit (int): Maximum number of news items to retrieve.
+        Returns:
+            List of news items containing the specified content.
+        """
+        embedding_service = EmbeddingService()
+        try:
+            query_embedding = embedding_service.generate_embeddings([content])
+            if not query_embedding or len(query_embedding) == 0:
+                logger.error("No embedding generated for the provided content.")
+                return []
+            query_vector = query_embedding[0]
+
+            # Cypher query to search for similar news using embeddings
+            from neomodel import db
+
+            cypher_query = """
+            MATCH (n:News)
+            WHERE n.content_embedding IS NOT NULL
+            WITH n, gds.similarity.cosine(n.content_embedding, $query_vector) AS similarity
+            RETURN n
+            ORDER BY similarity DESC
+            LIMIT $limit
+            """
+
+            results, meta = db.cypher_query(
+                cypher_query, {"query_vector": query_vector, "limit": limit}
+            )
+
+            # Inflate results to News objects
+            similar_news = [News.inflate(row[0]) for row in results]
+            return similar_news
+        except Exception as e:
+            logger.error(f"Error during content-based search: {e}")
+            return []
+        finally:
+            embedding_service.close()

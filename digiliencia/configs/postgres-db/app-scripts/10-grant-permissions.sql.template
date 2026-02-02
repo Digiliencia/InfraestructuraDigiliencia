@@ -1,0 +1,25 @@
+-- scripts/10-grant-permissions.sql.template
+
+-- Since we are now using a single user (${POSTGRES_USER}) who owns the database,
+-- explicit GRANT statements on specific tables are technically redundant
+-- (the owner has full rights by default).
+
+-- However, running these commands ensures that if permissions were somehow
+-- revoked or if schema ownership is mixed, the application user can still operate.
+
+-- 1. Grant Usage on the Schema
+GRANT USAGE ON SCHEMA public TO "${POSTGRES_USER}";
+
+-- 2. Grant Full Access to All Tables (created in 02-create-schema.sql)
+-- Note: We use ALL TABLES to cover users, chats, messages, ai_prompts, models
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "${POSTGRES_USER}";
+
+-- 3. Grant Full Access to Sequences (needed for auto-incrementing IDs if used, or UUID generation)
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "${POSTGRES_USER}";
+
+-- 4. Grant Execution Rights on Functions/Procedures
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO "${POSTGRES_USER}";
+
+-- Note: If you ever re-introduce a separate "Read Only" user for analytics,
+-- you would add lines like this here:
+-- GRANT SELECT ON ALL TABLES IN SCHEMA public TO "analytics_user";

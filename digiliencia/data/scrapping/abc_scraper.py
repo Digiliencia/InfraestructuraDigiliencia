@@ -23,7 +23,7 @@ class AbstractScraper(ABC):
 
         Returns
         -------
-        tuple[ScrapedNews]
-            A tuple containing ScrapedNewss with the scraped data.
+        tuple[ScrapedNewsModel]
+            A tuple containing ScrapedNewsModels with the scraped data.
         """
         pass

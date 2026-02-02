@@ -20,5 +20,6 @@ class Chunk(StructuredNode):
     kind = StringProperty(
         default="content"
     )  # 'content' (default) or other kinds if extended
+    model = StringProperty(required=True)  # Embedding model used for this chunk
 
     # Relationship to News is defined on News side as HAS_CHUNK

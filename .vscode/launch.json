@@ -74,6 +74,15 @@
       "args": [],
       "justMyCode": false,
       "django": false
+    },
+    {
+      "name": "Debug Streamlit App",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "-m",
+      "args": ["streamlit", "run", "./digiliencia/ui/chatbot.py"],
+      "console": "integratedTerminal",
+      "justMyCode": false
     }
   ]
 }

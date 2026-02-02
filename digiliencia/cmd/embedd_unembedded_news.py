@@ -2,6 +2,7 @@ from loguru import logger
 
 from digiliencia.data.services.neomodel.config import configure_neomodel
 from digiliencia.data.services.neomodel.news_service import NewsService
+from digiliencia.configs.env import env
 
 
 def main():
@@ -22,6 +23,7 @@ def main():
 
         # 2) Generar embeddings para cada chunk sin embedding
         updated_chunks = news_service.generate_embeddings_for_missing_chunks(
+            model_name=env.em,
             limit=None,
             batch_size=30,
         )
