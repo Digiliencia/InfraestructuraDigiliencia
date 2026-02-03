@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Stage 2: Install Dependencies
 # Copy requirements from the specific location
-COPY digiliencia/configs/fastAPI/requirements.txt .
+COPY digiliencia/fastAPI/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 3: Copy Application Code
@@ -25,10 +25,10 @@ COPY digiliencia/exc ./digiliencia/exc
 COPY digiliencia/utils ./digiliencia/utils
 COPY digiliencia/data ./digiliencia/data
 COPY digiliencia/configs/env.py ./digiliencia/configs/
-COPY digiliencia/configs/fastAPI ./digiliencia/configs/fastAPI
+COPY digiliencia/fastAPI ./digiliencia/fastAPI
 
 # Set working directory to where main.py and entrypoint.sh reside
-WORKDIR /app/digiliencia/configs/fastAPI
+WORKDIR /app/digiliencia/fastAPI
 
 # Add /app to PYTHONPATH so 'import digiliencia' works from anywhere
 ENV PYTHONPATH=/app

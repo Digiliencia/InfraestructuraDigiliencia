@@ -19,8 +19,8 @@ from httpx import AsyncClient
 
 # Import Schema and Config
 # We use the local project structure, assuming python path is set correctly
-from digiliencia.configs.fastAPI.schemas.chat import Templates, Models
-from digiliencia.configs.fastAPI.core.endpoints import (
+from digiliencia.fastAPI.schemas.chat import Templates, Models
+from digiliencia.fastAPI.core.endpoints import (
     TEMPLATE_LIST,
     MODEL_LIST,
     REGISTER,

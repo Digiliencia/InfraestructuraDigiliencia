@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from starlette import status
 
 # Import centralized endpoint constant
-from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
+from digiliencia.fastAPI.core.endpoints import HEALTH_PATH
 
 # Apply asyncio marker to all tests in this module
 pytestmark = pytest.mark.asyncio
