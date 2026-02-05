@@ -1,6 +1,5 @@
 # test/v2_chats_test.py
 import pytest
-import uuid
 from httpx import AsyncClient
 from starlette import status
 from digiliencia.fastAPI.schemas.chat import Templates, Models
@@ -12,11 +11,13 @@ V2_CONVERSATIONS = f"{V2_CHATS_PREFIX}/conversations"
 
 pytestmark = pytest.mark.asyncio
 
+
 async def test_v2_get_conversations_empty(authenticated_client: AsyncClient):
     """Verify v2 empty conversation list."""
     response = await authenticated_client.get(V2_CONVERSATIONS)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"conversations": []}
+
 
 async def test_v2_chat_creation_and_messages(
     authenticated_client: AsyncClient, templates: Templates, models: Models
@@ -34,7 +35,9 @@ async def test_v2_chat_creation_and_messages(
 
     # 2. Send Message V2
     msg = {"content": "Hello V2", "model_id": str(model_id)}
-    response = await authenticated_client.patch(f"{V2_CHATS_PREFIX}/{chat_id}", json=msg)
+    response = await authenticated_client.patch(
+        f"{V2_CHATS_PREFIX}/{chat_id}", json=msg
+    )
     assert response.status_code == status.HTTP_200_OK
     assert "text" in response.json()
 
@@ -44,12 +47,13 @@ async def test_v2_chat_creation_and_messages(
     conversation = history_response.json()
     assert len(conversation["messages"]) == 2
 
+
 async def test_v2_delete_conversation(
     authenticated_client: AsyncClient, templates: Templates
 ):
     """Verify deleting a chat via V2."""
     template_id = templates.templates[0].id
-    
+
     # Create valid chat for deletion
     chat_data = {"title": "V2 Delete", "ai_prompt_id": str(template_id)}
     create_resp = await authenticated_client.patch(V2_CHATS_PREFIX, json=chat_data)
