@@ -10,8 +10,8 @@ import pytest
 from httpx import AsyncClient
 from starlette import status
 
-from digiliencia.configs.fastAPI.core.config import settings
-from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
+from digiliencia.fastAPI.core.config import settings
+from digiliencia.fastAPI.core.endpoints import HEALTH_PATH
 
 pytestmark = pytest.mark.asyncio
 

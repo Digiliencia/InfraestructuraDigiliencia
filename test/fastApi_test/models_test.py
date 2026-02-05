@@ -14,7 +14,7 @@ import pytest
 from httpx import AsyncClient
 from starlette import status
 
-from digiliencia.configs.fastAPI.core.endpoints import MODEL_LIST
+from digiliencia.fastAPI.core.endpoints import MODEL_LIST
 
 pytestmark = pytest.mark.asyncio
 

@@ -18,10 +18,10 @@ from httpx import AsyncClient
 from starlette import status
 
 # Import Schemas
-from digiliencia.configs.fastAPI.schemas.chat import Templates, Models
+from digiliencia.fastAPI.schemas.chat import Templates, Models
 
 # Import Centralized Endpoints
-from digiliencia.configs.fastAPI.core.endpoints import (
+from digiliencia.fastAPI.core.endpoints import (
     CONVERSATIONS,
     CHATS_PATH,
     REGISTER,

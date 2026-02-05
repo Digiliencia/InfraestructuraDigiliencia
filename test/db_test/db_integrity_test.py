@@ -18,7 +18,7 @@ from psycopg2.errors import (
     ForeignKeyViolation,
     UndefinedColumn,
 )
-from digiliencia.configs.fastAPI.core.config import settings
+from digiliencia.fastAPI.core.config import settings
 
 
 def test_unique_email_constraint(get_db_connection_for_role):

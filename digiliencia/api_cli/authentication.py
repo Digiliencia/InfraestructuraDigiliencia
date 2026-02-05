@@ -11,7 +11,7 @@ from starlette import status
 
 # Custom modules
 import menu
-from digiliencia.configs.fastAPI.core.endpoints import LOGIN, REGISTER, USERS_ME
+from digiliencia.fastAPI.core.endpoints import LOGIN, REGISTER, USERS_ME
 
 
 def login(client: httpx.Client, email: str, password: str) -> bool:

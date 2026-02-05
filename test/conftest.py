@@ -22,10 +22,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 import random
 
-from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
+from digiliencia.fastAPI.core.config import settings as fastapi_settings
 
 # Import updated models
-from digiliencia.configs.fastAPI.db.models import (
+from digiliencia.fastAPI.db.models import (
     User,
     Chat,
     Message,

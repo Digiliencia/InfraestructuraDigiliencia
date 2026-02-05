@@ -15,13 +15,13 @@ from starlette import status
 
 # Custom modules
 import menu  # Assumed to be available for UI alerts
-from digiliencia.configs.fastAPI.core.endpoints import (
+from digiliencia.fastAPI.core.endpoints import (
     CHATS_PATH,
     CONVERSATIONS,
     MODEL_LIST,
     TEMPLATE_LIST,
 )
-from digiliencia.configs.fastAPI.schemas import chat as chat_schema
+from digiliencia.fastAPI.schemas import chat as chat_schema
 
 
 class Chat:

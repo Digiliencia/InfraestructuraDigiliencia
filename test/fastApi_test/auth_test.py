@@ -14,7 +14,7 @@ from httpx import AsyncClient
 from starlette import status
 
 # Use centralized endpoint definitions
-from digiliencia.configs.fastAPI.core.endpoints import REGISTER, LOGIN, USERS_ME, TOKEN
+from digiliencia.fastAPI.core.endpoints import REGISTER, LOGIN, USERS_ME, TOKEN
 
 pytestmark = pytest.mark.asyncio
 

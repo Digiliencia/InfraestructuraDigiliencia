@@ -39,6 +39,8 @@ class Env:
     _chatbot_llm: str = ""
     _news_chunk_size: int = 0
     _news_chunk_overlap: int = 0
+    _agent_session_timeout_minutes: int = 30
+    _agent_cleanup_interval_minutes: int = 10
 
     def __new__(cls):
         logger.debug("Loading environment variables")
@@ -79,6 +81,12 @@ class Env:
             )
             cls._instance._news_chunk_overlap = int(
                 cls._instance.get_env_var("NEWS_CHUNK_OVERLAP", 200)
+            )
+            cls._instance._agent_session_timeout_minutes = int(
+                cls._instance.get_env_var("AGENT_SESSION_TIMEOUT_MINUTES", 30)
+            )
+            cls._instance._agent_cleanup_interval_minutes = int(
+                cls._instance.get_env_var("AGENT_CLEANUP_INTERVAL_MINUTES", 10)
             )
         return cls._instance
 
@@ -154,6 +162,14 @@ class Env:
     @property
     def news_chunk_overlap(self) -> int:
         return self._news_chunk_overlap
+
+    @property
+    def agent_session_timeout_minutes(self) -> int:
+        return self._agent_session_timeout_minutes
+
+    @property
+    def agent_cleanup_interval_minutes(self) -> int:
+        return self._agent_cleanup_interval_minutes
 
     @staticmethod
     def load_env_vars():

@@ -12,7 +12,7 @@ Updates:
 
 import pytest
 import psycopg2
-from digiliencia.configs.fastAPI.core.config import settings as fastapi_settings
+from digiliencia.fastAPI.core.config import settings as fastapi_settings
 
 
 # =============================================================================
