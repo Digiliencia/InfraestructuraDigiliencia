@@ -6,6 +6,9 @@ This module initializes the FastAPI application, configures middlewares (CORS, S
 and mounts the API routers. It serves as the central hub for the backend service.
 """
 
+import asyncio
+from digiliencia.configs.env import env
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -25,13 +28,15 @@ from core.endpoints import (
     ROOT,
 )
 
-from core.agent_manager import agent_manager
 
 # Schema Imports
 from schemas import user as user_schema
 
 # Router Imports
 from api.routers import chats, custom_auth, custom_users, models, templates
+from api.v2 import chats as v2_chats, auth as v2_auth, users as v2_users
+
+from tasks import periodic_cleanup
 
 
 @asynccontextmanager
@@ -40,11 +45,28 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for the FastAPI application.
     Handles startup and shutdown events.
     """
-    # Startup: Pre-initialize agents to reuse them across requests
+
+    # Background cleanup task
+    cleanup_task = None
+
+    # Startup
     if not settings.TESTING:
-        agent_manager.pre_initialize()
+        # Start background cleanup task
+        cleanup_task = asyncio.create_task(periodic_cleanup())
+        print(
+            f"[Startup] Background cleanup task started (interval: {env.agent_cleanup_interval_minutes} min)"
+        )
+
     yield
-    # Shutdown: Clean up resources if needed
+
+    # Shutdown: Clean up resources
+    if cleanup_task:
+        cleanup_task.cancel()
+        try:
+            await cleanup_task
+        except asyncio.CancelledError:
+            pass
+        print("[Shutdown] Background cleanup task stopped")
 
 
 # --- Configuration ---
@@ -226,6 +248,12 @@ app.include_router(models.router, prefix=API_PREFIX, tags=["Models"])
 
 # Chats -> Defined in router using CONVERSATIONS (/chats/conversations) -> /api/chats/...
 app.include_router(chats.router, prefix=API_PREFIX, tags=["Chats"])
+
+# --- V2 API Routers ---
+# These routers already include the /v2 prefix in their definition
+app.include_router(v2_auth.router, prefix=API_PREFIX)
+app.include_router(v2_users.router, prefix=API_PREFIX)
+app.include_router(v2_chats.router, prefix=API_PREFIX)
 
 # --- Global Endpoints ---
 

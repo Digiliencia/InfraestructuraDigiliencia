@@ -21,6 +21,9 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
     future=True,
+    pool_size=20,
+    max_overflow=40,
+    pool_timeout=60,
 )
 
 

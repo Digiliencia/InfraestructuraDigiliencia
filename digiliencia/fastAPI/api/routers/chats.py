@@ -25,7 +25,7 @@ from db.models import Chat, AIPrompt, Message, User, Model
 from db.session import get_db
 from schemas import chat as chat_schema
 
-from digiliencia.agents.shared_memory import SharedConversationMemory, MessageRole
+from digiliencia.agents.shared_memory import MessageRole
 from core.agent_manager import agent_manager
 from digiliencia.configs.env import env
 
@@ -155,8 +155,7 @@ async def ask_question_to_chat(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
             )
 
-        # 0. Prepare history for the Agent
-        # Fetch existing messages to populate agent memory
+        # Fetch existing messages to build conversation history
         history_query = (
             select(Message)
             .where(Message.chat_id == chat_id)
@@ -165,28 +164,35 @@ async def ask_question_to_chat(
         history_result = await db.execute(history_query)
         past_messages = history_result.scalars().all()
 
-        # Initialize shared memory for this request
-        agent_memory = SharedConversationMemory()
-
-        # Populate memory with history
-        for msg in past_messages:
-            role = MessageRole.ASSISTANT if msg.model_id else MessageRole.USER
-            agent_memory.add_message(
-                role=role, content=str(msg.content), metadata=msg.statistics or {}
-            )
-
         # Determine model name
         model_name = env.chatbot_llm
         if payload.model_id:
             model_db = await db.get(Model, payload.model_id)
             if model_db:
                 model_name = str(model_db.name)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+                )
 
-        # Get pre-initialized agent from Manager
-        agent = agent_manager.get_agent(model_name=model_name)
+        # Prepare conversation history for agent initialization
+        history = [
+            (
+                MessageRole.ASSISTANT
+                if msg.order_number % 2 == 0
+                else MessageRole.USER,
+                str(msg.content),
+                msg.statistics or {},
+            )
+            for msg in past_messages
+        ]
 
-        # Reuse existing agent but switch to the current chat memory
-        agent_manager.set_agent_context(agent, agent_memory)
+        # Get or create session-specific agent (with conversation history)
+        # On first request: creates new agent with populated history
+        # On subsequent requests: reuses existing agent (history already in memory)
+        agent = agent_manager.get_or_create_conversation_agent(
+            chat_id=chat_id, model_name=model_name, history=history
+        )
 
         # 1. Save User Message
         max_order_query = select(func.max(Message.order_number)).where(
@@ -206,6 +212,12 @@ async def ask_question_to_chat(
         # 2. Get AI Response from Agent
         # RouterAgent.send_msg adds the user query to its shared_memory and processes it
         ai_response_text = await asyncio.to_thread(agent.send_msg, payload.content)
+
+        if ai_response_text is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate AI response",
+            )
 
         # 3. Save AI Message
         ai_message = Message(
@@ -348,3 +360,6 @@ async def delete_conversation(
 
     await db.delete(chat)
     await db.commit()
+
+    # Clean up the agent session for this conversation
+    agent_manager.cleanup_conversation_agent(chat_id)

@@ -17,14 +17,13 @@ from typing import Callable, List, Optional, Tuple
 import httpx
 from starlette import status
 
-from digiliencia.configs.fastAPI.schemas import chat as chat_schema
-from digiliencia.configs.fastAPI.core.endpoints import HEALTH_PATH
+from digiliencia.fastAPI.schemas import chat as chat_schema
+from digiliencia.fastAPI.core.endpoints import HEALTH_PATH
 
 # Custom modules
 import menu
 import authentication
 from chat import Chat
-
 
 
 def clear_screen():
@@ -47,7 +46,9 @@ class ConsoleCLI:
         self.messages: List[str] = ["Diligencia CLI"]
         self.base_url = url
         # Set a timeout to avoid hanging indefinitely
-        self.client: httpx.Client = httpx.Client(base_url=url, timeout=10.0, verify=False)
+        self.client: httpx.Client = httpx.Client(
+            base_url=url, timeout=10.0, verify=False
+        )
         self.chat: Chat = Chat(self.client)
         self.alert_time: float = 1.5
         self._check_health()
