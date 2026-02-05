@@ -3,7 +3,7 @@ services:
   fastapi-service-test:
     build:
       context: ..
-      dockerfile: digiliencia/configs/fastAPI/DockerFile
+      dockerfile: digiliencia/fastAPI/DockerFile
     ports:
       - "8080:8080"
     environment:
