@@ -11,8 +11,8 @@
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
-/** Default API base URL. Adjust if the backend runs elsewhere. */
-const BASE_URL = 'https://api.digiliencia.org/api';
+/** Default API base URL. Use relative /api since Nginx proxies it. */
+const BASE_URL = '/api';
 
 /** localStorage key used to persist the JWT token. */
 const TOKEN_KEY = 'digiliencia_token';
