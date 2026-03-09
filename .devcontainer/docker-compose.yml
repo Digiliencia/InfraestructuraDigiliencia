@@ -125,5 +125,6 @@ services:
       - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ../certs:/etc/nginx/ssl:ro # Mount your certificates here
+      - ../digiliencia/api_web:/usr/share/nginx/html:ro
     networks:
       - dev-network

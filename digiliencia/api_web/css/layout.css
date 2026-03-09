@@ -1,0 +1,396 @@
+/* layout.css
+ * Two-column ChatGPT-style layout.
+ * Left: fixed sidebar | Right: scrollable chat main area.
+ * INcibe corporate style — Rojo #E73137, Amarillo #FFDD00.
+ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── App container ─────────────────────────────────────── */
+
+#app {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  transition: opacity var(--transition-normal);
+}
+
+#app.app--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Sidebar ───────────────────────────────────────────── */
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--color-surface-alt);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  /* INcibe red stripe at the very top */
+  border-top: 3px solid var(--color-incibe-red);
+}
+
+.sidebar__header {
+  padding: var(--space-5) var(--space-4);
+  border-bottom: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+}
+
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+/* The INcibe diamond / shield mark */
+.sidebar__logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--color-incibe-red);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: var(--shadow-red);
+}
+
+/* Yellow accent square — mimics the 4-diamond INcibe symbol */
+.sidebar__logo-mark::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  background: var(--color-incibe-yellow);
+  border-radius: 2px;
+}
+
+.sidebar__logo-mark svg { color: #fff; }
+
+.sidebar__logo-text {
+  font-size: var(--font-size-md);
+  font-weight: 800; /* Bolder for light theme */
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__logo-sub {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* ── New chat button ───────────────────────────────────── */
+
+.sidebar__actions {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+/* ── Conversation list ─────────────────────────────────── */
+
+.sidebar__conversations {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+  background: var(--color-surface-alt);
+}
+
+.sidebar__conversations::-webkit-scrollbar { width: 4px; }
+.sidebar__conversations::-webkit-scrollbar-track { background: transparent; }
+.sidebar__conversations::-webkit-scrollbar-thumb {
+  background: var(--color-incibe-red);
+  border-radius: var(--radius-full);
+  opacity: 0.5;
+}
+
+.sidebar__section-label {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: var(--space-2);
+}
+
+/* ── Sidebar footer (user info) ────────────────────────── */
+
+.sidebar__footer {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface);
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sidebar__user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background: var(--color-incibe-red-muted);
+  border: 2px solid var(--color-incibe-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-incibe-red-light);
+}
+
+.sidebar__user-email {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar__footer-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap; /* Allow buttons to wrap to a new line if they don't fit */
+}
+
+/* ── Main content ──────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-bg);
+  height: 100%;
+  /* Matching top accent */
+  border-top: 3px solid var(--color-incibe-red);
+}
+
+/* ── Chat header ───────────────────────────────────────── */
+
+.chat-header {
+  height: var(--header-height);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  flex-shrink: 0;
+  background: var(--color-surface);
+}
+
+.chat-header__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-header__model {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.chat-header__model label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* ── Chat body ─────────────────────────────────────────── */
+
+.chat-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+#chat-empty,
+#chat-active {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-active--hidden,
+.chat-empty--hidden {
+  display: none !important;
+}
+
+/* ── Empty state ───────────────────────────────────────── */
+
+.chat-empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8);
+  gap: var(--space-4);
+}
+
+.chat-empty__logo {
+  width: 80px;
+  height: 80px;
+  background: var(--color-incibe-red);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+  box-shadow: var(--shadow-red);
+  position: relative;
+}
+
+/* Yellow accent diamond on the logo */
+.chat-empty__logo::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-incibe-yellow);
+  border-radius: 3px;
+}
+
+.chat-empty__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.chat-empty__subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  max-width: 360px;
+}
+
+/* ── Messages area ─────────────────────────────────────── */
+
+#messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
+  scroll-behavior: smooth;
+}
+
+#messages-container::-webkit-scrollbar { width: 6px; }
+#messages-container::-webkit-scrollbar-track { background: transparent; }
+#messages-container::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/* ── Input area ────────────────────────────────────────── */
+
+.chat-input-area {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.chat-input-wrapper {
+  max-width: var(--chat-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5); /* Increased padding inside the text box */
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.chat-input-wrapper:focus-within {
+  border-color: var(--color-incibe-red);
+  box-shadow: 0 0 0 2px var(--color-incibe-red-muted);
+}
+
+.chat-input-wrapper textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md); /* Larger text in input */
+  line-height: 1.5;
+  resize: none;
+  min-height: 28px;
+  max-height: 180px;
+}
+
+.chat-input-wrapper textarea::placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.chat-input-hint {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding-top: var(--space-2);
+  max-width: var(--chat-max-width);
+  margin: 0 auto;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    z-index: var(--z-dropdown);
+    transition: left var(--transition-normal);
+    height: 100dvh;
+  }
+  .sidebar.sidebar--open { left: 0; }
+  #app { flex-direction: column; }
+  .chat-header { padding: 0 var(--space-4); }
+  .chat-input-area { padding: var(--space-3) var(--space-3); }
+}
