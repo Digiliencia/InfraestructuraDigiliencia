@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Construct the uvicorn command
-CMD="uvicorn main:app --host 0.0.0.0 --port ${FASTAPI_PORT:-8080}"
+# Construct the uvicorn command (with 10-minute timeout for slow LLM responses)
+CMD="uvicorn main:app --host 0.0.0.0 --port ${FASTAPI_PORT:-8080} --timeout-keep-alive 600"
 
 # Add SSL if certificates are provided
 if [ -n "$SSL_CERTFILE" ] && [ -n "$SSL_KEYFILE" ]; then
