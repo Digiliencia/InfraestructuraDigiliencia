@@ -190,7 +190,7 @@ class Chat:
 
         try:
             response = self.client.patch(
-                f"{CHATS_PATH}/{str(chat_id)}", json=message_payload, timeout=1000
+                f"{CHATS_PATH}/{str(chat_id)}", json=message_payload, timeout=10000
             )
 
             if response.status_code == status.HTTP_200_OK:
