@@ -889,6 +889,6 @@ docker-compose logs -f fastapi
 - [Gabriel Díez Tejedor]()
 - [Esteban Peña Salazar](https://github.com/esalap00)
 - [Álvaro Prieto Álvarez](https://github.com/Apriea04)
-- [Carlos Prieto Viñuela]()
+- [Carlos Prieto Viñuela](https://github.com/carlos-prieto77)
 - [Enrique López González]()
 - [Cristina Mendaña Cuervo]()
