@@ -1,0 +1,8 @@
+"#","Archivo","Tamaño","Contenido"
+"(a)","a_encuesta_integral_coso.md","41 KB · 757 líneas","Encuesta completa: 10 bloques, 59 preguntas, 14 IATs⚡, tablas matriciales, escalas y opciones irónicamente curadas"
+"(b)","b_guia_metodologica.md","14 KB · 264 líneas","Diseño muestral, GQM, fórmula IGM ponderada, análisis estadístico (AFC, Cronbach, Kruskal-Wallis), gestión de sesgos"
+"(c)","c_narrativa_explicativa.md","15 KB · 143 líneas","Contexto NIS2/DORA/CGF2026, lógica de los 5 componentes COSO aplicados al ciberriesgo, singularidades España-UE, glosario de 30 términos"
+"(d)","d_mapeo_normativo.md","14 KB · 145 líneas","Tabla de trazabilidad pregunta → 12 marcos (COSO, NIS2, DORA, ENS, ISO 27001, NIST CSF, FAIR, GDPR, EU AI Act), densidad normativa por pregunta"
+"(e)","e_plantilla_excel_igm_roi.md","19 KB · 376 líneas","Especificación técnica completa de 8 pestañas Excel: fórmulas ALE/SLE/ARO/ROSI, conversión de respuestas, semáforos automáticos, dashboard"
+"(f)","f_plantilla_ppt_reporte_ejecutivo.md","21 KB · 408 líneas","17 diapositivas especificadas: portada, gauge IGM, spider chart COSO, grid 14 IATs, cuadro ROI, semáforo NIS2/DORA/ENS, roadmap y diapositiva de decisiones para el consejo"
+"(g)","g_readme_kit_encuesta.md","13 KB · 262 líneas","Guía de uso, árbol del kit, FAQs, prerrequisitos técnicos, cronograma de 21 semanas, licencia CC BY-NC-SA 4.0"
