@@ -7,12 +7,14 @@
 - [Tech Stack](#tech-stack)
 - [Arquitectura](#arquitectura)
 - [Diseño e Implementación](#diseño-e-implementación)
-- [Funcionamiento del Sistema](#funcionamiento-del-sistema)
 - [Instalación](#instalación)
 - [Configuración](#configuración)
+- [Interfaces de Usuario](#interfaces-de-usuario)
+  - [Console CLI](#console-cli-digilienciaapi_cli)
+  - [Web UI](#web-ui-digilienciaapi_web)
 - [Endpoints de API](#endpoints-de-api)
 - [Testing](#testing)
-- [Deployment](#deployment)
+- [Despliegue](#despliegue)
 - [Autores](#autores)
 
 ## Características Técnicas
@@ -622,6 +624,103 @@ CALL db.index.vector.createIndex("news-embeddings", {
   dimensions: 768,
   similarity_function: "cosine"
 });
+```
+
+---
+
+## Interfaces de Usuario
+
+### Console CLI (`digiliencia/api_cli/`)
+
+**Propósito**: Interfaz de línea de comandos interactiva para acceso local al chatbot.
+
+**Componentes**:
+```
+api_cli/
+├── main.py              # Entry point CLI
+├── console_cli.py       # UI de menú interactivo
+├── chat.py              # Lógica de chat en terminal
+├── authentication.py    # Gestión de credenciales (login)
+└── menu.py              # Sistema de menús (N1, N2, N3 support)
+```
+
+**Inicio de la CLI**:
+```bash
+# Terminal 1: Iniciar FastAPI backend
+cd digiliencia/fastAPI
+uvicorn main:app --port 8080
+
+# Terminal 2: Iniciar CLI
+cd digiliencia/api_cli
+python main.py
+```
+
+**Flujo de Uso Típico (N1 - Usuario General)**:
+```
+1. Usuario ejecuta: python main.py
+2. Selecciona [2] Registrar (o [1] Login si ya existe)
+3. Ingresa email y contraseña
+4. Selecciona [3] Nueva Conversación
+5. Escribe pregunta: "¿Cómo me protejo de ransomware?"
+6. CLI envía POST /api/chats/{chat_id}/messages
+7. Backend procesa con RouterAgent → NewsAgent (RAG)
+8. Respuesta se muestra en streaming
+9. Usuario puede seguir conversando en mismo chat
+10. Opción para guardar o exportar historial
+```
+
+**Ejemplo de Código CLI**:
+```python
+# digiliencia/api_cli/chat.py
+class ChatInterface:
+    def __init__(self, api_url: str, token: str):
+        self.api_url = api_url
+        self.token = token
+        self.current_chat_id = None
+    
+    async def send_message(self, message: str) -> str:
+        """Envía mensaje al backend y retorna respuesta con streaming"""
+        response = await httpx.post(
+            f"{self.api_url}/api/chats/{self.current_chat_id}/messages",
+            headers={"Authorization": f"Bearer {self.token}"},
+            json={"content": message}
+        )
+        # Procesa streaming de respuesta
+        async for chunk in response.aiter_text():
+            print(chunk, end='', flush=True)
+        return response.json()["content"]
+    
+    async def list_conversations(self):
+        """Lista conversaciones del usuario"""
+        response = await httpx.get(
+            f"{self.api_url}/api/chats/conversations",
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        return response.json()
+```
+
+---
+
+### Web UI (`digiliencia/api_web/`)
+
+Interfaz gráfica moderna basada en web para acceso através de navegador. Diseñada para optimizar experiencia de usuario no-técnico. SU dirección es [api.digiliencia.org](https://api.digiliencia.org). Existe una versión alternativa desarrollada por la Universidad de Salamanca en la dirección [digiliencia.org](https://digiliencia.org).
+
+**Componentes**:
+```
+api_web/
+├── index.html           # SPA entry point
+├── js/
+│   ├── app.js           # Lógica de aplicación
+│   ├── auth.js          # Gestión de autenticación
+│   ├── chat.js          # Interfaz de chat
+│   ├── api.js           # Cliente API REST
+│   └── utils.js         # Utilidades (formateo, etc.)
+└── css/
+    ├── main.css         # Estilos principales
+    ├── chat.css         # Estilos de chat
+    ├── responsive.css   # Media queries responsive
+    └── dark-mode.css    # Tema oscuro
+─────────────────────────┘
 ```
 
 ---
