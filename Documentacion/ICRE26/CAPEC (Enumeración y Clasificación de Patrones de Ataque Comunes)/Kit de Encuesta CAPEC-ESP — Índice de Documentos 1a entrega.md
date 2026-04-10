@@ -1,9 +1,0 @@
-| # | Documento                      | Contenido clave                                                                                                                         |
-| - | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| A | CAPEC-encuesta-integral.md     | 50 preguntas en 11 secciones, escalas Likert, tablas de autoevaluación por dominio, preguntas abiertas con tono propositivo y literario |
-| B | CAPEC-guia-metodologica.md     | GQM completo, diseño estadístico (n=400), Alpha de Cronbach, AFC, cálculo del IGM-CAPEC con pesos, plan de análisis cuanti/cualitativo  |
-| C | CAPEC-narrativa-explicativa.md | Contexto INCIBE/ENISA 2025, metáfora del "naturalista de los ataques", las 5 preguntas incómodas, reflexión sobre la urgencia de medir  |
-| D | CAPEC-mapeo-normativo.md       | +120 mapeos pregunta ↔ NIS2/ENS/DORA/ISO en tablas exhaustivas por sección                                                              |
-| E | CAPEC-plantilla-IGM-ROI.md     | 8 hojas Excel descritas: ENCUESTA_DATOS, IGM_CAPEC, ROSI_CALCULATOR, DASHBOARD, BENCHMARKS, PLAN_ACCION; fórmulas listas                |
-| F | CAPEC-reporte-ejecutivo-ppt.md | 18 slides + 6 backup: paleta, tipografía, layouts, contenido, timing, adaptaciones por audiencia (Consejo, Regulador, Técnico)          |
-| G | CAPEC-README.md                | Guía de inicio rápido, flujos por perfil de usuario, licencia CC BY-NC-SA 4.0, cita APA recomendada                                     |

@@ -1,9 +1,0 @@
-| Doc | Archivo                    | Lo que contiene                                                                                                                                                                     |
-| --- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | GQM-A-marco-integrativo.md | Árbol GQM completo por 8 dominios (Software, IS, Supply Chain, OT, IA, PQC, Gobernanza, Resiliencia) con 24 métricas CAPEC, fórmulas de cálculo y umbrales verde/rojo               |
-| B   | GQM-B-matriz-pragmatic.md  | Evaluación de los 9 criterios PRAGMATIC para cada una de las 24 métricas, con puntuaciones individuales, justificaciones y ranking de prioridad de implementación                   |
-| C   | GQM-C-narrativa.md         | El "por qué" argumentado —con la ironía acordada— de medir con CAPEC, incluyendo el argumento financiero del 39% de reducción de coste de brecha y la visión del indicador nacional |
-| D   | GQM-D-mapeo-normativo.md   | +120 mapeos pregunta ↔ NIS2/ENS/DORA/ISO 27001/NIST CSF en tablas exhaustivas, con tabla consolidada de cobertura por métrica                                                       |
-| E   | GQM-E-excel-IGM-ROSI.md    | Especificación completa de las 8 hojas Excel: todas las fórmulas implementables para el IGM-CAPEC ponderado, el cálculo ROSI/FAIR, el dashboard y el plan de acción automático      |
-| F   | GQM-F-reporte-ppt.md       | 18 slides + 4 backup especificados slide a slide: paleta HEX, tipografías, layouts, contenido, notas para ponente y adaptaciones por audiencia (Consejo, Regulador, Técnico)        |
-| G   | GQM-G-README.md            | Guía de inicio rápido en 5 pasos, árbol de decisión por perfil de usuario, ajustes de pesos por sector NIS2, FAQ, control de calidad de datos y licencia CC BY-NC-SA 4.0            |
