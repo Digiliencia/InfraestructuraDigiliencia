@@ -1,0 +1,63 @@
+# Matriz de Evaluación PRAGMATIC de Métricas SASE
+
+> Tabla de apoyo para puntuar y comparar las métricas SASE propuestas con criterios PRAGMATIC. La escala sugerida es 0 (nulo), 1 (bajo), 2 (medio), 3 (alto). Puede ajustarse según necesidades.
+
+---
+
+## 1. Leyenda de criterios
+
+- **P (Predictive)** – Anticipa problemas u oportunidades.  
+- **R (Relevant)** – Está alineada con objetivos y preocupaciones clave.  
+- **A (Actionable)** – Sugiere acciones claras si empeora/mejora.  
+- **G (Genuine)** – Mide directamente el fenómeno, no un proxy engañoso.  
+- **M (Meaningful)** – Se entiende fácilmente por decisores.  
+- **A (Accurate)** – Tiene nivel de precisión adecuado para la decisión.  
+- **T (Timely)** – Se actualiza con la frecuencia necesaria.  
+- **I (Independent)** – Poco vulnerable a manipulación o conflicto de interés.  
+- **C (Cheap)** – Su coste es razonable respecto a su valor.
+
+---
+
+## 2. Matriz resumida (extracto representativo)
+
+> Nota: Puntuaciones orientativas; deben refinarse en talleres con stakeholders.
+
+| Código | Métrica | P | R | A | G | M | A(c) | T | I | C | Comentario síntesis |
+|--------|---------|---|---|---|---|---|------|---|---|---|---------------------|
+| M1.1 | Latencia p95 hacia apps críticas (ms) | 3 | 3 | 2 | 3 | 3 | 2 | 3 | 3 | 2 | Muy predictiva de degradaciones y quejas; requiere buena instrumentación. |
+| M1.2 | Jitter p95 voz/vídeo (ms) | 3 | 2 | 2 | 3 | 2 | 2 | 3 | 3 | 2 | Específica pero crítica para voz/vídeo; menos relevante para otras apps. |
+| M1.3 | Pérdida de paquetes (%) | 2 | 2 | 2 | 3 | 2 | 2 | 3 | 3 | 2 | Métrica clásica de red; útil si se relaciona con QoE. |
+| M1.4 | Tiempo de carga de página/operación (s) | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | 2 | Excelente puente red–negocio; exige DEM/RUM. |
+| M1.5 | Disponibilidad PoPs/túneles (%) | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 3 | 2 | Fundamental para continuidad; familiar en contextos ENS/NIS2. |
+| M1.6 | Índice QoE 0–100 por servicio | 2 | 3 | 3 | 2 | 3 | 2 | 2 | 2 | 1 | Traduce técnica a lenguaje ejecutivo; diseño delicado. |
+| M2.1 | % usuarios sensibles con MFA | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 3 | Directamente alineada con Zero Trust y NIS2; barata de obtener. |
+| M2.2 | % apps críticas solo vía ZTNA | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Muy indicada para madurez Zero Trust; requiere inventario riguroso. |
+| M2.3 | % accesos privilegiados vía ZTNA+contexto | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Métrica fina de control de privilegios; algo más costosa. |
+| M2.4 | Índice madurez Zero Trust (0–100) | 2 | 3 | 3 | 2 | 3 | 2 | 2 | 2 | 2 | Bueno para visión macro, pero depende de modelo de madurez. |
+| M3.1 | MTTD-SASE (min/horas) | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Clásico KPI SOC, fácilmente comunicable; cuidado con definiciones. |
+| M3.2 | MTTC-SASE | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Complementa MTTD; crítico para contener impacto. |
+| M3.3 | MTTR-SASE | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Relaciona ciber con continuidad; a veces incluye factores externos. |
+| M3.4 | Nº incidentes SASE/mes (por severidad) | 2 | 2 | 2 | 3 | 2 | 2 | 3 | 2 | 2 | Útil para tendencias; puede ser “ruidosa” sin contexto. |
+| M3.5 | Amenazas bloqueadas por categoría | 2 | 2 | 2 | 3 | 2 | 2 | 3 | 2 | 2 | Buena para evidenciar eficacia, pero fácil de inflar/malinterpretar. |
+| M4.1 | % proyectos cloud integrados en SASE | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | KPI estructural para ENS/NIS2; depende de buen censo de proyectos. |
+| M4.2 | % sistemas ENS M/A vía SASE/ZTNA | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Métrica clara para administración pública; requiere clasificación ENS robusta. |
+| M4.3 | % logs de acceso obtenidos desde SASE | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Indica centralización de visibilidad; técnica pero muy útil. |
+| M4.4 | Índice alineamiento SASE–ENS/NIS2 | 2 | 3 | 3 | 2 | 3 | 2 | 2 | 2 | 2 | Métrica compuesta; buena para auditoría, exige metodología clara. |
+| M5.1 | % planes de continuidad que incluyen SASE | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 3 | 3 | Barata y muy reveladora de integración ciber–continuidad. |
+| M5.2 | Nº rutas alternativas por servicio crítico | 2 | 2 | 2 | 3 | 2 | 2 | 2 | 3 | 2 | Técnica, pero importante en sectores críticos; más coste de modelado. |
+| M5.3 | Tiempo de conmutación PoP/enlace (s/min) | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Muy accionable; suele requerir pruebas periódicas planificadas. |
+| M5.4 | Indisponibilidad anual atribuible a SASE | 3 | 3 | 2 | 3 | 3 | 2 | 2 | 2 | 2 | Métrica de síntesis fuerte; requiere análisis de causa raíz honesto. |
+| M6.1 | Nº plataformas sustituidas por SASE | 1 | 2 | 2 | 3 | 2 | 2 | 2 | 3 | 3 | Barata; buena para narrar consolidación, menos predictiva. |
+| M6.2 | Ahorro anual licencias/contratos (€) | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 2 | Clave para ROI; depende de datos financieros fiables. |
+| M6.3 | Reducción horas operación/soporte | 2 | 3 | 3 | 2 | 2 | 2 | 2 | 2 | 2 | Necesita mediciones antes/después; útil para justificar OPEX. |
+| M6.4 | Reducción incidentes mayores | 2 | 3 | 3 | 2 | 3 | 2 | 2 | 2 | 2 | Difícil aislar solo SASE; aun así, poderosa para narrativa C-level. |
+| M6.5 | ROI SASE (%) | 2 | 3 | 3 | 2 | 3 | 2 | 2 | 2 | 2 | Síntesis económica; depende del buen diseño del modelo de costes/beneficios. |
+
+---
+
+## 3. Uso práctico de la matriz
+
+1. Validar y ajustar las puntuaciones en talleres con representantes de negocio, ciberseguridad, continuidad y finanzas.  
+2. Calcular para cada métrica una **puntuación PRAGMATIC total** (suma o media).  
+3. Ordenar las métricas según su puntuación y **seleccionar un subconjunto manejable** (por ejemplo 10–15 métricas “estrella”) para el cuadro de mando nacional o sectorial.  
+4. Revisar periódicamente las puntuaciones ante cambios de contexto (nuevas exigencias ENS/NIS2, nuevos servicios SASE, etc.).
