@@ -1,0 +1,16 @@
+# Matriz de Evaluación PRAGMATIC de métricas de Agentic IA
+
+Escala sugerida por criterio PRAGMATIC: 1 (muy bajo) a 5 (muy alto).
+
+| Métrica                           | P Predictiva | R Relevante | A Accionable | G Genuina | M Significativa | P Precisa | T Oportuna | I Independiente | C Rentable | Comentario sintético |
+|-----------------------------------|-------------|-------------|--------------|-----------|------------------|-----------|-----------|------------------|-----------|----------------------|
+| Unsafe Action Rate (UAR)         | 5           | 5           | 5            | 4         | 5                | 4         | 3         | 3                | 3         | Excelente para anticipar incidentes por comportamiento inseguro; requiere inversión en bancos de pruebas y logging estructurado. |
+| Policy Adherence Rate (PAR)      | 4           | 5           | 5            | 4         | 5                | 4         | 4         | 3                | 4         | Indica el grado de alineamiento de los agentes con las políticas; muy útil en auditorías y revisiones regulatorias. |
+| Privilege‑Escalation Distance (PED) | 5         | 5           | 4            | 4         | 4                | 3         | 3         | 3                | 3         | Clave para riesgo de escalado de privilegios, aunque su precisión depende de un buen modelado de niveles de acceso. |
+| Out‑of‑Role Action Rate (OORAR)  | 4           | 4           | 4            | 4         | 4                | 3         | 3         | 3                | 3         | Útil para detectar “derivas” funcionales de agentes; exige definición clara de límites de rol. |
+| Retrieval Risk Score (RRS)       | 4           | 4           | 4            | 3         | 4                | 3         | 3         | 3                | 3         | Evalúa el riesgo asociado a las fuentes de datos usadas por el agente; sensible a sesgos en la clasificación de fuentes. |
+| Cost‑Exploit Susceptibility (CES)| 5           | 5           | 5            | 3         | 5                | 3         | 3         | 3                | 4         | Conecta vulnerabilidades con impacto económico; depende de estimaciones de coste de incidente. |
+| Time‑to‑Contain (TTC)            | 4           | 5           | 5            | 4         | 5                | 4         | 4         | 4                | 4         | Métrica clásica adaptada a incidentes Agentic; muy comprensible para dirección y aseguradoras. |
+| Alert Triage Automation Rate     | 3           | 4           | 4            | 4         | 4                | 4         | 4         | 3                | 4         | Refleja el grado de automatización; relevante para dimensionar equipos humanos y justificar inversiones en SOC Agentic. |
+| Mean Time to Triage (MTTT)       | 3           | 4           | 4            | 4         | 4                | 4         | 4         | 4                | 4         | Indicador de eficiencia operativa del SOC; mejora con la Agentic IA, fácil de comunicar. |
+| False Positive Reduction Rate    | 3           | 4           | 4            | 4         | 4                | 4         | 4         | 3                | 4         | Reduce carga de trabajo y fatiga de alertas; depende de una buena línea base y etiquetado histórico. |

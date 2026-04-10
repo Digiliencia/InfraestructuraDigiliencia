@@ -1,0 +1,15 @@
+# Mapeo de preguntas de la encuesta a requisitos normativos y marcos
+
+| Nº Pregunta | Tema principal                                | RGPD / AEPD (España)                               | NIST AI RMF / Perfil Agentic AI (CLTC)                 | ENISA / Otros marcos                            |
+|------------|-----------------------------------------------|----------------------------------------------------|--------------------------------------------------------|------------------------------------------------|
+| 5–8        | Uso y catálogo de agentes                     | Registro de actividades; responsabilidad del responsable | Mapear sistemas y contextos de uso                     | Capa de ciberseguridad específica IA           |
+| 9–13       | Gobernanza y responsabilidades                | Proactive accountability; implicación del DPO       | Gobernar: políticas, roles y accountability            | Marcos de gestión de riesgos AI                |
+| 11         | Regla de 2 (entrada no controlada, datos sensibles, acciones autónomas) | Guía AEPD Agentic IA; minimización y proporcionalidad | Medir contextos peligrosos de operación               | Buenas prácticas de limitación de superficie   |
+| 12–13      | EIPD y revisiones de riesgo                   | DPIA / EIPD obligatoria para alto riesgo           | Funciones de Mapear y Medir riesgos                    | Evaluaciones sectoriales de riesgo             |
+| 14–18      | Datos, memoria, minimización, servicios externos | Principios de minimización, limitación y transferencias | Controles sobre memoria, herramientas y entornos       | Multilayer Framework: gestión de datos IA      |
+| 19–25      | UAR, PAR, PED, RRS, CES (métricas Agentic)    | Evaluaciones basadas en evidencia y pruebas “golden” | Medir: métricas de comportamiento de agentes           | Indicadores técnicos de ciberseguridad AI      |
+| 26–30      | SOC, MTTT, TTC, falsos positivos              | Seguridad de tratamiento; registro de incidentes    | Gestionar: respuesta a incidentes y mitigación         | ENISA Threat Landscape y prácticas SOC         |
+| 31–34      | Alineamiento con marcos y contratos           | RGPD, cláusulas contractuales, certificaciones      | Integración con gestión de riesgos corporativos        | Uso de ISO/IEC 15408, 18045, 27001             |
+| 35–38      | Capacitación, cultura y transparencia         | Información a interesados; derechos y transparencia | Gobernar: cultura y formación                          | Guías de sensibilización y formación           |
+| 39–41      | Incidentología Agentic IA                     | Notificación de brechas, registros de incidentes    | Gestionar: revisión post-incidente                     | Buenas prácticas de respuesta a incidentes      |
+| 42–44      | Perspectiva estratégica y ROI                 | Accountability y evaluación de proporcionalidad     | Mapear y Medir beneficios / riesgos                    | Evaluación de eficacia de controles            |
