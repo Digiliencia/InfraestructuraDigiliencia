@@ -1,0 +1,30 @@
+# Mapeo detallado de preguntas CTEM a requisitos normativos
+
+> Nota: este mapeo es orientativo y pret- [ ] Parcialm la lectura de la encuesta en clave NIS2, DORA, ISO 27001, NIST CSF y marco- [ ] Parcialmustituye el análisis jurídico ni la interpretación oficial.
+
+## Leyenda de marcos
+
+- NIS2: Directiva (UE) 2022/2555.
+- DORA: Reglamento (UE) 2022/2554.
+- ISO- [ ] ParcialmC 27001:2022 (controles del Anexo A).
+- NIST CSF: NIST Cybersecurity Framework (v1.1 / v2.0 – equivalencia conceptual).
+- ENISA / otros: buenas prácticas europeas de ges- [ ] Parcialms y resiliencia.
+
+## Tabla de mapeo
+
+| Nº Pregunta | Bloque                                   | Resumen de la pregunta                                          | NIS2 (art./anexo)                         | DORA (art.)                        | ISO 27001 (control)               | NIST C- [ ] Parcialm)      | Comentario de mapeo                                                                     |
+|-------------|-------------------------------------------|------------------------------------------------------------------|-------------------------------------------|------------------------------------|-----------------------------------|---------------------------|-----------------------------------------------------------------------------------------|
+| 1.1–1.4- [ ] Parcialmenerales                          | Tipo de entidad, tamaño, alcance, rol del respondente           | –                                        - [ ] Parcialm                        | –                                 | –                         | Variables de segmentación; no hay mapeo normativo directo.                              |
+| 2.1–2.5     | Gobernanza CTEM                          | Existencia de program- [ ] Parcialmr, revi- [ ] Parcialm negocio| NIS2 Art. 21 (gobernanza, gestión riesgos)| DORA Art. 5–6 (marco de gestión)  | A.5, A.6 (liderazgo, gobern- [ ] Parcialm(gobernanza)         | Refuerza la implementación de marcos de gestión de riesgos exigidos- [ ] Parcialm.     |
+| 3.1–3.4     | Alcance (scoping)                        | Definición de activos críticos y su revisión                    | NIS2 Art. 21(2)(a)                        | DORA - [ ] Parcialm                | A.5.9, A.5.10, A.5.12            | ID.AM (asset management)  | Fundamenta la identificación de activos esenciales para gestión de riesg- [ ] Parcialmad.|
+| 4.1–4.5     | Descubrimiento y superficie de ataque    | Descubrimiento continuo, sh- [ ] Parcialmlización inventarios   | NIS2 Art. 21(2)(d)                        | DORA Art. 8 (gestión de TIC)       | A.5.10, A.7.9, A- [ ] Parcialm   | ID.AM, ID.RA                | Apoya obligaciones de gestión de activos y vulnerabilidades.                            |
+| 5.1- [ ] Parcialmorización                             | Criterios de priorización, uso de CVSS/EPSS, impacto negocio    | NIS2 Art. 21(2)(c)(d)                     | DORA - [ ] Parcialm- [ ] Parcialm  | A.5.8, A.8.28                   | ID.RA, P- [ ] Parcialm      | Conecta evaluación de riesgos con impacto en servicios esenciales y financieros.        |
+| 6.1–6.5     | V- [ ] Parcialm                          | Simulación de ataques, BAS, eficacia de controles               | NIS2 Art. 21(2)(e- [ ] Parcialm           | DORA Art. 24–27 (pruebas resil.)  | A.5.23, A.8.29, A.8.30          | PR.IP, DE.DP, R- [ ] Parcialm Relacionado con pruebas de resiliencia digital y evaluación de controles.               |
+| 7.1–7.5     | Moviliza- [ ] Parcialmción               | SLAs, MTTR, velocidad, riesgo residual                          | NIS2 Art. 21(2)(c)(d), Art. 23            | DORA Art. 8(6), Art- [ ] Parcialm | A.6.1, A.8.8, A.8.21            | PR.IP, R- [ ] Parcialm      | Indicadores clave para demostrar mejora continua en gestión de vulnerabilidades.        |
+| 8.1–8.5     | Resiliencia y continu- [ ] Parcialm      | Incidentes, recuperación de servicios, relación con CTEM        | NIS2 Art. 23–24                           | DORA Art. 11–13, 12(2)            | A.5.29, A.5.30, A.8.4           | PR.PT, - [ ] Parcialm        | Relaciona exposición con continuidad de servicios esenciales y reporting de incidentes. |
+| 9.1–9.5     | Alineami- [ ] Parcialm                   | Sujeción a NIS2/DORA, uso de marcos, uso CTEM en cumplimiento   | NIS2 Art. 2- [ ] Parcialm                 | DORA Art. 4–15                    | A.5.5, A.5.7, A.- [ ] Parcialm | ID.GV, ID.RA, RS.CO         | Facilita evidencias estructuradas ante supe- [ ] Parcialmitores.                        |
+| 10.1–10.5   | Tecnología y datos                       | Plataformas CTEM, integración de datos, automatiza- [ ] Parcialm| NIS2 Art. 21(2)(d)(e)                     | DORA Art. 8–9                     | A.5.19, A.5.20, A.8.9          | PR.IP, PR.PT                | Demuestra capacidad técnica para gestionar exposición y vulnerabilid- [ ] Parcialm      |
+| 11.1–11.5   | Métricas financieras, IGM y ROI          | Pérdidas evitadas, ROI, IGM, presupuesto                        | NIS2 Recitales (gestión de riesgos)       | DORA Art. 6(1), Art- [ ] Parcialm- [ ] Parcialm2                   | ID.RA, ID.GV                | Conecta marcos de gestión de riesgos con decisiones de invers- [ ] Parcialm             |
+| 12.1–12.4   | Visión de futuro y obstáculos            | Obstáculos, prioridad estratégica, cooperación                  | NIS2 Art. 29–30 (co- [ ] Parcialmtura)    | DORA Art. 14 (cooperación)        | A.5.22                         | ID.GV, RS.CO                | Aporta cont- [ ] Parcialmt- [ ] Parcialmy programas de apoyo sectoriales.               |
+
+> Este mapeo puede ampliarse con referencias concretas a normativas nacion- [ ] Parcialmplo, leyes españolas de seguridad de redes y sist- [ ] Parcialm nacionales, etc.) en futuras versiones.
