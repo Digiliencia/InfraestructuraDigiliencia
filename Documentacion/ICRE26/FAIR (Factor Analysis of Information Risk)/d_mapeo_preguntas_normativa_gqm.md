@@ -1,0 +1,14 @@
+# Mapeo de indicadores/preguntas a requisitos normativos (visión nacional)
+
+| Indicador / Pregunta GQM                  | Tema principal                                              | Posible relación normativa (ejemplos)                                                                 |
+|-------------------------------------------|-------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| IFEP‑S – Q1/Q2                            | Frecuencia de incidentes significativos por sector         | NIS2 (notificación de incidentes); ENS; regulaciones sectoriales de operadores de servicios esenciales |
+| INAT – Q                                  | Actividad de amenazas e inteligencia                       | NIS2 (gestión de riesgos y amenazas); estrategias nacionales de ciberseguridad                          |
+| ISUS‑C – Q                                | Susceptibilidad / vulnerabilidad de controles              | NIS2 (medidas técnicas y organizativas); ISO 27001/27002; ENS niveles de seguridad                      |
+| PAE‑S – Q1/Q2/Q3                          | Pérdida anual esperada y % sobre PIB sectorial             | Marcos de gestión de riesgo macroprudencial; políticas nacionales de resiliencia; normativa financiera  |
+| PaExt‑S – Q                               | Escenarios de pérdida extrema y pruebas de estrés          | Supervisión financiera (pruebas de estrés); pautas de gestión de riesgos operacionales                  |
+| IMat‑N – Q                                | Proporción de escenarios con impacto material              | Normas de información financiera; obligaciones de reporte al mercado y supervisores                     |
+| IEReg‑N – Q1/Q2                           | Impacto de sanciones, litigios y costes regulatorios       | GDPR (multas); NIS2 (sanciones); regulaciones sectoriales (energía, finanzas, telecomunicaciones)      |
+| IECtrl‑S – Q                              | Eficacia de controles en reducción de ALE                  | ISO 27001/27005; ENS; NIS2 (eficacia de medidas de gestión de riesgos)                                   |
+| IAut‑N – Q                                | Automatización e IA en procesos de gestión de riesgos      | No hay obligación directa; se alinea con principios de mejora continua (ISO 27001, ENS)                 |
+| IPart‑N – Q                               | Participación en esquemas nacionales de datos de ciber‑riesgo | Estrategias nacionales de ciberseguridad; políticas de cooperación público‑privada                      |
