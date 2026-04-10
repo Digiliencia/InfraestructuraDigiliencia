@@ -1,4 +1,4 @@
-# Digiliencia - Plataforma Conversacional de IA para Ciberseguridad
+# Cibersegur-IA - Plataforma Conversacional de IA para Ciberseguridad
 
 ![Logo Digiliencia - Ciberseguridad](./CIBERSEGUR-IA-2.png)
 
