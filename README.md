@@ -720,7 +720,6 @@ api_web/
     ├── chat.css         # Estilos de chat
     ├── responsive.css   # Media queries responsive
     └── dark-mode.css    # Tema oscuro
-─────────────────────────┘
 ```
 
 ---
