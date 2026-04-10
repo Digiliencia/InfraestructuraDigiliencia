@@ -1,0 +1,45 @@
+# Mapeo de Preguntas a Requisitos Normativos (GQM + PRAGMATIC)
+
+---
+
+## 1. Estructura de la tabla
+
+Se añaden al mapeo normativo clásico dos columnas:
+
+- **Goal GQM** – meta a la que contribuye la pregunta/métrica.  
+- **Métrica GQM** – identificador de la métrica asociada.
+
+---
+
+## 2. Tabla de mapeo (versión condensada)
+
+| ID Pregunta | Bloque | Resumen Pregunta | Goal GQM | Métrica GQM | TIBER‑EU 2025 | TIBER‑ES | DORA/TLPT | Comentario |
+|------------|--------|------------------|----------|-------------|---------------|---------|-----------|-----------|
+| 2.1 | Gobernanza/CIFs | Inventario formal de CIFs | GOV‑1 | M‑GOV‑1 | Secciones sobre CIFs y scope | Cap. 2 | RTS TLPT – identificación de funciones críticas | Presencia de inventario y revisión periódica. |
+| 2.2 | Gobernanza/CIFs | Madurez proceso CIFs (0–5) | GOV‑1 | M‑GOV‑1bis | Idem | Cap. 2 | Idem | Matiza calidad del proceso de identificación. |
+| 2.3 | Gobernanza/CIFs | Uso de BIA para CIFs | GOV‑1 | M‑GOV‑2 | Alineamiento con BIA | Cap. 2 | RTS – análisis BIA | Proporción de CIFs sustentadas en BIA. |
+| 2.4 | Gobernanza/CIFs | % CIFs cubiertas por TIBER | GOV‑1 | M‑GOV‑3 | Scope de pruebas | Cap. 3 | RTS – cobertura TLPT | Conecta criticidad con alcance real de pruebas. |
+| 2.6 | Gobernanza | Implicación del Consejo | GOV‑1 | M‑GOV‑4 | Gobernanza | Caps. 2 y 4 | DORA – gobernanza TIC | Mide alineamiento con mandato del órgano de administración. |
+| 3.1 | Inteligencia | Uso de GTL sectorial | TI‑1 | M‑TI‑1 | Sección GTL | Cap. 3 | RTS – inteligencia de amenazas | Evalúa anclaje en paisaje nacional. |
+| 3.2 | Inteligencia | Origen del TTIR | TI‑1 | M‑TI‑1bis | Sección TTIR | Cap. 3 | RTS – proveedores TI | Distingue capacidades internas y externas. |
+| 3.3 | Inteligencia | Alineamiento TTIR‑realidad | TI‑1 | M‑TI‑2 | Calidad TTIR | Cap. 3 | RTS – plausibilidad escenarios | Percepción de realismo de escenarios. |
+| 3.5 | Inteligencia | Actualización TTIR | TI‑1 | M‑TI‑3 | Iteración TI | Cap. 3 | RTS – actualización continua | Dinamismo de la inteligencia durante pruebas. |
+| 3.6 | Inteligencia | Integración TTIR en procesos | TI‑1 | M‑TI‑4 | Integración en gestión de riesgos | Cap. 3 | DORA – gestión de riesgos TIC | Conecta TI con operaciones. |
+| 4.2 | Red Team | Escenarios previstos vs. ejecutados | RT‑1 | M‑RT‑1 | Planificación RT | Cap. 4 | RTS – planificación pruebas | Ambición y ejecución de ejercicios. |
+| 4.3 | Red Team | Tipos de escenarios | RT‑1 | M‑RT‑1bis | Scope RT | Cap. 4 | RTS – variedad de escenarios | Cobertura de vectores. |
+| 4.4 | Red Team | % banderas sin leg‑ups | RT‑1 | M‑RT‑3 | Ejecución RT | Cap. 4 | RTS – efectividad pruebas | Complejidad/eficacia de ataques. |
+| 4.5 | Red Team | Frecuencia de leg‑ups | RT‑1 | M‑RT‑4 | Rol del Control Team | Cap. 4 | RTS – integridad pruebas | Necesidad de ayudas para completar escenarios. |
+| 5.2 | Blue Team | MTTD escenarios críticos | BLUE‑1 | M‑BLUE‑1 | Resultados test | Cap. 5 | RTS – reporting mínimo | Métrica central de detección. |
+| 5.3 | Blue Team | MTTR escenarios críticos | BLUE‑1 | M‑BLUE‑2 | Idem | Cap. 5 | Idem | Métrica central de contención. |
+| 5.4 | Blue Team | % actividades detectadas en tiempo real | BLUE‑1 | M‑BLUE‑3 | Idem | Cap. 5 | Idem | Madurez de monitorización. |
+| 5.5 | Blue Team | Detecciones por negocio | BLUE‑1 | M‑BLUE‑4 | Idem | Cap. 5 | DORA – cultura de riesgo | Contribución de usuarios finales. |
+| 6.1 | Purple | Ejercicios de purple teaming | PRP‑1 | M‑PRP‑1 | Cierre y learning | Cap. 6 | RTS – post‑test | Existencia de fase de co‑aprendizaje. |
+| 6.2 | Purple | Mejora MTTD tras purple | PRP‑1 | M‑PRP‑2 | Idem | Cap. 6 | Idem | Eficacia del purple teaming. |
+| 6.3 | Remediación | % recomendaciones críticas 12 meses | PRP‑1 | M‑PRP‑3a | Plan de acción | Cap. 6 | RTS – remediación | Cierre de brechas críticas. |
+| 6.4 | Remediación | % recomendaciones altas 24 meses | PRP‑1 | M‑PRP‑3b | Idem | Cap. 6 | Idem | Constancia en remediación. |
+| 6.5 | Gobernanza | Proceso lecciones aprendidas con Consejo | PRP‑1 | M‑PRP‑4 | Learning | Cap. 6 | DORA – gobernanza | Formalidad del aprendizaje a alto nivel. |
+| 8.2 | ROI | Esfuerzo en estimar ROI | GOV/PRP | M‑ROI‑1 | General | General | DORA – planificación recursos | Uso de métricas económicas para TIBER. |
+
+---
+
+_Fin del mapeo GQM + normativo._
