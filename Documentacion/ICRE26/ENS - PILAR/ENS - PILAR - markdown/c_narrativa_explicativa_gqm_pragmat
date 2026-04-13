@@ -1,0 +1,72 @@
+# Narrativa explicativa del marco GQM + PRAGMATIC aplicado a PILAR–ENS
+
+> De los objetivos nacionales al bit y del bit al comité de dirección, pasando por las métricas que no dan vergüenza ajena.
+
+---
+
+## 1. Por qué GQM y por qué ahora
+
+El ENS exige gestionar riesgos de forma sistemática y proporcional, justificando medidas con base en análisis de riesgos y revisiones periódicas. [web:12]  
+PILAR proporciona un marco sólido para modelar activos, riesgos, salvaguardas y madurez, pero el exceso de datos puede confundir tanto como la ausencia de ellos. [web:38][web:39][web:40][web:43][web:46]
+
+La metodología GQM nos obliga a comenzar por los objetivos (Goals), seguir con las preguntas (Questions) y terminar en las métricas (Metrics). [web:41][web:44][web:47]  
+Así se evita “coleccionar métricas” sin saber para qué sirven y se mejora la trazabilidad entre los objetivos nacionales de seguridad, las exigencias ENS y los números que aparecen en los informes.
+
+---
+
+## 2. Qué valor añade PRAGMATIC
+
+Aunque GQM ayuda a seleccionar métricas alineadas con objetivos, no todas las métricas candidatas son igual de útiles.  
+El marco PRAGMATIC introduce un catálogo de virtudes y defectos para cada métrica: si no es predictiva, relevante, accionable, genuina, significativa, precisa, oportuna, independiente y rentable, igual conviene no dedicarle tiempo. [web:42][web:45][web:48]
+
+Aplicar PRAGMATIC a las métricas que derivamos de PILAR y ENS sirve para:
+
+- Filtrar aquellos indicadores que sólo quedan bien en los paneles.  
+- Señalar dónde falta precisión o independencia (por ejemplo, cuando las valoraciones de madurez son demasiado optimistas).  
+- Fomentar una cultura de métricas “que sirven para algo” y no sólo para rellenar informes.
+
+---
+
+## 3. El hilo narrativo: de G a Q a M
+
+En la práctica, el recorrido es:
+
+1. Partimos de objetivos como “mantener el riesgo residual aceptable”, “elevar la madurez ENS” o “priorizar inversiones de seguridad”.  
+2. Formulamos preguntas que una dirección mínimamente curiosa podría hacerse: cuántos activos están en riesgo alto, qué controles ENS están en L0–L2, dónde una subida de madurez aporta más reducción de riesgo, etc.  
+3. Identificamos métricas concretas de PILAR (riesgo repercutido, madurez L0–L5, recomendación, semáforos, etc.) que respondan a esas preguntas. [web:38][web:39][web:40][web:43][web:46]
+
+Así, evitamos construir métricas que no responden a ninguna pregunta que importe a alguien con poder de decisión, y conectamos el mundo ENS con el mundo de los números.
+
+---
+
+## 4. Cómo se ve todo esto en un informe real
+
+En un informe típico, el lector debería encontrar:
+
+- Una sección que explique los objetivos (G1, G2, G3) que se persiguen con las métricas.  
+- Un mapa que relacione cada objetivo con las preguntas de gestión y las métricas derivadas.  
+- Los resultados numéricos en forma de gráficos y tablas, acompañados de su evaluación PRAGMATIC (al menos a nivel interno).  
+- Una explicación franca de las limitaciones: por ejemplo, que el Δ riesgo por Δ madurez es un modelo, no un oráculo.
+
+Con este enfoque, cuando el comité de dirección vea un gráfico de “% de salvaguardas críticas en rojo”, sabrá qué objetivo se está midiendo, qué pregunta se responde y qué margen de maniobra existe.
+
+---
+
+## 5. Riesgos de interpretación y mitigaciones
+
+- **Riesgo de autoengañarse con la madurez (L0–L5):** se mitiga documentando criterios claros de valoración y revisando las valoraciones con agentes externos cuando sea posible. [web:18][web:39]  
+- **Riesgo de sobreconfiar en métricas muy precisas pero poco relevantes:** PRAGMATIC ayuda a equilibrar precisión y relevancia. [web:42][web:45][web:48]  
+- **Riesgo de “teatralizar” el ROI de seguridad:** cualquier cifra de ROI debe ir acompañada de supuestos y rangos de incertidumbre explícitos.
+
+El mensaje subyacente es sencillo: las métricas son instrumentos de navegación, no el destino.  
+Si el piloto ignora el horizonte y sólo mira el altímetro, el sistema puede seguir cumpliendo indicadores mientras se aproxima peligrosamente a la montaña.
+
+---
+
+## 6. Próximos pasos sugeridos
+
+- Formalizar un catálogo corporativo de métricas GQM + PRAGMATIC basado en los indicadores de PILAR–ENS.  
+- Revisar anualmente el catálogo, retirando métricas que han demostrado poco valor y añadiendo otras que cubran nuevas necesidades.  
+- Integrar la discusión sobre métricas en el ciclo de revisión ENS y en las decisiones sobre inversiones de seguridad.
+
+Con el tiempo, la organización debería pasar de “tener algunos números de seguridad” a disponer de un sistema razonado de métricas que conecta objetivos, decisiones y resultados medibles.
