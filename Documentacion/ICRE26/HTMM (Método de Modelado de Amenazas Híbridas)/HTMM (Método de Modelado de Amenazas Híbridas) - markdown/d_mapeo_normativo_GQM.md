@@ -1,0 +1,11 @@
+# Mapeo normativo de objetivos, preguntas y métricas (GQM) en el contexto HTMM
+
+| Objetivo (G) | Preguntas clave (Q) | Métricas (M) asociadas | Referencias normativas/estratégicas |
+|-------------|----------------------|------------------------|--------------------------------------|
+| G1 – Cobertura de amenazas | Q1.1 Cobertura STRIDE; Q1.2 Cobertura ENISA; Q1.3 Amenazas nuevas | M1.1 Cobertura STRIDE; M1.2 Cobertura ENISA; M1.3 Tasa amenazas nuevas | ENISA TL 2025 (enfoque threat-centric, categorías de amenaza), NIS2 (gestión de riesgos basada en amenazas), ISO/IEC 27005 (identificación de riesgos). [web:13][web:7] |
+| G2 – Consistencia y falsos positivos | Q2.1 Varianza inter-equipo; Q2.2 % amenazas descartadas; Q2.3 Efecto hTMM | M2.1 Varianza inter-equipo; M2.2 % amenazas descartadas; M2.3 Solapamiento de catálogos | SEI hTMM (consistencia, reducción de falsos positivos), ISO/IEC 27005 (criterios de evaluación de riesgos), buenas prácticas de aseguramiento de calidad. [web:6][web:16] |
+| G3 – Esfuerzo y costo-efectividad | Q3.1 Esfuerzo por rol; Q3.2 Esfuerzo vs. cobertura; Q3.3 Comparación hTMM | M3.1 Esfuerzo total sesión; M3.2 Esfuerzo por amenaza útil; M3.3 Esfuerzo relativo hTMM | NIS2 (proporcionalidad y coste-efectividad de medidas), ISO/IEC 27001 (recursos y soporte), marcos de gestión de costes en seguridad. |
+| G4 – Trazabilidad a requisitos, controles y riesgos | Q4.1 % amenazas con controles; Q4.2 Tiempo a registro de riesgos; Q4.3 Vinculación con continuidad | M4.1 % amenazas con control; M4.2 Tiempo a registro de riesgos; M4.3 % amenazas críticas con RTO/RPO | NIS2 (medidas técnicas y organizativas, gobernanza de riesgos), ISO/IEC 27001 (controles Anexo A), ISO/IEC 27005 (tratamiento de riesgos), ISO 22301 (continuidad). |
+| G5 – Alineación con paisaje europeo de amenazas | Q5.1 Mapeo a categorías ENISA; Q5.2 Uso de datos ENISA; Q5.3 Tiempo de reacción | M5.1 Mapeo a ENISA; M5.2 Uso de datos ENISA en priorización; M5.3 Tiempo de reacción ENISA | ENISA Threat Landscape 2025, estrategias nacionales de ciberseguridad, NIS2 (cooperación e intercambio de información). [web:13][web:7] |
+
+Este mapeo proporciona la base para justificar regulatoriamente la recopilación de métricas y su uso en cuadros de mando nacionales, sectoriales u organizativos.
