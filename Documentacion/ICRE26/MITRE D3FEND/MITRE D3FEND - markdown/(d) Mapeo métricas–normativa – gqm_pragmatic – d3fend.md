@@ -1,0 +1,9 @@
+# (d) Mapeo detallado de métricas GQM a requisitos normativos
+
+| Objetivo GQM | Métricas asociadas | Referencia D3FEND/ATT&CK | Referencias normativas / marcos | Comentario |
+|-------------|--------------------|---------------------------|----------------------------------|-----------|
+| G1 Cobertura ATT&CK–D3FEND | M1.1, M1.2, M1.3, M1.4 | ATT&CK Enterprise, D3FEND Matrix y mapeos ATT&CK–D3FEND[web:3][web:5][web:8] | NIS2 art. 21 (gestión de riesgos), borrador Ley española de ciberseguridad 2025 (obligaciones de seguridad para entidades esenciales e importantes)[web:25][web:26][web:27] | Demuestran cómo se materializa la gestión de riesgos frente a técnicas concretas del adversario. |
+| G2 Latencia detección/respuesta | M2.1, M2.2, M2.3, M2.4 | D3FEND tácticas Detect, Evict, Restore[web:1][web:5] | NIS2 art. 23 (gestión y notificación de incidentes), ISO 27035 | Miden capacidad de detección y respuesta, elementos centrales del cumplimiento. |
+| G3 Eficacia de mitigaciones | M3.1, M3.2, M3.3 | D3FEND técnicas de mitigación y erradicación[web:5][web:18] | NIS2 art. 21(2) (medidas técnicas y organizativas), NIST CSF (Respond, Recover) | Conectan la existencia de controles con su efectividad observable. |
+| G4 Telemetría y sensores | M4.1, M4.2, M4.3, M4.4 | D3FEND artefactos y sensores, CAD User Guide[web:1][web:19] | NIS2 art. 21(2)(c) (políticas y procedimientos para monitorización), NIST SP 800-53 (AU, SI) | Evidencian la capacidad de monitorización y registro exigida normativamente. |
+| G5 OT/ICS resiliente | M5.1, M5.2, M5.3, M5.4 | D3FEND extensión OT[web:5] | NIS2 anexos I y II (sectores OT), legislación y guías nacionales de infraestructuras críticas[web:20][web:23] | Cubren requisitos de protección de servicios esenciales en entornos industriales y ciberfísicos. |

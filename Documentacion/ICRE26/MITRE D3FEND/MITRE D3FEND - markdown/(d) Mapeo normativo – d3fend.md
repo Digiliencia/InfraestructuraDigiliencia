@@ -1,0 +1,15 @@
+# (d) Mapeo detallado de preguntas a requisitos normativos
+
+| Nº pregunta | Tema principal | Referencia D3FEND/ATT&CK | Referencia normativa / marco | Comentario de alineación |
+|------------|----------------|---------------------------|------------------------------|--------------------------|
+| 2, 3, 4    | Contexto organización | N/A | NIS2 art. 2–3 (ámbito de aplicación), borrador Ley de Ciberseguridad española 2025 (definición de entidades esenciales e importantes)[web:25][web:26][web:27] | Permite clasificar la organización según su criticidad regulatoria. |
+| 7–11       | Conocimiento y adopción D3FEND/ATT&CK | MITRE D3FEND Matrix, ATT&CK Enterprise[web:1][web:3][web:14] | NIS2 art. 21 (gestión de riesgos de ciberseguridad), ENISA guías de threat-informed defence | Evalúa si la organización usa marcos de referencia reconocidos para threat-informed defence. |
+| 12–15      | Uso de D3FEND CAD y modelado | D3FEND CAD User Guide[web:19][web:22] | NIS2 art. 21(2) (medidas técnicas y organizativas), NIST CSF v2 (Identify, Protect) | El modelado estructurado apoya el análisis de riesgos y la selección de controles. |
+| 16–21      | Catálogo ATT&CK y coberturas | ATT&CK, D3FEND mapeos ATT&CK–D3FEND[web:3][web:5][web:8] | NIS2 art. 21(2)(a) (análisis de riesgos), guía de operadores esenciales | La definición de catálogos de técnicas es coherente con un enfoque basado en riesgos. |
+| 22–26      | Latencia, MTTR, eficacia mitigaciones | Métricas operativas D3FEND[web:5][web:18][web:21] | NIS2 art. 23 (gestión y notificación de incidentes), ISO 27035 | MTTD y MTTR son indicadores clave para respuesta a incidentes regulada. |
+| 27–29      | Telemetría y calidad detecciones | D3FEND artefactos y sensores[web:1][web:19] | NIS2 art. 21(2)(c) (políticas y procedimientos de seguridad), NIST SP 800-53 (AU, SI) | Cobertura de telemetría sustenta el cumplimiento de requisitos de monitorización. |
+| 30–32      | OT / ICS y extensión D3FEND OT | D3FEND OT extension[web:5] | NIS2 anexos (sectores OT), directrices sectoriales nacionales | Aborda requisitos específicos de infraestructuras esenciales OT. |
+| 33–35      | Integración con cumplimiento | D3FEND–NIST 800-53 mapeos[web:5][web:12] | NIS2 art. 20–21, ISO 27001, NIST CSF | Evalúa el grado en que las prácticas técnicas se conectan con marcos normativos. |
+| 36–39      | IGM y ROI | Métricas de madurez y ROI[web:5][web:18][web:21] | NIS2 art. 20 (gobernanza y gestión), expectativas de supervisores sectoriales | Conecta métricas técnicas con indicadores de negocio y riesgo. |
+| 40–43      | Gobierno y talento | ATT&CK/D3FEND adoption maturity[web:14] | NIS2 art. 20(2) (responsabilidades de la alta dirección), buenas prácticas de gobernanza | Evalúa el involucramiento de órganos de gobierno y capacidades internas. |
+| 44–46      | Barreras y próximos pasos | N/A | Estrategias nacionales de ciberseguridad y planes de mejora | Identifica obstáculos y posibles líneas de actuación estratégica. |
