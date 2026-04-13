@@ -1,0 +1,186 @@
+#header-mobile {
+    display: none;
+    background: #ffffff;
+    border-bottom: 2px solid #DF1A21;
+    padding: 12px 20px;
+    position: relative;
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-mobile-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 15px;
+}
+
+.mobile-logo-left { flex: 0 0 auto; }
+.mobile-logo-left img { height: 45px; width: auto; display: block; object-fit: contain; max-width: 100%; }
+.mobile-nav { flex: 1 1 auto; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.mobile-nav a { color: #4B5C66; text-decoration: none; font-weight: 600; font-size: 16px; transition: color 0.2s; padding: 8px 12px; white-space: nowrap; }
+.mobile-nav a:hover { color: #DF1A21; }
+.mobile-logo-right { flex: 0 0 auto; }
+.mobile-logo-right img { height: 70px; width: auto; display: block; object-fit: contain; max-width: 100%; }
+
+#header-desktop { display: block; background: #ffffff; border-bottom: 3px solid #DF1A21; padding: 20px 40px; width: 100%; box-sizing: border-box; }
+.header-desktop-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1400px; margin: 0 auto; gap: 40px; }
+.header-logo-left { flex: 0 0 auto; }
+.header-logo-left img { height: 120px; width: auto; display: block; object-fit: contain; max-width: 100%; }
+.header-nav { flex: 1 1 auto; display: flex; justify-content: center; gap: 40px; }
+.header-nav a { color: #4B5C66; text-decoration: none; font-weight: 600; font-size: 18px; transition: color 0.2s; padding: 10px; white-space: nowrap; }
+.header-nav a:hover { color: #DF1A21; }
+.header-logo-right { flex: 0 0 auto; }
+.header-logo-right img { height: 120px; width: 200px; display: block; object-fit: contain; max-width: 100%; }
+
+/* ============================
+   BOTONES DE ACCIÓN DE AI ENGINE
+   ============================ */
+
+/* Ocultar el botón de descarga roto de AI Engine Pro */
+.mwai-download-button { display: none !important; }
+
+/* El botón de copiar sí funciona bien — se mantiene visible */
+/* .mwai-copy-button { } */
+
+/* ============================
+   MEDIA QUERIES
+   ============================ */
+
+@media (max-width: 1024px) {
+    #header-desktop { padding: 15px 30px; }
+    .header-desktop-inner { gap: 25px; }
+    .header-logo-left img { height: 80px; }
+    .header-logo-right img { height: 60px; }
+    .header-nav { gap: 25px; }
+    .header-nav a { font-size: 16px; padding: 8px; }
+}
+
+@media (max-width: 768px) {
+    #header-desktop { display: none !important; }
+    #header-mobile { display: flex !important; align-items: center; padding: 12px 15px; }
+    .mobile-logo-left img { height: 40px; }
+    .mobile-logo-right img { height: 45px; }
+    .mobile-nav { gap: 15px; }
+    .mobile-nav a { font-size: 15px; padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+    #header-mobile { padding: 10px 12px; gap: 10px; }
+    .mobile-logo-left img { height: 35px; }
+    .mobile-logo-right img { height: 40px; }
+    .mobile-nav { gap: 12px; }
+    .mobile-nav a { font-size: 14px; padding: 5px 8px; }
+}
+
+@media (max-width: 360px) {
+    #header-mobile { padding: 8px 10px; gap: 8px; }
+    .mobile-logo-left img { height: 32px; }
+    .mobile-logo-right img { height: 36px; }
+    .mobile-nav { gap: 8px; flex-direction: column; align-items: center; }
+    .mobile-nav a { font-size: 13px; padding: 4px 6px; }
+}
+
+/* ============================
+   CHAT INTERFACE
+   ============================ */
+
+.dgc-wrap { display:flex; width:100%; height:710px; border-radius:14px; overflow:hidden; box-shadow:0 6px 30px rgba(0,0,0,.14); font-family:'Segoe UI',system-ui,sans-serif; position:relative; margin-top:16px; margin-bottom:40px; }
+
+.dgc-side { width:252px; min-width:252px; background:#1e2a32; display:flex; flex-direction:column; transition:width .3s,min-width .3s,opacity .3s; overflow:hidden; position:relative; flex-shrink:0; height:100%; box-sizing:border-box; }
+.dgc-side.dgc-hidden { width:0; min-width:0; opacity:0; pointer-events:none; }
+
+.dgc-side-top { padding:16px 12px 12px; border-bottom:1px solid rgba(255,255,255,.08); flex-shrink:0; box-sizing:border-box; }
+.dgc-brand { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.dgc-brand img { width:26px; height:26px; border-radius:7px; object-fit:cover; padding:3px; background:rgba(255,255,255,.08); display:block; flex-shrink:0; }
+.dgc-brand span { font-size:12.5px; font-weight:700; color:rgba(255,255,255,.88); white-space:nowrap; }
+
+.dgc-btn-new { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:9px 12px; background:#DF1A21; color:#fff; border:none; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; box-sizing:border-box; transition:background .2s; }
+.dgc-btn-new:hover { background:#b81519; }
+
+.dgc-list-label { padding:10px 12px 4px; margin:0; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,.28); white-space:nowrap; flex-shrink:0; }
+.dgc-list { flex:1; overflow-y:auto; padding:4px 6px; }
+.dgc-list::-webkit-scrollbar { width:3px; }
+.dgc-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:3px; }
+
+.dgc-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:30px 10px; color:rgba(255,255,255,.2); text-align:center; }
+.dgc-empty p { font-size:11px; line-height:1.4; margin:0; padding:0; }
+
+.dgc-conv-item { display:flex; align-items:center; gap:8px; padding:8px; border-radius:7px; cursor:pointer; margin-bottom:2px; transition:background .15s; border-left:2px solid transparent; }
+.dgc-conv-item:hover { background:rgba(255,255,255,.06); }
+.dgc-conv-item.dgc-active { background:rgba(223,26,33,.18); border-left-color:#DF1A21; }
+.dgc-conv-ico { width:26px; height:26px; background:rgba(255,255,255,.07); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.dgc-conv-info { flex:1; min-width:0; }
+.dgc-conv-title { font-size:11.5px; font-weight:500; color:rgba(255,255,255,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:148px; margin:0; padding:0; line-height:1.3; }
+.dgc-conv-date  { font-size:10px; color:rgba(255,255,255,.27); margin:2px 0 0; padding:0; }
+.dgc-conv-del   { opacity:0; background:none; border:none; color:rgba(255,255,255,.28); cursor:pointer; padding:3px; border-radius:4px; transition:opacity .15s,color .15s; flex-shrink:0; display:flex; align-items:center; font-family:inherit; }
+.dgc-conv-item:hover .dgc-conv-del { opacity:1; }
+.dgc-conv-del:hover { color:#DF1A21; }
+
+.dgc-toggle { position:absolute; top:50%; right:-11px; transform:translateY(-50%); width:22px; height:46px; background:#1e2a32; border:1px solid rgba(255,255,255,.1); border-left:none; border-radius:0 8px 8px 0; color:rgba(255,255,255,.35); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:20; font-family:inherit; transition:color .2s; }
+.dgc-toggle:hover { color:#fff; }
+
+.dgc-show-btn { position:absolute; top:50%; left:0; transform:translateY(-50%); width:26px; height:50px; background:#1e2a32; border:1px solid rgba(255,255,255,.1); border-left:none; border-radius:0 8px 8px 0; color:rgba(255,255,255,.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:20; font-family:inherit; }
+.dgc-show-btn.dgc-visible { display:flex; }
+.dgc-show-btn:hover { color:#fff; }
+
+.dgc-main { flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; height:100%; }
+
+.dgc-header { background:linear-gradient(135deg,#4B5C66 0%,#3a4a52 100%); border-bottom:3px solid #DF1A21; padding:14px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:7px; flex-shrink:0; box-sizing:border-box; }
+.dgc-header-icon { width:40px; height:40px; background:linear-gradient(135deg,#DF1A21,#b81519); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; box-shadow:0 3px 10px rgba(223,26,33,.3); animation:dgcPulse 3s ease-in-out infinite; }
+@keyframes dgcPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+.dgc-header-text { flex:1; min-width:0; }
+.dgc-title    { margin:0; padding:0; font-size:17px; font-weight:700; color:#fff; line-height:1.2; border:none; background:none; }
+.dgc-em       { font-style:normal; background:linear-gradient(135deg,#ff8888,#DF1A21); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.dgc-subtitle { margin:3px 0 0; padding:0; font-size:11px; color:rgba(255,255,255,.55); }
+.dgc-header-right { display:flex; align-items:center; gap:9px; flex-shrink:0; }
+.dgc-status   { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); padding:5px 10px; border-radius:20px; font-size:11px; color:rgba(255,255,255,.85); white-space:nowrap; }
+.dgc-dot      { width:6px; height:6px; background:#4ade80; border-radius:50%; animation:dgcBlink 2s ease-in-out infinite; flex-shrink:0; }
+@keyframes dgcBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.dgc-logo-img { height:30px; width:auto; object-fit:contain; opacity:.85; display:block; }
+
+.dgc-bot-area { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+
+#dgcBot .mwai-chatbot-container { width:100% !important; position:static !important; display:flex !important; flex-direction:column !important; flex:1 !important; height:100% !important; }
+#dgcBot .mwai-chat { position:static !important; display:flex !important; flex-direction:column !important; flex:1 !important; width:100% !important; max-width:100% !important; height:100% !important; bottom:auto !important; right:auto !important; left:auto !important; top:auto !important; --mwai-width:100% !important; border-radius:0 !important; box-shadow:none !important; }
+#dgcBot .mwai-window-box { width:100% !important; flex:1 !important; height:100% !important; max-height:none !important; border-radius:0 !important; box-shadow:none !important; position:static !important; display:flex !important; flex-direction:column !important; }
+#dgcBot .mwai-body,
+#dgcBot .mwai-chatgpt-theme .mwai-body,
+#dgcBot .mwai-chat .mwai-body { flex:1 !important; height:auto !important; min-height:0 !important; max-height:none !important; border-radius:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }
+#dgcBot .mwai-conversation { flex:1 !important; overflow-y:auto !important; height:auto !important; min-height:0 !important; }
+#dgcBot .mwai-input { flex-shrink:0 !important; }
+#dgcBot .mwai-chat.mwai-window { display:flex !important; }
+#dgcBot .mwai-trigger, #dgcBot .mwai-open-button, #dgcBot [class*="mwai-trigger"], #dgcBot [class*="mwai-open"] { display:none !important; }
+
+.dgc-chips-row { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; padding:8px 14px; border-top:1px solid #e2e5e9; background:#f4f5f7; flex-shrink:0; box-sizing:border-box; }
+.dgc-chip { padding:6px 12px; background:#fff; border:1.5px solid #e2e5e9; border-radius:20px; color:#1e2a32; cursor:pointer; font-size:11.5px; font-family:inherit; white-space:nowrap; transition:all .2s; }
+.dgc-chip:hover { border-color:#DF1A21; background:#DF1A21; color:#fff; transform:translateY(-1px); }
+
+/* Botón de descarga del plugin */
+.dgc-btn-descargar { display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:8px; cursor:pointer; color:rgba(255,255,255,.85); opacity:.8; transition:all .2s; padding:0; flex-shrink:0; }
+.dgc-btn-descargar:hover { opacity:1; background:rgba(255,255,255,.2); }
+.dgc-btn-descargar svg { width:16px; height:16px; }
+
+@media (max-width:768px) {
+    .dgc-wrap { height:580px; border-radius:8px; }
+    .dgc-side { position:absolute; top:0; left:0; bottom:0; z-index:50; height:100%; }
+    .dgc-logo-img { display:none; }
+    .dgc-title { font-size:14px; }
+    .dgc-btn-new span { display:none; }
+    .dgc-btn-new { justify-content:center; }
+    #dgcBot .mwai-chat { height:100% !important; }
+    #dgcBot .mwai-body { height:100% !important; max-height:none !important; }
+}
+
+/* ============================
+   ESTILOS HEREDADOS (no tocar)
+   ============================ */
+.mwai-trigger, .mwai-open-button, .mwai-icon-container { display:none !important; visibility:hidden !important; opacity:0 !important; pointer-events:none !important; }
+[class*="mwai-trigger"], [class*="mwai-button"], [class*="mwai-open"] { display:none !important; }
+.mwai-chatgpt-theme .mwai-body { background:var(--mwai-backgroundSecondaryColor); color:var(--mwai-fontColor); font-size:var(--mwai-fontSize); overflow:hidden; display:flex; flex-direction:column; border-radius:var(--mwai-borderRadius); position:relative; height:500px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+img { max-width:100%; height:auto; display:block; }
+a { text-decoration:none; }
+button { font-family:inherit; }
