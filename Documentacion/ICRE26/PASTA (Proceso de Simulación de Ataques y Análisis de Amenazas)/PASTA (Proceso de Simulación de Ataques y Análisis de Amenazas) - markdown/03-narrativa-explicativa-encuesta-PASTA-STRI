@@ -1,0 +1,77 @@
+# Narrativa Explicativa de la Encuesta PASTA+STRIDE
+## Por qué preguntamos lo que preguntamos (y por qué debería importarle)
+
+### 1. Un poco de contexto (sin PowerPoint, prometido)
+
+En los últimos años España ha avanzado notablemente en gobernanza de ciberseguridad: la Alta Dirección aparece en los informes, los comités proliferan y las normativas aprietan con cariño pero con firmeza.[web:8][web:21][web:37]  
+
+Sin embargo, los estudios de madurez revelan una realidad menos glamourosa: muchas organizaciones siguen lejos de un modelo realmente proactivo, basado en riesgo y con comprensión profunda de sus propias amenazas.[web:31][web:38]  
+
+¿Dónde suele fallar todo? En dos lugares:
+
+1. Traducir la estrategia de seguridad en decisiones concretas sobre sistemas, datos y procesos.  
+2. Hacer de esa traducción una práctica sistemática, no un ritual anual de autoengañarse en PowerPoint.
+
+Ahí es donde el modelado de amenazas entra, con PASTA, STRIDE y compañía. Y ahí es donde esta encuesta quiere mirar.
+
+### 2. ¿Qué es lo que realmente se quiere medir?
+
+Más allá de nombres propios, queremos saber:
+
+- Si su organización entiende de qué vive (objetivos de negocio) y qué tendría que pasar para que un ciberataque la dejase sin ese sustento.  
+- Si sabe qué tiene (activos, datos, sistemas), por dónde circula, quién los toca y en qué condiciones.  
+- Si identifica, clasifica y prioriza amenazas como algo más que una lista genérica exportada de una herramienta.  
+- Si las vulnerabilidades se gestionan con lógica de riesgo real, no sólo con listas interminables de CVEs.  
+- Si las simulaciones de ataque son una práctica viva que aprende y se integra, o un teatro ocasional para apaciguar auditorías.  
+- Si el lenguaje de la ciberseguridad ha logrado hacerse entender en el dialecto nativo de Finanzas y del Consejo: el del impacto y el retorno de inversión.
+
+### 3. De PASTA y STRIDE a su organización
+
+PASTA propone un proceso en siete etapas: desde entender el negocio hasta traducir amenazas en riesgos y acciones. STRIDE ofrece un catálogo estructurado para pensar en amenazas de forma sistemática.[web:18]  
+
+La encuesta recorre estas etapas, preguntando por:
+
+- Gobernanza y estrategia: quién manda, quién escucha, quién decide.  
+- Alcance y descomposición: hasta dónde se ve y qué queda en la penumbra.  
+- Análisis de amenazas: si hay taxonomía o sólo intuición.  
+- Vulnerabilidades y simulaciones: si se aprende actuando o sólo archivando informes.  
+- Riesgo, continuidad y ROI: si el discurso llega a la sala donde se aprueban presupuestos.  
+- Capacidades habilitadoras: sin personas formadas, herramientas adecuadas y algo de automatización, todo esto se queda en manual de buenas intenciones.[web:8][web:39]
+
+### 4. ¿Qué NO es esta encuesta?
+
+No es:
+
+- Un examen para culpabilizar al CISO de todos los males de la humanidad.  
+- Un cuestionario pensado para quedar bien: las preguntas están formuladas para que la respuesta “hacemos de todo y muy bien” resulte creíble sólo en organizaciones que realmente lo hacen.  
+- Un sustituto de una evaluación técnica o normativa, aunque se alinea con ellas.
+
+### 5. Qué puede hacer usted con los resultados
+
+En manos de una organización honesta consigo misma, los resultados permiten:
+
+- Identificar dónde la cadena es más débil (governanza, modelado, simulaciones, integración en riesgo, capacidades).  
+- Priorizar proyectos: quizá no hace falta “un SIEM más”, sino el primer ejercicio serio de PASTA sobre los sistemas que sostienen el negocio.  
+- Defender presupuestos: transformar “necesitamos invertir en ciberseguridad” en “este es el riesgo actual, este es el riesgo residual con estas medidas, este es el coste de no hacer nada”.[web:8][web:31]
+
+A escala sectorial o nacional, el mismo instrumento sirve para:
+
+- Medir penetración real de buenas prácticas.  
+- Detectar sectores/segmentos rezagados.  
+- Comprobar si la presión normativa se traduce en cambios reales o sólo en más documentación.
+
+### 6. La ironía como mecanismo de defensa (y de lucidez)
+
+El tono de algunas preguntas, lo admitimos, roza deliberadamente la ironía. No es un capricho literario: la historia de la ciberseguridad está llena de “cumplimientos” que no protegían nada, de dashboards que parecían árboles de Navidad y de auditorías que podían aprobarse sin que nadie supiera de verdad qué amenazas afectaban al corazón del negocio.  
+
+Si algo de esa ironía ayuda a que la organización se mire al espejo con menos autoindulgencia y más voluntad de cambio, habrá cumplido su función.
+
+### 7. Próximos pasos razonables
+
+Tras completar la encuesta, los pasos lógicos son:
+
+1. Revisar el resultado agregado por dimensiones de madurez.  
+2. Relacionar los hallazgos con la realidad de incidentes y casi-incidentes vividos.  
+3. Decidir dónde invertir primero: en método, en personas, en herramientas, en automatización… o en reconocer, por fin, que “no sabemos qué amenazas tenemos, pero ahora al menos sabemos que no lo sabemos”.
+
+Con eso, el camino hacia un uso serio de PASTA y STRIDE deja de ser un asunto de especialistas aislados y pasa a formar parte de la conversación estratégica de la organización. Y ahí, precisamente ahí, es donde debería estar.
