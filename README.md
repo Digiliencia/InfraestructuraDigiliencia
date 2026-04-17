@@ -990,3 +990,9 @@ docker-compose logs -f fastapi
 - [Carlos Prieto Viñuela](https://github.com/carlos-prieto77)
 - [Enrique López González]()
 - [Cristina Mendaña Cuervo]()
+
+# Financiación
+
+Este documento es parte del convenio entre INCIBE y la Universidad de León titulado “Madurez, Adaptabilidad, Resiliencia y Continuidad en Organizaciones Digitalizadas. MARC.0 (Diligencia)” incluido en los Proyectos Estratégicos en España, en el marco del Plan de Recuperación, Transformación y Resiliencia, con la financiación de los Fondos Next Generation-EU.
+
+**Sobre INCIBE:** *El Instituto Nacional de Ciberseguridad es una entidad dependiente del Ministerio para la Transformación Digital y de la Función Pública a través de la Secretaría de Estado de Telecomunicaciones e Infraestructuras Digitales, consolidado como entidad de referencia para el desarrollo de la ciberseguridad y de la confianza digital de los ciudadanos y las empresas. Además, es un motor de transformación social y oportunidad para la innovación, fomentando la I+D+i y el talento.*
