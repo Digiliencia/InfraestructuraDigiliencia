@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_python_implementation != 'PyPy'",
@@ -248,18 +248,19 @@ wheels = [
 
 [[package]]
 name = "banks"
-version = "2.3.0"
+version = "2.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecated" },
+    { name = "filetype" },
     { name = "griffe" },
     { name = "jinja2" },
     { name = "platformdirs" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/64/9a4e17dfe7dc172594ffb877a287859edb40d59e0564bc930941e6c5df9d/banks-2.3.0.tar.gz", hash = "sha256:1ecb439a0b340588fcf9a8072d806540aad03c4b874ab9aff59ac8bc08c112ff", size = 182736, upload-time = "2026-01-21T10:03:15.114Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/51/08fb68d23f4b0f6256fe85dc86e9576941550f890b079352fba719e07b39/banks-2.4.2.tar.gz", hash = "sha256:cda6013bd377ea7b701933578bfb9370fc21ad70bc13cedfc3f5cb2c034ca3dc", size = 188633, upload-time = "2026-04-27T12:15:22.021Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/d6/ccceb03dd5193d180e28411c9f880f2cc9a574251de94b9b8a21ebdf51ec/banks-2.3.0-py3-none-any.whl", hash = "sha256:ac6a5800d468f26a0d80e091c0c6971b69457d580ce34c0217ee2bf6c3f07271", size = 32748, upload-time = "2026-01-21T10:03:14.251Z" },
+    { url = "https://files.pythonhosted.org/packages/00/b6/8dc5477681b782e2f99de703e7a99828883364b9e03a60d3e2c47053d56a/banks-2.4.2-py3-none-any.whl", hash = "sha256:5fe407cc48c101f3e13d1cf732b83b8246003337612f13c0705d2e81f6faffb7", size = 35050, upload-time = "2026-04-27T12:15:20.785Z" },
 ]
 
 [[package]]
