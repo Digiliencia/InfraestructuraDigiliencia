@@ -34,7 +34,7 @@ dependencies = [
     "pluggy==1.5.0",
     "psycopg2-binary>=2.9.11",
     "pycparser==2.22",
-    "pydantic-settings>=2.9.1",
+    "pydantic-settings>=2.14.2",
     "pygments==2.19.1",
     "pysocks==1.7.1",
     "pytest==8.3.5",
